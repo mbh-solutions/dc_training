@@ -1,0 +1,19 @@
+schema_version = "1.0"
+language = "typescript"
+production_paths = ["src"]
+high_risk_paths = [
+    "src/App.tsx",
+    "src/lib/supabase.ts",
+]
+
+[[gates]]
+adapter = "typescript.c901-equivalent-touched.v1"
+paths = ["src"]
+
+[[gates]]
+adapter = "typescript.import-boundaries.v1"
+paths = ["src"]
+
+[complexity]
+adapter = "typescript.c901-equivalent-touched.v1"
+maximum = 10

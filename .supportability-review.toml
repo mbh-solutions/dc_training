@@ -1,0 +1,62 @@
+schema_version = "1.0"
+
+[behavior]
+intended_behavior = "Adopt repository enforcement without changing the deployed DC Training application behavior."
+proof = "The adoption diff contains only the two supportability contract files; the existing production build and lint commands remain the baseline checks."
+
+[characterization]
+captured_behavior = "The current foundation provides owner authentication, a protected owner record, the approved Home shell, installable PWA behavior, temporary offline launch, and reconnection."
+proof = "docs/implementation/FOUNDATION_ROADMAP.md records the completed live foundation and its authentication, isolation, deployment, installation, offline, and reconnection proof."
+
+[separation_of_concerns]
+before = "The React foundation had explicit UI and Supabase client boundaries but no repository-level Supportability Gate contract."
+after = "The application boundaries remain unchanged while fixed TypeScript complexity, import-boundary, coverage, and semantic-review evidence become repository policy."
+
+[architecture]
+dependency_direction = "src/main.tsx composes src/App.tsx; src/App.tsx depends on src/lib/supabase.ts; the Supabase client boundary does not import UI composition."
+reviewed_paths = [
+    "src/App.tsx",
+    "src/index.css",
+    "src/lib/supabase.ts",
+    "src/main.tsx",
+    "src/vite-env.d.ts",
+]
+
+[responsibility_boundary]
+path = "src/App.tsx"
+owns = "Owner authentication state, the foundation profile read, and approved Home-shell presentation."
+does_not_own = "Supabase client construction, database policy, build configuration, service-worker generation, or future workout-domain behavior."
+
+[incremental_refactor]
+target = "Adopt enforcement around the proven foundation without refactoring application code."
+completed_step = "Added only the fixed TypeScript gate contract and structured semantic-review evidence."
+
+[review_handoff]
+summary = "Review exact supportability scope, high-risk auth/UI boundaries, dependency direction, maximum complexity 10, and absence of application behavior changes."
+remaining_risks = [
+    "The current foundation has no automated source-coverage suite; enforced production changes must add relevant coverage before they can pass.",
+]
+
+[human_review]
+naming = "App and Supabase boundaries use direct product and platform names."
+cohesion = "The adoption adds policy metadata only and leaves application responsibilities unchanged."
+intended_behavior = "Future production changes must satisfy deterministic quality gates and independent semantic review before merge."
+reviewability = "The bootstrap change is limited to two small TOML contracts with no runtime code changes."
+
+[[module_boundaries]]
+path = "src/App.tsx"
+owner_path = "src/App.tsx"
+basis = "responsibility"
+justification = "Owns foundation authentication flow and approved Home-shell presentation."
+
+[[module_boundaries]]
+path = "src/lib/supabase.ts"
+owner_path = "src/lib/supabase.ts"
+basis = "responsibility"
+justification = "Owns browser-safe Supabase client construction and environment validation."
+
+[[module_boundaries]]
+path = "src/main.tsx"
+owner_path = "src/main.tsx"
+basis = "responsibility"
+justification = "Owns React root creation and top-level application mounting."
