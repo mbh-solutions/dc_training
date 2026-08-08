@@ -8,8 +8,12 @@ const target =
   process.env.SUPPORTABILITY_CHARACTERIZATION_TARGET ?? process.cwd();
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 const require = createRequire(pathToFileURL(path.join(target, "package.json")));
-const definition = fileURLToPath(new URL("../..", import.meta.url));
-const definitionRequire = createRequire(import.meta.url);
+const definition =
+  process.env.SUPPORTABILITY_CHARACTERIZATION_DEFINITION ??
+  fileURLToPath(new URL("../..", import.meta.url));
+const definitionRequire = createRequire(
+  pathToFileURL(path.join(definition, "package.json")),
+);
 
 const install = (cwd) => {
   const options = { cwd, stdio: "ignore", timeout: 90_000 };
