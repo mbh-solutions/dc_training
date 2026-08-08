@@ -5,8 +5,9 @@ architecture_judgment = "PASS"
 base_sha = "b37f75211a1bf45076a1333f0ee999b41661cf51"
 overall_result = "PASS"
 responsibility_changes = [
-    "App now selects screens and composes focused auth-session, connectivity, profile-authorization, and Home-presentation boundaries.",
-    "The foundation-profile hook hides the protected shell and locally signs out on both missing profile data and query errors.",
+    "App now selects screens and composes focused auth-screen, auth-session, connectivity, profile-authorization, and Home-presentation boundaries.",
+    "Online profile access is pending until the current user's query succeeds; missing data and query errors deny access and locally sign out.",
+    "Authentication screens delegate Supabase sign-in, reset-request, and recovery-completion workflows to focused auth actions.",
     "Authentication callback parsing is separate from publishable-key-only Supabase client construction.",
 ]
 simplified_functions = [
@@ -16,22 +17,29 @@ simplified_functions = [
     "LoadingScreen",
     "NetworkStatus",
     "ResetPasswordScreen",
+    "ResetPasswordScreen.anonymous@157:23",
+    "ResetPasswordScreen.anonymous@169:23",
     "ResetPasswordScreen.handleSubmit",
     "SetupScreen",
     "SignInScreen",
+    "SignInScreen.anonymous@60:23",
+    "SignInScreen.anonymous@71:23",
     "SignInScreen.handlePasswordReset",
     "SignInScreen.handleSubmit",
+    "completeOwnerPasswordRecovery",
+    "requestOwnerPasswordReset",
+    "signInOwner",
     "useAuthSession",
     "useAuthSession.anonymous@13:13",
     "useAuthSession.anonymous@13:13.anonymous@19:42",
     "useAuthSession.anonymous@13:13.anonymous@24:54",
     "useAuthSession.anonymous@13:13.anonymous@30:12",
-    "useAuthSession.anonymous@34:5",
+    "useAuthSession.anonymous@33:46",
     "useAuthSession.anonymous@37:31",
     "useFoundationProfile",
-    "useFoundationProfile.anonymous@12:13",
-    "useFoundationProfile.anonymous@12:13.anonymous@29:13",
-    "useFoundationProfile.anonymous@12:13.anonymous@42:12",
+    "useFoundationProfile.anonymous@16:13",
+    "useFoundationProfile.anonymous@16:13.anonymous@33:13",
+    "useFoundationProfile.anonymous@16:13.anonymous@46:12",
     "useOnline",
     "useOnline.anonymous@6:13",
     "useOnline.anonymous@6:13.anonymous@12:12",
@@ -39,8 +47,8 @@ simplified_functions = [
     "useOnline.anonymous@6:13.handleOnline",
 ]
 boundary_rationale = [
-    "App retains only top-level screen composition and authentication-screen presentation; focused hooks own stateful lifecycles and FoundationHome owns Home presentation.",
-    "Callback parsing and Supabase client construction are separate leaf modules that do not import UI.",
+    "App retains only top-level screen composition; AuthScreens owns forms; focused hooks own stateful lifecycles; FoundationHome owns Home presentation.",
+    "Auth actions, callback parsing, and Supabase client construction are focused leaf modules; library modules do not import UI.",
 ]
 remaining_risks = [
     "Live Supabase policy, service-worker caching, and mobile installation remain deployment evidence outside the deterministic source characterization.",
@@ -63,8 +71,8 @@ gate_coverage = [
 
 [[completion_report.claims]]
 id = "claim-owner-profile-boundary"
-text = "Online profile authorization selects the current session user's foundation status, hides protected UI, and locally signs out on missing data or query errors."
-citations = ["src/hooks/use-foundation-profile.ts:24-39"]
+text = "Online profile access starts pending for the current user, App withholds Home until authorization succeeds, and a user-scoped query denies access and locally signs out on missing data or errors."
+citations = ["src/App.tsx:35-45", "src/hooks/use-foundation-profile.ts:28-55"]
 
 [[completion_report.claims]]
 id = "claim-browser-client-boundary"

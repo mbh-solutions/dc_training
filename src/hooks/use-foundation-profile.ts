@@ -3,15 +3,19 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase.js";
 
 type SyncState = "idle" | "syncing" | "synced";
+type ProfileAccess = "authorized" | "denied";
+type ProfileResult = { state: ProfileAccess; userId: string };
 
 export function useFoundationProfile(session: Session | null, online: boolean) {
-  const [accessDenied, setAccessDenied] = useState(false);
+  const [profileResult, setProfileResult] = useState<ProfileResult | null>(
+    null,
+  );
   const [cloudStatus, setCloudStatus] = useState("NOT CHECKED");
   const [syncState, setSyncState] = useState<SyncState>("idle");
 
   useEffect(() => {
     if (!session) {
-      setAccessDenied(false);
+      setProfileResult(null);
       setCloudStatus("NOT CHECKED");
       setSyncState("idle");
       return;
@@ -29,12 +33,12 @@ export function useFoundationProfile(session: Session | null, online: boolean) {
       .then(async ({ data, error }) => {
         if (!active) return;
         if (error || !data) {
-          setAccessDenied(true);
+          setProfileResult({ state: "denied", userId: session.user.id });
           await client.auth.signOut({ scope: "local" });
           return;
         }
 
-        setAccessDenied(false);
+        setProfileResult({ state: "authorized", userId: session.user.id });
         setCloudStatus(data.status === "ready" ? "PROTECTED" : "CONNECTED");
         setSyncState("synced");
       });
@@ -44,5 +48,9 @@ export function useFoundationProfile(session: Session | null, online: boolean) {
     };
   }, [online, session]);
 
-  return { accessDenied, cloudStatus, syncState };
+  const profileAccess =
+    profileResult?.userId === session?.user.id
+      ? profileResult.state
+      : "pending";
+  return { cloudStatus, profileAccess, syncState };
 }

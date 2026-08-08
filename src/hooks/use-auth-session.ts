@@ -30,10 +30,10 @@ export function useAuthSession() {
     return () => data.subscription.unsubscribe();
   }, []);
 
-  const finishPasswordRecovery = useCallback(
-    () => setRecoveringPassword(false),
-    [],
-  );
+  const finishPasswordRecovery = useCallback(() => {
+    window.history.replaceState({}, "", "/");
+    setRecoveringPassword(false);
+  }, []);
   const signOut = useCallback(async () => {
     await supabase?.auth.signOut();
   }, []);

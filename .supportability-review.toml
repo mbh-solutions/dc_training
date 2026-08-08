@@ -2,25 +2,27 @@ schema_version = "1.0"
 
 [behavior]
 intended_behavior = "Preserve the owner workflows while making online foundation-profile authorization fail closed on missing data or query errors."
-proof = "The foundation characterization mounts the real application and verifies both profile failure paths hide the protected shell and locally sign out."
+proof = "The foundation characterization mounts the real application and exercises both profile failure paths; App hides online protected UI until the focused profile boundary authorizes the current user."
 
 [characterization]
 captured_behavior = "The foundation provides owner authentication, protected profile authorization, the approved Home shell, temporary offline launch, reconnection, and password recovery."
-proof = "tests/characterization/foundation-shell.characterization.mjs mounts src/main.tsx through React createRoot, drives real effects and form events, verifies profile absence and query errors fail closed, and records Supabase-boundary calls."
+proof = "tests/characterization/foundation-shell.characterization.mjs mounts src/main.tsx through React createRoot, drives real effects, forms, profile-failure paths, and records Supabase-boundary calls while preserving compatible observable behavior."
 
 [separation_of_concerns]
 before = "App owned session lifecycle, network listeners, profile authorization, route selection, and Home presentation; the Supabase module also parsed callback URLs."
-after = "App only selects screens and composes focused auth, network, profile-authorization, callback-parsing, client-construction, and Home-presentation boundaries."
+after = "App only selects screens; focused modules own auth-screen forms, Supabase auth actions, session state, network state, profile authorization, callback parsing, client construction, and Home presentation."
 
 [architecture]
-dependency_direction = "src/main.tsx mounts App; App composes focused hooks and FoundationHome; hooks depend on callback parsing or the Supabase client; neither library module imports UI."
+dependency_direction = "src/main.tsx mounts App; App composes AuthScreens, focused hooks, and FoundationHome; AuthScreens delegates client calls to auth-actions; hooks and auth-actions depend on callback parsing or the Supabase client; library modules do not import UI."
 reviewed_paths = [
     "src/App.tsx",
+    "src/AuthScreens.tsx",
     "src/FoundationHome.tsx",
     "src/hooks/use-auth-session.ts",
     "src/hooks/use-foundation-profile.ts",
     "src/hooks/use-online.ts",
     "src/index.css",
+    "src/lib/auth-actions.ts",
     "src/lib/auth-callback.ts",
     "src/lib/supabase.ts",
     "src/main.tsx",
@@ -28,30 +30,36 @@ reviewed_paths = [
 
 [responsibility_boundary]
 path = "src/App.tsx"
-owns = "Top-level screen selection plus sign-in, recovery, loading, and setup screen presentation."
-does_not_own = "Auth lifecycle, network listeners, profile queries, Home presentation, callback parsing, Supabase construction, database policy, or future workout behavior."
+owns = "Top-level screen selection and composition of focused foundation boundaries."
+does_not_own = "Auth forms or client calls, auth lifecycle, network listeners, profile queries, Home presentation, callback parsing, Supabase construction, database policy, or future workout behavior."
 
 [incremental_refactor]
-target = "Correct the three exact semantic findings without expanding the product scope."
-completed_step = "Extracted focused lifecycle and presentation boundaries, separated callback parsing, and made profile query errors fail closed."
+target = "Correct the exact semantic findings without expanding the product scope."
+completed_step = "Made online profile authorization pending by default, extracted auth screens and client actions, and retained focused lifecycle, callback, and Home boundaries."
 
 [review_handoff]
-summary = "Review the thin App composition, fail-closed profile guard, focused dependency direction, and real React characterization."
+summary = "Review pending-by-default online profile authorization, thin App composition, delegated auth actions, focused dependency direction, and real React characterization."
 remaining_risks = [
     "Live Supabase RLS, deployed PWA caching, and iPhone installation remain deployment evidence outside source characterization.",
 ]
 
 [human_review]
-naming = "Each hook names its one lifecycle; FoundationHome and auth-callback name their direct responsibilities."
-cohesion = "App composes; hooks own stateful effects; FoundationHome presents; library modules parse callback input or construct the client."
+naming = "Each hook and auth action names one concrete responsibility; AuthScreens, FoundationHome, and auth-callback name their direct boundaries."
+cohesion = "App composes; AuthScreens owns form presentation and validation; auth-actions owns client workflows; hooks own stateful effects; FoundationHome presents."
 intended_behavior = "Owner authentication, recovery, cloud status, offline shell, and Home presentation remain, while authorization errors now deny access."
-reviewability = "The correction maps directly to the three semantic findings and adds no product feature or dependency."
+reviewability = "The correction maps directly to the pending-authorization and mixed-auth-workflow findings and adds no product feature or dependency."
 
 [[module_boundaries]]
 path = "src/App.tsx"
 owner_path = "src/App.tsx"
 basis = "responsibility"
-justification = "Owns top-level screen selection and authentication-screen presentation only."
+justification = "Owns top-level screen selection and composition only."
+
+[[module_boundaries]]
+path = "src/AuthScreens.tsx"
+owner_path = "src/AuthScreens.tsx"
+basis = "responsibility"
+justification = "Owns authentication and recovery form presentation, local form state, and input validation while delegating client workflows."
 
 [[module_boundaries]]
 path = "src/FoundationHome.tsx"
@@ -76,6 +84,12 @@ path = "src/hooks/use-online.ts"
 owner_path = "src/hooks/use-online.ts"
 basis = "responsibility"
 justification = "Owns browser connectivity observation."
+
+[[module_boundaries]]
+path = "src/lib/auth-actions.ts"
+owner_path = "src/lib/auth-actions.ts"
+basis = "responsibility"
+justification = "Owns focused Supabase owner-authentication client workflows without UI state or presentation."
 
 [[module_boundaries]]
 path = "src/lib/auth-callback.ts"

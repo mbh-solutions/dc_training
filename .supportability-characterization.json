@@ -3,10 +3,12 @@
     {
       "covers": [
         "src/App.tsx",
+        "src/AuthScreens.tsx",
         "src/FoundationHome.tsx",
         "src/hooks/use-auth-session.ts",
         "src/hooks/use-foundation-profile.ts",
         "src/hooks/use-online.ts",
+        "src/lib/auth-actions.ts",
         "src/lib/auth-callback.ts",
         "src/lib/supabase.ts",
         "src/main.tsx"
