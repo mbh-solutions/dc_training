@@ -1,0 +1,358 @@
+:root {
+  color: #f4f4f2;
+  background: #050505;
+  font-family: "Aptos Narrow", "Arial Narrow", sans-serif;
+  font-synthesis: none;
+  text-rendering: geometricPrecision;
+  --black: #050505;
+  --panel: #0b0b0b;
+  --white: #f4f4f2;
+  --gray: #8b8b88;
+  --line: #3a3a38;
+  --red: #ef3028;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: var(--black);
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 50% -15%, rgba(255, 255, 255, 0.07), transparent 34rem),
+    var(--black);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--white);
+  outline-offset: 3px;
+}
+
+.auth-shell,
+.center-screen {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+}
+
+.auth-panel {
+  width: min(100%, 430px);
+}
+
+.auth-header {
+  margin-bottom: 46px;
+}
+
+.eyebrow,
+.section-label,
+.account-email,
+.quiet-note,
+.auth-footnote {
+  margin: 0;
+  color: var(--gray);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+
+h1,
+h2,
+button,
+label,
+dt,
+dd {
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.045em;
+}
+
+.auth-header h1,
+.app-header h1 {
+  margin: 7px 0 0;
+  font-size: clamp(3.25rem, 13vw, 5.15rem);
+  line-height: 0.9;
+}
+
+.auth-header > p:last-child {
+  margin: 18px 0 0;
+  color: var(--red);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+}
+
+.auth-form {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-form label {
+  margin-top: 12px;
+  color: #c8c8c5;
+  font-size: 0.92rem;
+}
+
+.auth-form input {
+  width: 100%;
+  min-height: 54px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 16px;
+  color: var(--white);
+  background: rgba(13, 13, 13, 0.94);
+  font-size: 1rem;
+}
+
+.auth-form input:focus {
+  border-color: #777773;
+}
+
+.primary-action,
+.secondary-action {
+  width: 100%;
+  min-height: 58px;
+  border-radius: 6px;
+  color: var(--white);
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.primary-action {
+  margin-top: 24px;
+  border: 1px solid var(--red);
+  background: linear-gradient(120deg, #d9211c, var(--red));
+}
+
+.secondary-action {
+  border: 1px solid var(--red);
+  background: transparent;
+}
+
+.primary-action:disabled,
+.secondary-action:disabled,
+.text-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.text-action {
+  justify-self: center;
+  min-height: 44px;
+  border: 0;
+  padding: 10px 14px;
+  color: #bdbdba;
+  background: transparent;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.form-message {
+  margin: 10px 0 0;
+  color: #d0d0cd;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.auth-footnote {
+  margin-top: 44px;
+  text-align: center;
+}
+
+.app-shell {
+  width: min(100%, 520px);
+  min-height: 100svh;
+  margin: 0 auto;
+  padding: max(26px, env(safe-area-inset-top)) 22px max(28px, env(safe-area-inset-bottom));
+}
+
+.app-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 14px 3px 30px;
+}
+
+.app-header h1 {
+  font-size: clamp(2.7rem, 11vw, 4.3rem);
+}
+
+.foundation-mark {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--red);
+  font-family: Impact, sans-serif;
+  font-size: 1.35rem;
+}
+
+.status-strip {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #444441;
+  border-radius: 6px;
+  padding: 7px 12px;
+  color: #bdbdba;
+  font-family: Impact, Haettenschweiler, sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+}
+
+.status-strip--quiet {
+  min-height: 28px;
+  border-color: transparent;
+  color: #666663;
+}
+
+.status-strip--failed {
+  justify-content: space-between;
+  border-color: #9d211d;
+  color: var(--red);
+}
+
+.status-strip--failed button {
+  min-height: 28px;
+  border: 1px solid var(--red);
+  border-radius: 4px;
+  padding: 3px 11px;
+  color: var(--white);
+  background: transparent;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.foundation-card {
+  margin-top: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 30px 26px 24px;
+  background: linear-gradient(145deg, rgba(16, 16, 16, 0.88), rgba(6, 6, 6, 0.96));
+}
+
+.foundation-card h2 {
+  margin: 6px 0 10px;
+  font-size: clamp(4.5rem, 21vw, 7rem);
+  line-height: 0.95;
+}
+
+.foundation-copy {
+  max-width: 30ch;
+  margin: 0 0 30px;
+  color: #a7a7a3;
+  line-height: 1.5;
+}
+
+.proof-list {
+  margin: 0;
+  border-top: 1px solid #272725;
+}
+
+.proof-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid #272725;
+  padding: 17px 0;
+}
+
+.proof-list dt,
+.proof-list dd {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.proof-list dt {
+  color: #8f8f8c;
+}
+
+.proof-list dd {
+  color: var(--white);
+  text-align: right;
+}
+
+.account-email {
+  margin: 28px 4px 12px;
+  overflow-wrap: anywhere;
+}
+
+.quiet-note {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.center-screen {
+  align-content: center;
+  color: var(--gray);
+  text-align: center;
+}
+
+.center-screen h1,
+.center-screen p {
+  margin: 8px 0;
+}
+
+.loading-mark {
+  display: grid;
+  width: 68px;
+  height: 68px;
+  place-items: center;
+  border: 2px solid var(--red);
+  border-radius: 50%;
+  color: var(--white);
+  font-family: Impact, sans-serif;
+  font-size: 1.7rem;
+}
+
+@media (max-width: 380px) {
+  .foundation-card {
+    padding-inline: 20px;
+  }
+
+  .status-strip--failed {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .auth-panel,
+  .app-shell {
+    animation: reveal 360ms ease-out both;
+  }
+
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}

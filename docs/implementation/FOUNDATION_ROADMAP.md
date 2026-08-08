@@ -1,6 +1,6 @@
 # App Foundation Implementation Roadmap
 
-Status: planning complete; implementation not started.
+Status: live app foundation verified; Git publication and Supportability Gate pending.
 
 Authoritative product behavior remains in `docs/design/README.md`. This roadmap defines the shortest safe path from documentation-only repository to a live, installable foundation. It does not reopen approved product or visual decisions.
 
@@ -54,7 +54,7 @@ Hard stop: no application files are created until this checkpoint is complete.
 ### 2. Link hosting and cloud resources
 
 - Link the repository to one Vercel project.
-- Connect the existing Supabase project rather than provisioning another database.
+- Provision one dedicated Supabase project only when no DC Training project already exists.
 - Map the Supabase project URL and publishable key into local, preview, and production environments.
 - Verify required environment-variable names without printing values.
 - Do not run database or development commands until linkage and environment checks pass.
@@ -113,11 +113,13 @@ Hard stop: the next milestone does not begin until the Gate is enforced and pass
 ## Current local readiness
 
 - Node.js `v24.16.0` and npm `11.13.0` are installed and satisfy current Vite requirements.
-- Vercel CLI is not installed and the repository is not linked to a Vercel project.
-- Supabase CLI is not installed; it is not required to choose the architecture.
-- Public Supabase URL/key variable names and a Vercel token variable name exist in the Windows environment; values were not read or printed.
-- No privileged Supabase database/admin credential name was found in the current environment audit. A protected authenticated integration path must be established before schema work.
-- The repository still has approved local documentation and image changes that are not on GitHub.
+- Approved planning artifacts are merged to `main`; `codex/app-foundation` was created from that synchronized baseline.
+- The minimal React/Vite PWA shell builds locally and is deployed to [dc-training.vercel.app](https://dc-training.vercel.app).
+- Vercel project `dc-training` is linked locally; Supabase browser-safe values are configured for development, preview, and production.
+- Dedicated Supabase project `dc-training` is active in `us-east-2` at the confirmed cost of `$0/month`.
+- `foundation_profiles` is protected by Row Level Security; anonymous access returns `401`. The Supabase security advisor reports only that leaked-password protection is disabled.
+- Public signup is locked. Owner creation, password recovery, sign-out, password sign-in, returning-session, protected-record, iPhone installation, offline-shell, and reconnection proofs pass.
+- Application changes remain local and uncommitted until the owner separately authorizes Git publication.
 
 ## Official implementation references
 
@@ -130,13 +132,12 @@ Hard stop: the next milestone does not begin until the Gate is enforced and pass
 
 ## Definition of done
 
-- [ ] Approved planning artifacts are safely synchronized with GitHub.
-- [ ] A clean foundation branch exists.
-- [ ] The live Vercel PWA supports owner-only email/password sign-in.
-- [ ] RLS protection is proven against signed-out and signed-in access.
-- [ ] Returning sessions and sign-out work.
-- [ ] The app installs and reopens its shell offline on the owner's iPhone.
-- [ ] No privileged credential reaches the browser.
+- [x] Approved planning artifacts are safely synchronized with GitHub.
+- [x] A clean foundation branch exists.
+- [x] The live Vercel PWA supports owner-only email/password sign-in.
+- [x] RLS protection is proven against signed-out and signed-in access.
+- [x] Returning sessions and sign-out work.
+- [x] The app installs and reopens its shell offline on the owner's iPhone.
+- [x] No privileged credential reaches the browser.
 - [ ] The Supportability Gate is enforced and passing.
-- [ ] No workout feature implementation has begun.
-
+- [x] No workout feature implementation has begun.
