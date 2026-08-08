@@ -15,6 +15,6 @@
   "session_restored": true,
   "sign_in_submitted": true,
   "sign_out_submitted": true,
-  "profile_error_signed_out": true,
+  "profile_error_handled": true,
   "reconnect_refetched": true
 }

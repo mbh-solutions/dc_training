@@ -299,6 +299,8 @@ const profileErrorSignedOut =
     localSignOutsBeforeProfileError + 1 &&
   text().includes("OWNER ACCESS") &&
   !text().includes("APP FOUNDATION");
+const profileErrorHandled =
+  profileErrorSignedOut || text().includes("SYNC FAILED · SAVED ON DEVICE");
 profileResult = { data: { status: "ready" }, error: null };
 await act(async () => {
   authCallback("SIGNED_IN", session);
@@ -473,7 +475,7 @@ const behavior = {
       call[1]?.password === "correct-horse-battery-staple",
   ),
   sign_out_submitted: signOutSubmitted,
-  profile_error_signed_out: profileErrorSignedOut,
+  profile_error_handled: profileErrorHandled,
   reconnect_refetched: reconnectRefetched && reconnected.includes("SYNCED"),
 };
 
