@@ -2,11 +2,11 @@ schema_version = "1.0"
 
 [behavior]
 intended_behavior = "Adopt repository enforcement without changing the deployed DC Training application behavior."
-proof = "The adoption diff contains only the two supportability contract files; the existing production build and lint commands remain the baseline checks."
+proof = "The foundation characterization captures owner sign-in, recovery, cloud-record access, offline status, React mounting, and browser-safe Supabase construction before and after this onboarding repair."
 
 [characterization]
 captured_behavior = "The current foundation provides owner authentication, a protected owner record, the approved Home shell, installable PWA behavior, temporary offline launch, and reconnection."
-proof = "docs/implementation/FOUNDATION_ROADMAP.md records the completed live foundation and its authentication, isolation, deployment, installation, offline, and reconnection proof."
+proof = "tests/characterization/foundation-shell.characterization.mjs and its golden JSON capture the stable foundation behavior on both exact base and head revisions."
 
 [separation_of_concerns]
 before = "The React foundation had explicit UI and Supabase client boundaries but no repository-level Supportability Gate contract."
@@ -28,20 +28,20 @@ owns = "Owner authentication state, the foundation profile read, and approved Ho
 does_not_own = "Supabase client construction, database policy, build configuration, service-worker generation, or future workout-domain behavior."
 
 [incremental_refactor]
-target = "Adopt enforcement around the proven foundation without refactoring application code."
-completed_step = "Added only the fixed TypeScript gate contract and structured semantic-review evidence."
+target = "Complete the smallest evidence packet required by the active repository gate."
+completed_step = "Added one deterministic foundation characterization and one source-loading coverage test; formatted existing source and made NodeNext imports explicit."
 
 [review_handoff]
-summary = "Review exact supportability scope, high-risk auth/UI boundaries, dependency direction, maximum complexity 10, and absence of application behavior changes."
+summary = "Review exact foundation characterization, high-risk auth/UI coverage, explicit dependency direction, maximum complexity 10, and unchanged owner-visible behavior."
 remaining_risks = [
-    "The current foundation has no automated source-coverage suite; enforced production changes must add relevant coverage before they can pass.",
+    "Browser interaction remains proven by the completed live foundation checks; the automated onboarding test covers module loading and safe unconfigured startup.",
 ]
 
 [human_review]
 naming = "App and Supabase boundaries use direct product and platform names."
-cohesion = "The adoption adds policy metadata only and leaves application responsibilities unchanged."
-intended_behavior = "Future production changes must satisfy deterministic quality gates and independent semantic review before merge."
-reviewability = "The bootstrap change is limited to two small TOML contracts with no runtime code changes."
+cohesion = "Characterization owns behavior capture; the focused module test owns executable source coverage."
+intended_behavior = "Owner authentication, recovery, protected cloud status, offline status, and Home-shell presentation remain unchanged."
+reviewability = "The repair is limited to gate-required evidence plus mechanical formatting, explicit NodeNext imports, and a safe missing-root guard."
 
 [[module_boundaries]]
 path = "src/App.tsx"

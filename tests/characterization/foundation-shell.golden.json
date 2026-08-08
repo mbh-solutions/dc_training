@@ -1,0 +1,9 @@
+{
+  "account_required": true,
+  "cloud_record": true,
+  "offline_status": true,
+  "owner_password_auth": true,
+  "password_recovery": true,
+  "react_root": true,
+  "supabase_client": true
+}

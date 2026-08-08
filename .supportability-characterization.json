@@ -1,0 +1,10 @@
+{
+  "scenarios": [
+    {
+      "covers": ["src/App.tsx", "src/lib/supabase.ts", "src/main.tsx"],
+      "id": "foundation-shell",
+      "kind": "regression"
+    }
+  ],
+  "schema_version": "1.0"
+}
