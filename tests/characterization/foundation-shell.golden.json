@@ -7,6 +7,8 @@
   "missing_profile_signed_out": true,
   "offline_sign_out_safe": true,
   "protected_owner_record": true,
+  "recovery_failure_retained": true,
+  "recovery_rejects_mismatch": true,
   "recovery_completed": true,
   "reset_request_private": true,
   "session_restored": true,

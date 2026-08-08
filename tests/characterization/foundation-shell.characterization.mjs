@@ -51,6 +51,7 @@ const session = { user: { email: "owner@example.com", id: "owner-1" } };
 const sessionResolvers = [];
 let authCallback;
 let profileResult = { data: { status: "ready" }, error: null };
+let updateResult = { error: null };
 
 const client = {
   auth: {
@@ -80,7 +81,7 @@ const client = {
     },
     updateUser: async (attributes) => {
       calls.push(["updateUser", attributes]);
-      return { error: null };
+      return updateResult;
     },
   },
   from(table) {
@@ -352,7 +353,38 @@ await act(async () => {
 });
 const recoveryShown = text().includes("OWNER RECOVERY");
 await setInput("new-password", "correct-horse-battery-staple");
+await setInput("confirm-password", "mismatched-recovery-password");
+const updatesBeforeMismatch = countCalls("updateUser");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("SAVE PASSWORD"))
+    .click();
+  await flush();
+});
+const recoveryMismatchRejected =
+  text().includes("Passwords do not match.") &&
+  countCalls("updateUser") === updatesBeforeMismatch;
+
 await setInput("confirm-password", "correct-horse-battery-staple");
+updateResult = { error: { message: "recovery session expired" } };
+const updatesBeforeFailure = countCalls("updateUser");
+const otherSignOutsBeforeFailure = calls.filter(
+  (call) => call[0] === "signOut" && call[1]?.scope === "others",
+).length;
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("SAVE PASSWORD"))
+    .click();
+  await flush();
+});
+const recoveryFailureRetained =
+  text().includes("Password could not be updated. Request a new reset link.") &&
+  text().includes("OWNER RECOVERY") &&
+  countCalls("updateUser") === updatesBeforeFailure + 1 &&
+  calls.filter((call) => call[0] === "signOut" && call[1]?.scope === "others")
+    .length === otherSignOutsBeforeFailure;
+
+updateResult = { error: null };
 await act(async () => {
   [...document.querySelectorAll("button")]
     .find((button) => button.textContent.includes("SAVE PASSWORD"))
@@ -389,6 +421,8 @@ const behavior = {
     hasCall("select", (call) => call[1] === "status") &&
     hasCall("eq", (call) => call[1] === "user_id" && call[2] === "owner-1") &&
     signedOutReadBlocked,
+  recovery_failure_retained: recoveryFailureRetained,
+  recovery_rejects_mismatch: recoveryMismatchRejected,
   recovery_completed:
     recoveryShown &&
     recoveryExited &&
