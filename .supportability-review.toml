@@ -6,7 +6,7 @@ proof = "The foundation characterization captures owner sign-in, recovery, cloud
 
 [characterization]
 captured_behavior = "The current foundation provides owner authentication, a protected owner record, the approved Home shell, installable PWA behavior, temporary offline launch, and reconnection."
-proof = "tests/characterization/foundation-shell.characterization.mjs mounts the real app, renders signed-in, signed-out, recovery, and offline UI with stubs, submits the real sign-in and recovery forms, requests a reset email, and records the resulting Supabase calls on both exact base and head revisions."
+proof = "tests/characterization/foundation-shell.characterization.mjs mounts the real app, restores a session through retained hook state, drives offline and PASSWORD_RECOVERY callbacks, submits the real sign-in and recovery forms, and records the resulting Supabase calls on both exact base and head revisions."
 
 [separation_of_concerns]
 before = "The React foundation had explicit UI and Supabase client boundaries but no repository-level Supportability Gate contract."

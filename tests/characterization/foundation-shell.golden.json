@@ -48,5 +48,6 @@
   "offline_ui": true,
   "online_ui": true,
   "recovery_ui": true,
+  "restored_session": true,
   "signed_out_ui": true
 }

@@ -31,6 +31,8 @@ try {
 const ts = require("typescript");
 const calls = [];
 const session = { user: { email: "owner@example.com", id: "owner-1" } };
+const listeners = {};
+let authCallback;
 
 const client = {
   auth: {
@@ -38,8 +40,9 @@ const client = {
       calls.push(["getSession"]);
       return { data: { session } };
     },
-    onAuthStateChange: () => {
+    onAuthStateChange: (callback) => {
       calls.push(["onAuthStateChange"]);
+      authCallback = callback;
       return { data: { subscription: { unsubscribe() {} } } };
     },
     resetPasswordForEmail: async (email, options) => {
@@ -89,7 +92,8 @@ Object.assign(globalThis, {
     VITE_SUPABASE_URL: "https://example.supabase.co",
   },
   __foundationMounts: [],
-  __foundationStates: [],
+  __foundationHookIndex: 0,
+  __foundationHookValues: [],
 });
 
 Object.defineProperties(globalThis, {
@@ -104,10 +108,14 @@ Object.defineProperties(globalThis, {
   window: {
     configurable: true,
     value: {
-      addEventListener() {},
+      addEventListener(type, callback) {
+        listeners[type] = callback;
+      },
       history: { replaceState() {} },
       location: { hash: "", origin: "https://dc-training.test", search: "" },
-      removeEventListener() {},
+      removeEventListener(type) {
+        delete listeners[type];
+      },
     },
   },
 });
@@ -118,9 +126,13 @@ const reactUrl = moduleUrl(`
 export const useCallback = (callback) => callback;
 export const useEffect = (effect) => globalThis.__foundationEffects.push(effect);
 export const useState = (initial) => {
-  const states = globalThis.__foundationStates;
-  const value = states.length ? states.shift() : initial;
-  return [value, () => {}];
+  const index = globalThis.__foundationHookIndex++;
+  const states = globalThis.__foundationHookValues;
+  if (!(index in states)) states[index] = typeof initial === "function" ? initial() : initial;
+  const setValue = (next) => {
+    states[index] = typeof next === "function" ? next(states[index]) : next;
+  };
+  return [states[index], setValue];
 };
 export const StrictMode = Symbol.for("StrictMode");
 `);
@@ -226,18 +238,35 @@ const appUrl = pathToFileURL(path.join(target, "src/App.tsx")).href;
 const mainUrl = pathToFileURL(path.join(target, "src/main.tsx")).href;
 const { default: App } = await import(appUrl);
 
-globalThis.__foundationStates.push(
-  session,
-  false,
-  false,
-  true,
-  "synced",
-  "PROTECTED",
-);
+const resetHooks = (states = []) => {
+  globalThis.__foundationHookIndex = 0;
+  globalThis.__foundationHookValues.splice(
+    0,
+    globalThis.__foundationHookValues.length,
+    ...states,
+  );
+  globalThis.__foundationEffects.length = 0;
+};
+const rerender = () => {
+  globalThis.__foundationHookIndex = 0;
+  globalThis.__foundationEffects.length = 0;
+};
+
+resetHooks();
+const loading = text(App());
+const sessionEffect = globalThis.__foundationEffects[0];
+sessionEffect();
+await new Promise((resolve) => setImmediate(resolve));
+
+rerender();
+App();
+const cloudEffect = globalThis.__foundationEffects[1];
+cloudEffect();
+await new Promise((resolve) => setImmediate(resolve));
+
+rerender();
 const onlineTree = App();
 const online = text(onlineTree);
-for (const effect of globalThis.__foundationEffects.splice(0)) effect();
-await new Promise((resolve) => setImmediate(resolve));
 const signOutButton = find(
   onlineTree,
   (node) => node?.type === "button" && text(node).includes("SIGN OUT"),
@@ -248,21 +277,15 @@ Object.defineProperty(globalThis, "navigator", {
   configurable: true,
   value: { onLine: false },
 });
-globalThis.__foundationStates.push(
-  session,
-  false,
-  false,
-  false,
-  "idle",
-  "PROTECTED",
-);
+listeners.offline();
+rerender();
 const offline = text(App());
 
 Object.defineProperty(globalThis, "navigator", {
   configurable: true,
   value: { onLine: true },
 });
-globalThis.__foundationStates.push(
+resetHooks([
   null,
   false,
   false,
@@ -273,7 +296,7 @@ globalThis.__foundationStates.push(
   "correct-horse-battery-staple",
   "",
   false,
-);
+]);
 const signedOutTree = App();
 const signedOut = text(signedOutTree);
 const signInForm = find(
@@ -286,18 +309,11 @@ const resetButton = find(
   (node) => node?.type === "button" && text(node).includes("FORGOT PASSWORD?"),
 );
 await resetButton.props.onClick();
-globalThis.__foundationStates.push(
-  session,
-  false,
-  true,
-  true,
-  "idle",
-  "NOT CHECKED",
-  "correct-horse-battery-staple",
-  "correct-horse-battery-staple",
-  "",
-  false,
-);
+
+authCallback("PASSWORD_RECOVERY", session);
+globalThis.__foundationHookValues[6] = "correct-horse-battery-staple";
+globalThis.__foundationHookValues[7] = "correct-horse-battery-staple";
+rerender();
 const recoveryTree = App();
 const recovery = text(recoveryTree);
 const recoveryForm = find(
@@ -328,6 +344,7 @@ const behavior = {
     "OWNER RECOVERY",
     "SAVE PASSWORD",
   ]),
+  restored_session: includes(loading, ["LOADING"]) && online.length > 0,
   signed_out_ui: includes(signedOut, [
     "OWNER ACCESS",
     "SIGN IN",
