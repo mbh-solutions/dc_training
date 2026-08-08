@@ -314,9 +314,9 @@ const readsBeforeSignedOut = countCalls("from");
 await setInput("email", "owner@example.com");
 await setInput("password", "correct-horse-battery-staple");
 await act(async () => {
-  document
-    .querySelector("form.auth-form")
-    .dispatchEvent(new window.SubmitEvent("submit", { bubbles: true }));
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("SIGN IN"))
+    .click();
   await flush();
 });
 const genericSignInError = text().includes(
@@ -351,9 +351,9 @@ const recoveryShown = text().includes("OWNER RECOVERY");
 await setInput("new-password", "correct-horse-battery-staple");
 await setInput("confirm-password", "correct-horse-battery-staple");
 await act(async () => {
-  document
-    .querySelector("form.auth-form")
-    .dispatchEvent(new window.SubmitEvent("submit", { bubbles: true }));
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("SAVE PASSWORD"))
+    .click();
   await flush();
 });
 const recoveryExited =
