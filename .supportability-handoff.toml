@@ -1,0 +1,70 @@
+schema_version = "1.0"
+
+[completion_report]
+architecture_judgment = "PASS"
+base_sha = "b37f75211a1bf45076a1333f0ee999b41661cf51"
+overall_result = "PASS"
+responsibility_changes = [
+    "The Supabase boundary safely reads optional browser build configuration while retaining publishable-key-only client construction.",
+    "The application entry point owns safe root discovery before mounting the existing React foundation.",
+]
+simplified_functions = [
+    "App",
+    "App.anonymous@28:42",
+    "App.anonymous@53:13",
+    "App.anonymous@53:13.anonymous@62:14",
+    "App.anonymous@53:13.anonymous@68:42",
+    "App.anonymous@53:13.anonymous@73:54",
+    "App.anonymous@53:13.anonymous@79:12",
+    "App.anonymous@53:13.handleOffline",
+    "App.anonymous@53:13.handleOnline",
+    "App.anonymous@86:13",
+    "App.anonymous@95:40",
+    "App.handleSignOut",
+    "LoadingScreen",
+    "NetworkStatus",
+    "NetworkStatus.anonymous@180:40",
+    "ResetPasswordScreen",
+    "ResetPasswordScreen.handleSubmit",
+    "SetupScreen",
+    "SignInScreen",
+    "SignInScreen.handlePasswordReset",
+    "SignInScreen.handleSubmit",
+]
+boundary_rationale = [
+    "App retains owner authentication and protected-profile presentation; the Supabase module retains client construction and URL parsing.",
+    "The entry point performs only DOM root discovery and React mounting, preserving dependency direction into App.",
+]
+remaining_risks = [
+    "Live Supabase policy, service-worker caching, and mobile installation remain deployment evidence outside the deterministic source characterization.",
+]
+validation_results = [
+    { adapter = "typescript.tool-install.v1", arguments = ["$NPM", "install", "--prefix", "$TOOLS", "--ignore-scripts", "--no-audit", "--no-fund", "eslint@9.39.3", "@typescript-eslint/parser@8.65.0", "prettier@3.9.6", "typescript@5.9.3", "dependency-cruiser@18.1.0"], exit_code = 0 },
+    { adapter = "typescript.target-install.v1", arguments = ["$NPM", "ci", "--ignore-scripts", "--no-audit", "--no-fund"], exit_code = 0 },
+    { adapter = "typescript.eslint.v1", arguments = ["$TOOLS/node_modules/.bin/eslint", "--config", "$TOOLS/eslint.config.mjs", "--no-config-lookup", "--no-ignore", "--no-inline-config", "$SOURCE_FILES", "$TEST_FILES"], exit_code = 0 },
+    { adapter = "typescript.prettier.v1", arguments = ["$TOOLS/node_modules/.bin/prettier", "--check", "--config", "$TOOLS/prettier.json", "--ignore-path", "$TOOLS/prettier.ignore", "$SOURCE_FILES", "$TEST_FILES"], exit_code = 0 },
+    { adapter = "typescript.c901-equivalent-touched.v1", arguments = ["$TOOLS/node_modules/.bin/eslint", "--config", "$TOOLS/eslint.config.mjs", "--no-config-lookup", "--no-ignore", "--no-inline-config", "--rule", "complexity: [error, 10]", "$SOURCE_FILES", "$TEST_FILES"], exit_code = 0 },
+    { adapter = "typescript.typecheck.v1", arguments = ["$TOOLS/node_modules/.bin/tsc", "--project", "$OUTPUT/tsconfig-check.json"], exit_code = 0 },
+    { adapter = "typescript.test.v1", arguments = ["$NODE", "--test", "--experimental-test-coverage", "--test-coverage-include=src/**", "--test-reporter=spec", "--test-reporter=lcov", "--test-reporter-destination=stdout", "--test-reporter-destination=$OUTPUT/coverage.lcov", "$TEST_FILES"], exit_code = 0 },
+    { adapter = "typescript.build.v1", arguments = ["$TOOLS/node_modules/.bin/tsc", "--project", "$OUTPUT/tsconfig-build.json"], exit_code = 0 },
+    { adapter = "typescript.import-boundaries.v1", arguments = ["$TOOLS/node_modules/.bin/depcruise", "--config", "$TOOLS/dependency-cruiser.json", "--ts-config", "$OUTPUT/tsconfig-check.json", "--", "src"], exit_code = 0 },
+]
+gate_coverage = [
+    { adapter = "typescript.c901-equivalent-touched.v1", paths = ["src"] },
+    { adapter = "typescript.import-boundaries.v1", paths = ["src"] },
+]
+
+[[completion_report.claims]]
+id = "claim-owner-profile-boundary"
+text = "Authenticated cloud refresh selects the foundation profile status for the current session user and locally signs out an account without an owner profile."
+citations = ["src/App.tsx:26-49"]
+
+[[completion_report.claims]]
+id = "claim-browser-client-boundary"
+text = "The browser client uses only the configured Supabase URL and publishable key with persistent, URL-detecting, auto-refresh authentication."
+citations = ["src/lib/supabase.ts:3-33"]
+
+[[completion_report.claims]]
+id = "claim-safe-react-mount"
+text = "The entry point mounts the React application only when the root element exists."
+citations = ["src/main.tsx:6-14"]
