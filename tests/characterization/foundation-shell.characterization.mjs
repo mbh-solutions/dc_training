@@ -352,6 +352,19 @@ await act(async () => {
   authCallback("PASSWORD_RECOVERY", session);
 });
 const recoveryShown = text().includes("OWNER RECOVERY");
+await setInput("new-password", "short");
+await setInput("confirm-password", "short");
+const updatesBeforeShortPassword = countCalls("updateUser");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("SAVE PASSWORD"))
+    .click();
+  await flush();
+});
+const recoveryShortPasswordRejected =
+  text().includes("Use at least 12 characters.") &&
+  countCalls("updateUser") === updatesBeforeShortPassword;
+
 await setInput("new-password", "correct-horse-battery-staple");
 await setInput("confirm-password", "mismatched-recovery-password");
 const updatesBeforeMismatch = countCalls("updateUser");
@@ -423,6 +436,7 @@ const behavior = {
     signedOutReadBlocked,
   recovery_failure_retained: recoveryFailureRetained,
   recovery_rejects_mismatch: recoveryMismatchRejected,
+  recovery_rejects_short_password: recoveryShortPasswordRejected,
   recovery_completed:
     recoveryShown &&
     recoveryExited &&

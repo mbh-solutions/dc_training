@@ -9,6 +9,7 @@
   "protected_owner_record": true,
   "recovery_failure_retained": true,
   "recovery_rejects_mismatch": true,
+  "recovery_rejects_short_password": true,
   "recovery_completed": true,
   "reset_request_private": true,
   "session_restored": true,
