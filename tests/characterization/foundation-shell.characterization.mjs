@@ -150,6 +150,9 @@ registerHooks({
         candidates.push(
           new URL(specifier.replace(/\.jsx$/, ".tsx"), context.parentURL),
         );
+      } else if (!path.extname(specifier)) {
+        candidates.push(new URL(`${specifier}.ts`, context.parentURL));
+        candidates.push(new URL(`${specifier}.tsx`, context.parentURL));
       }
       const match = candidates.find((candidate) =>
         existsSync(fileURLToPath(candidate)),
