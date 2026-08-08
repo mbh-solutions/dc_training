@@ -285,18 +285,21 @@ Object.defineProperty(globalThis, "navigator", {
   configurable: true,
   value: { onLine: true },
 });
-resetHooks([
-  null,
-  false,
-  false,
-  true,
-  "idle",
-  "NOT CHECKED",
-  "owner@example.com",
-  "correct-horse-battery-staple",
-  "",
-  false,
-]);
+resetHooks([null, false, false, true, "idle", "NOT CHECKED"]);
+const signedOutInputTree = App();
+const emailInput = find(
+  signedOutInputTree,
+  (node) => node?.type === "input" && node.props?.id === "email",
+);
+const passwordInput = find(
+  signedOutInputTree,
+  (node) => node?.type === "input" && node.props?.id === "password",
+);
+emailInput.props.onChange({ target: { value: "owner@example.com" } });
+passwordInput.props.onChange({
+  target: { value: "correct-horse-battery-staple" },
+});
+rerender();
 const signedOutTree = App();
 const signedOut = text(signedOutTree);
 const signInForm = find(
@@ -311,8 +314,23 @@ const resetButton = find(
 await resetButton.props.onClick();
 
 authCallback("PASSWORD_RECOVERY", session);
-globalThis.__foundationHookValues[6] = "correct-horse-battery-staple";
-globalThis.__foundationHookValues[7] = "correct-horse-battery-staple";
+globalThis.__foundationHookValues.length = 6;
+rerender();
+const recoveryInputTree = App();
+const newPasswordInput = find(
+  recoveryInputTree,
+  (node) => node?.type === "input" && node.props?.id === "new-password",
+);
+const confirmationInput = find(
+  recoveryInputTree,
+  (node) => node?.type === "input" && node.props?.id === "confirm-password",
+);
+newPasswordInput.props.onChange({
+  target: { value: "correct-horse-battery-staple" },
+});
+confirmationInput.props.onChange({
+  target: { value: "correct-horse-battery-staple" },
+});
 rerender();
 const recoveryTree = App();
 const recovery = text(recoveryTree);
