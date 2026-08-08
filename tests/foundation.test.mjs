@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { registerHooks } from "node:module";
 import test from "node:test";
+import { JSDOM } from "jsdom";
 import ts from "typescript";
 
 registerHooks({
@@ -48,9 +49,20 @@ registerHooks({
   },
 });
 
+const dom = new JSDOM("<!doctype html><body></body>", {
+  url: "https://dc-training.test/",
+});
 Object.assign(globalThis, {
-  document: { getElementById: () => null },
-  window: { location: { hash: "", search: "" } },
+  document: dom.window.document,
+  Event: dom.window.Event,
+  HTMLElement: dom.window.HTMLElement,
+  IS_REACT_ACT_ENVIRONMENT: true,
+  Node: dom.window.Node,
+  window: dom.window,
+});
+Object.defineProperty(globalThis, "navigator", {
+  configurable: true,
+  value: dom.window.navigator,
 });
 
 test("foundation modules load without browser secrets", async () => {
@@ -63,4 +75,14 @@ test("foundation modules load without browser secrets", async () => {
   assert.equal(typeof App, "function");
   assert.equal(isSupabaseConfigured, false);
   assert.equal(supabase, null);
+
+  document.body.innerHTML = '<div id="root"></div>';
+  const [{ act, createElement }, { createRoot }] = await Promise.all([
+    import("react"),
+    import("react-dom/client"),
+  ]);
+  const root = createRoot(document.getElementById("root"));
+  await act(async () => root.render(createElement(App)));
+  assert.match(document.body.textContent, /SETUP REQUIRED/);
+  await act(async () => root.unmount());
 });

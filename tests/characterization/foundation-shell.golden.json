@@ -3,6 +3,7 @@
   "cold_start_offline": true,
   "generic_sign_in_error": true,
   "mounted_application": true,
+  "missing_profile_signed_out": true,
   "offline_sign_out_safe": true,
   "protected_owner_record": true,
   "recovery_completed": true,
@@ -10,5 +11,6 @@
   "session_restored": true,
   "sign_in_submitted": true,
   "sign_out_submitted": true,
+  "sync_failure_recovered": true,
   "reconnect_refetched": true
 }

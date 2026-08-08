@@ -50,6 +50,7 @@ const calls = [];
 const session = { user: { email: "owner@example.com", id: "owner-1" } };
 const sessionResolvers = [];
 let authCallback;
+let profileResult = { data: { status: "ready" }, error: null };
 
 const client = {
   auth: {
@@ -72,6 +73,9 @@ const client = {
     },
     signOut: async (options) => {
       calls.push(["signOut", options]);
+      if (options?.scope === "local") {
+        queueMicrotask(() => authCallback("SIGNED_OUT", null));
+      }
       return { error: null };
     },
     updateUser: async (attributes) => {
@@ -90,7 +94,7 @@ const client = {
             return {
               async maybeSingle() {
                 calls.push(["maybeSingle"]);
-                return { data: { status: "ready" }, error: null };
+                return profileResult;
               },
             };
           },
@@ -269,6 +273,34 @@ await act(async () => {
 const reconnected = text();
 const reconnectRefetched = countCalls("from") > firstOnlineCloudReads;
 
+profileResult = { data: null, error: { message: "temporarily unavailable" } };
+Object.defineProperty(window.navigator, "onLine", {
+  configurable: true,
+  value: false,
+});
+await act(async () => {
+  window.dispatchEvent(new window.Event("offline"));
+});
+Object.defineProperty(window.navigator, "onLine", {
+  configurable: true,
+  value: true,
+});
+await act(async () => {
+  window.dispatchEvent(new window.Event("online"));
+  await flush();
+});
+const syncFailureShown = text().includes("SYNC FAILED · SAVED ON DEVICE");
+const readsBeforeRetry = countCalls("from");
+profileResult = { data: { status: "ready" }, error: null };
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("TRY AGAIN"))
+    .click();
+  await flush();
+});
+const syncRetryRecovered =
+  text().includes("SYNCED") && countCalls("from") > readsBeforeRetry;
+
 await act(async () => {
   document.querySelector("button.secondary-action").click();
   await flush();
@@ -302,6 +334,16 @@ const resetMessage = text().includes(
 );
 const signedOutReadBlocked = countCalls("from") === readsBeforeSignedOut;
 
+profileResult = { data: null, error: null };
+await act(async () => {
+  authCallback("SIGNED_IN", session);
+  await flush();
+});
+const missingProfileSignedOut =
+  hasCall("signOut", (call) => call[1]?.scope === "local") &&
+  text().includes("OWNER ACCESS");
+profileResult = { data: { status: "ready" }, error: null };
+
 await act(async () => {
   authCallback("PASSWORD_RECOVERY", session);
 });
@@ -332,6 +374,7 @@ const behavior = {
   generic_sign_in_error: genericSignInError,
   mounted_application:
     root.childElementCount > 0 && text().includes("DC TRAINING"),
+  missing_profile_signed_out: missingProfileSignedOut,
   offline_sign_out_safe:
     offline.includes("OFFLINE · SAVED ON DEVICE") && signOutDisabled === true,
   protected_owner_record:
@@ -364,6 +407,7 @@ const behavior = {
       call[1]?.password === "correct-horse-battery-staple",
   ),
   sign_out_submitted: signOutSubmitted,
+  sync_failure_recovered: syncFailureShown && syncRetryRecovered,
   reconnect_refetched: reconnectRefetched && reconnected.includes("SYNCED"),
 };
 
