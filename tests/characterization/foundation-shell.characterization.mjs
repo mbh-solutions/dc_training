@@ -3,17 +3,16 @@ import { existsSync, readFileSync } from "node:fs";
 import { createRequire, registerHooks } from "node:module";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { JSDOM } from "jsdom";
 
 const target =
   process.env.SUPPORTABILITY_CHARACTERIZATION_TARGET ?? process.cwd();
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 const require = createRequire(pathToFileURL(path.join(target, "package.json")));
+const definition = fileURLToPath(new URL("../..", import.meta.url));
+const definitionRequire = createRequire(import.meta.url);
 
-try {
-  require.resolve("typescript");
-} catch {
-  const options = { cwd: target, stdio: "ignore", timeout: 90_000 };
+const install = (cwd) => {
+  const options = { cwd, stdio: "ignore", timeout: 90_000 };
   if (process.platform === "win32") {
     execFileSync(
       process.env.ComSpec,
@@ -27,9 +26,22 @@ try {
       options,
     );
   }
+};
+
+try {
+  require.resolve("typescript");
+} catch {
+  install(target);
+}
+
+try {
+  definitionRequire.resolve("jsdom");
+} catch {
+  install(definition);
 }
 
 const ts = require("typescript");
+const { JSDOM } = definitionRequire("jsdom");
 const calls = [];
 const session = { user: { email: "owner@example.com", id: "owner-1" } };
 const sessionResolvers = [];
