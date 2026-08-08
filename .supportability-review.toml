@@ -24,7 +24,6 @@ reviewed_paths = [
     "src/lib/auth-callback.ts",
     "src/lib/supabase.ts",
     "src/main.tsx",
-    "src/vite-env.d.ts",
 ]
 
 [responsibility_boundary]

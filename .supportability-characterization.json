@@ -9,8 +9,7 @@
         "src/hooks/use-online.ts",
         "src/lib/auth-callback.ts",
         "src/lib/supabase.ts",
-        "src/main.tsx",
-        "src/vite-env.d.ts"
+        "src/main.tsx"
       ],
       "id": "foundation-shell",
       "kind": "regression"
