@@ -285,6 +285,15 @@ Object.defineProperty(globalThis, "navigator", {
   configurable: true,
   value: { onLine: true },
 });
+listeners.online();
+rerender();
+App();
+const reconnectCloudEffect = globalThis.__foundationEffects[1];
+reconnectCloudEffect();
+await new Promise((resolve) => setImmediate(resolve));
+rerender();
+const reconnected = text(App());
+
 resetHooks([null, false, false, true, "idle", "NOT CHECKED"]);
 const signedOutInputTree = App();
 const emailInput = find(
@@ -362,6 +371,7 @@ const behavior = {
     "OWNER RECOVERY",
     "SAVE PASSWORD",
   ]),
+  reconnected_ui: includes(reconnected, ["SYNCED", "SIGN OUT"]),
   restored_session: includes(loading, ["LOADING"]) && online.length > 0,
   signed_out_ui: includes(signedOut, [
     "OWNER ACCESS",

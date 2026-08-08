@@ -17,6 +17,10 @@
     ["eq", "user_id", "owner-1"],
     ["maybeSingle"],
     ["signOut", null],
+    ["from", "foundation_profiles"],
+    ["select", "status"],
+    ["eq", "user_id", "owner-1"],
+    ["maybeSingle"],
     [
       "signInWithPassword",
       {
@@ -48,6 +52,7 @@
   "offline_ui": true,
   "online_ui": true,
   "recovery_ui": true,
+  "reconnected_ui": true,
   "restored_session": true,
   "signed_out_ui": true
 }
