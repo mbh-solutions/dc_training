@@ -15,7 +15,14 @@
     ["from", "foundation_profiles"],
     ["select", "status"],
     ["eq", "user_id", "owner-1"],
-    ["maybeSingle"]
+    ["maybeSingle"],
+    [
+      "signInWithPassword",
+      {
+        "email": "owner@example.com",
+        "password": "correct-horse-battery-staple"
+      }
+    ]
   ],
   "mounted_root": "root",
   "offline_ui": true,

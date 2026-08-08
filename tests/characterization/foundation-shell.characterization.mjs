@@ -42,6 +42,10 @@ const client = {
       calls.push(["onAuthStateChange"]);
       return { data: { subscription: { unsubscribe() {} } } };
     },
+    signInWithPassword: async (credentials) => {
+      calls.push(["signInWithPassword", credentials]);
+      return { error: null };
+    },
     signOut: async () => ({ error: null }),
   },
   from(table) {
@@ -196,6 +200,17 @@ const text = (node) => {
   return text(node.props?.children);
 };
 
+const find = (node, predicate) => {
+  if (node == null || node === false) return null;
+  if (predicate(node)) return node;
+  const children = Array.isArray(node) ? node : node.props?.children;
+  for (const child of Array.isArray(children) ? children : [children]) {
+    const match = find(child, predicate);
+    if (match) return match;
+  }
+  return null;
+};
+
 const appUrl = pathToFileURL(path.join(target, "src/App.tsx")).href;
 const mainUrl = pathToFileURL(path.join(target, "src/main.tsx")).href;
 const { default: App } = await import(appUrl);
@@ -237,8 +252,18 @@ globalThis.__foundationStates.push(
   true,
   "idle",
   "NOT CHECKED",
+  "owner@example.com",
+  "correct-horse-battery-staple",
+  "",
+  false,
 );
-const signedOut = text(App());
+const signedOutTree = App();
+const signedOut = text(signedOutTree);
+const signInForm = find(
+  signedOutTree,
+  (node) => node?.type === "form" && typeof node.props?.onSubmit === "function",
+);
+await signInForm.props.onSubmit({ preventDefault() {} });
 globalThis.__foundationStates.push(
   session,
   false,
