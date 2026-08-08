@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="DC Training">
+  <rect width="512" height="512" rx="96" fill="#050505"/>
+  <rect x="28" y="28" width="456" height="456" rx="72" fill="none" stroke="#ef3028" stroke-width="18"/>
+  <text x="256" y="324" fill="#f4f4f2" font-family="Impact, sans-serif" font-size="216" text-anchor="middle" letter-spacing="8">DC</text>
+</svg>
