@@ -105,7 +105,7 @@ const client = {
 };
 
 const dom = new JSDOM('<!doctype html><div id="root"></div>', {
-  url: "https://dc-training.test/",
+  url: "https://dc-training.test/?error_code=otp_expired",
 });
 Object.assign(globalThis, {
   document: dom.window.document,
@@ -310,6 +310,9 @@ await act(async () => {
   authCallback("SIGNED_OUT", null);
 });
 const readsBeforeSignedOut = countCalls("from");
+const expiredRecoveryExplained = text().includes(
+  "Reset link expired or was already used. Request a new one.",
+);
 
 await setInput("email", "owner@example.com");
 await setInput("password", "correct-horse-battery-staple");
@@ -374,6 +377,7 @@ const behavior = {
     coldStartNoCloudRead &&
     coldOffline.includes("OFFLINE · SAVED ON DEVICE") &&
     coldSignOutDisabled === true,
+  expired_recovery_explained: expiredRecoveryExplained,
   generic_sign_in_error: genericSignInError,
   mounted_application:
     root.childElementCount > 0 && text().includes("DC TRAINING"),

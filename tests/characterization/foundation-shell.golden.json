@@ -1,6 +1,7 @@
 {
   "browser_safe_client": true,
   "cold_start_offline": true,
+  "expired_recovery_explained": true,
   "generic_sign_in_error": true,
   "mounted_application": true,
   "missing_profile_signed_out": true,
