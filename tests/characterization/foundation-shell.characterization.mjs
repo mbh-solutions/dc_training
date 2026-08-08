@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { createRequire, registerHooks } from "node:module";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { JSDOM } from "jsdom";
 
 const target =
   process.env.SUPPORTABILITY_CHARACTERIZATION_TARGET ?? process.cwd();
@@ -31,14 +32,14 @@ try {
 const ts = require("typescript");
 const calls = [];
 const session = { user: { email: "owner@example.com", id: "owner-1" } };
-const listeners = {};
+const sessionResolvers = [];
 let authCallback;
 
 const client = {
   auth: {
-    getSession: async () => {
+    getSession: () => {
       calls.push(["getSession"]);
-      return { data: { session } };
+      return new Promise((resolve) => sessionResolvers.push(resolve));
     },
     onAuthStateChange: (callback) => {
       calls.push(["onAuthStateChange"]);
@@ -51,7 +52,7 @@ const client = {
     },
     signInWithPassword: async (credentials) => {
       calls.push(["signInWithPassword", credentials]);
-      return { error: null };
+      return { error: { message: "User not found" } };
     },
     signOut: async (options) => {
       calls.push(["signOut", options]);
@@ -83,68 +84,32 @@ const client = {
   },
 };
 
+const dom = new JSDOM('<!doctype html><div id="root"></div>', {
+  url: "https://dc-training.test/",
+});
 Object.assign(globalThis, {
+  document: dom.window.document,
+  Event: dom.window.Event,
+  HTMLElement: dom.window.HTMLElement,
+  HTMLInputElement: dom.window.HTMLInputElement,
+  IS_REACT_ACT_ENVIRONMENT: true,
+  MouseEvent: dom.window.MouseEvent,
+  Node: dom.window.Node,
+  window: dom.window,
   __foundationCalls: calls,
   __foundationClient: client,
-  __foundationEffects: [],
   __foundationEnv: {
     VITE_SUPABASE_PUBLISHABLE_KEY: "publishable-test-key",
     VITE_SUPABASE_URL: "https://example.supabase.co",
   },
-  __foundationMounts: [],
-  __foundationHookIndex: 0,
-  __foundationHookValues: [],
 });
-
-Object.defineProperties(globalThis, {
-  document: {
-    configurable: true,
-    value: { getElementById: (id) => ({ id }) },
-  },
-  navigator: {
-    configurable: true,
-    value: { onLine: true },
-  },
-  window: {
-    configurable: true,
-    value: {
-      addEventListener(type, callback) {
-        listeners[type] = callback;
-      },
-      history: { replaceState() {} },
-      location: { hash: "", origin: "https://dc-training.test", search: "" },
-      removeEventListener(type) {
-        delete listeners[type];
-      },
-    },
-  },
+Object.defineProperty(globalThis, "navigator", {
+  configurable: true,
+  value: dom.window.navigator,
 });
 
 const moduleUrl = (source) =>
   `data:text/javascript,${encodeURIComponent(source)}`;
-const reactUrl = moduleUrl(`
-export const useCallback = (callback) => callback;
-export const useEffect = (effect) => globalThis.__foundationEffects.push(effect);
-export const useState = (initial) => {
-  const index = globalThis.__foundationHookIndex++;
-  const states = globalThis.__foundationHookValues;
-  if (!(index in states)) states[index] = typeof initial === "function" ? initial() : initial;
-  const setValue = (next) => {
-    states[index] = typeof next === "function" ? next(states[index]) : next;
-  };
-  return [states[index], setValue];
-};
-export const StrictMode = Symbol.for("StrictMode");
-`);
-const jsxUrl = moduleUrl(`
-const render = (type, props) => typeof type === "function" ? type(props ?? {}) : { type, props: props ?? {} };
-export const Fragment = Symbol.for("Fragment");
-export const jsx = render;
-export const jsxs = render;
-`);
-const reactDomUrl = moduleUrl(`
-export const createRoot = (root) => ({ render(node) { globalThis.__foundationMounts.push([root.id, node]); } });
-`);
 const supabaseUrl = moduleUrl(`
 export const createClient = (url, key, options) => {
   globalThis.__foundationCalls.push(["createClient", url, key, options.auth]);
@@ -154,13 +119,9 @@ export const createClient = (url, key, options) => {
 
 registerHooks({
   resolve(specifier, context, nextResolve) {
-    const mocks = {
-      "@supabase/supabase-js": supabaseUrl,
-      react: reactUrl,
-      "react-dom/client": reactDomUrl,
-      "react/jsx-runtime": jsxUrl,
-    };
-    if (mocks[specifier]) return { shortCircuit: true, url: mocks[specifier] };
+    if (specifier === "@supabase/supabase-js") {
+      return { shortCircuit: true, url: supabaseUrl };
+    }
 
     if (context.parentURL?.startsWith("file:") && specifier.startsWith(".")) {
       const requested = new URL(specifier, context.parentURL);
@@ -173,9 +134,6 @@ registerHooks({
         candidates.push(
           new URL(specifier.replace(/\.jsx$/, ".tsx"), context.parentURL),
         );
-      } else if (!path.extname(specifier)) {
-        candidates.push(new URL(`${specifier}.ts`, context.parentURL));
-        candidates.push(new URL(`${specifier}.tsx`, context.parentURL));
       }
       const match = candidates.find((candidate) =>
         existsSync(fileURLToPath(candidate)),
@@ -215,170 +173,153 @@ registerHooks({
   },
 });
 
-const text = (node) => {
-  if (node == null || node === false) return [];
-  if (typeof node === "string" || typeof node === "number")
-    return [String(node)];
-  if (Array.isArray(node)) return node.flatMap(text);
-  return text(node.props?.children);
+const reactUrl = pathToFileURL(require.resolve("react")).href;
+const { act } = await import(reactUrl);
+const root = document.getElementById("root");
+const text = () => root.textContent ?? "";
+const flush = () => new Promise((resolve) => setImmediate(resolve));
+const hasCall = (name, predicate = () => true) =>
+  calls.some((call) => call[0] === name && predicate(call));
+const countCalls = (name) => calls.filter((call) => call[0] === name).length;
+
+const setInput = async (id, value) => {
+  const input = document.getElementById(id);
+  const setter = Object.getOwnPropertyDescriptor(
+    window.HTMLInputElement.prototype,
+    "value",
+  ).set;
+  await act(async () => {
+    setter.call(input, value);
+    input.dispatchEvent(new window.Event("input", { bubbles: true }));
+    await flush();
+  });
 };
 
-const find = (node, predicate) => {
-  if (node == null || node === false) return null;
-  if (predicate(node)) return node;
-  const children = Array.isArray(node) ? node : node.props?.children;
-  for (const child of Array.isArray(children) ? children : [children]) {
-    const match = find(child, predicate);
-    if (match) return match;
+await act(async () => {
+  await import(pathToFileURL(path.join(target, "src/main.tsx")).href);
+});
+const loading = text().includes("LOADING");
+
+await act(async () => {
+  for (const resolve of sessionResolvers.splice(0)) {
+    resolve({ data: { session } });
   }
-  return null;
-};
+  await flush();
+});
+const signedIn = text();
+const firstCloudReads = countCalls("from");
 
-const appUrl = pathToFileURL(path.join(target, "src/App.tsx")).href;
-const mainUrl = pathToFileURL(path.join(target, "src/main.tsx")).href;
-const { default: App } = await import(appUrl);
-
-const resetHooks = (states = []) => {
-  globalThis.__foundationHookIndex = 0;
-  globalThis.__foundationHookValues.splice(
-    0,
-    globalThis.__foundationHookValues.length,
-    ...states,
-  );
-  globalThis.__foundationEffects.length = 0;
-};
-const rerender = () => {
-  globalThis.__foundationHookIndex = 0;
-  globalThis.__foundationEffects.length = 0;
-};
-
-resetHooks();
-const loading = text(App());
-const sessionEffect = globalThis.__foundationEffects[0];
-sessionEffect();
-await new Promise((resolve) => setImmediate(resolve));
-
-rerender();
-App();
-const cloudEffect = globalThis.__foundationEffects[1];
-cloudEffect();
-await new Promise((resolve) => setImmediate(resolve));
-
-rerender();
-const onlineTree = App();
-const online = text(onlineTree);
-const signOutButton = find(
-  onlineTree,
-  (node) => node?.type === "button" && text(node).includes("SIGN OUT"),
-);
-await signOutButton.props.onClick();
-
-Object.defineProperty(globalThis, "navigator", {
+Object.defineProperty(window.navigator, "onLine", {
   configurable: true,
-  value: { onLine: false },
+  value: false,
 });
-listeners.offline();
-rerender();
-const offline = text(App());
+await act(async () => {
+  window.dispatchEvent(new window.Event("offline"));
+});
+const offline = text();
+const signOutDisabled = document.querySelector(
+  "button.secondary-action",
+)?.disabled;
 
-Object.defineProperty(globalThis, "navigator", {
+Object.defineProperty(window.navigator, "onLine", {
   configurable: true,
-  value: { onLine: true },
+  value: true,
 });
-listeners.online();
-rerender();
-App();
-const reconnectCloudEffect = globalThis.__foundationEffects[1];
-reconnectCloudEffect();
-await new Promise((resolve) => setImmediate(resolve));
-rerender();
-const reconnected = text(App());
-
-resetHooks([null, false, false, true, "idle", "NOT CHECKED"]);
-const signedOutInputTree = App();
-const emailInput = find(
-  signedOutInputTree,
-  (node) => node?.type === "input" && node.props?.id === "email",
-);
-const passwordInput = find(
-  signedOutInputTree,
-  (node) => node?.type === "input" && node.props?.id === "password",
-);
-emailInput.props.onChange({ target: { value: "owner@example.com" } });
-passwordInput.props.onChange({
-  target: { value: "correct-horse-battery-staple" },
+await act(async () => {
+  window.dispatchEvent(new window.Event("online"));
+  await flush();
 });
-rerender();
-const signedOutTree = App();
-const signedOut = text(signedOutTree);
-const signInForm = find(
-  signedOutTree,
-  (node) => node?.type === "form" && typeof node.props?.onSubmit === "function",
-);
-await signInForm.props.onSubmit({ preventDefault() {} });
-const resetButton = find(
-  signedOutTree,
-  (node) => node?.type === "button" && text(node).includes("FORGOT PASSWORD?"),
-);
-await resetButton.props.onClick();
+const reconnected = text();
+const reconnectRefetched = countCalls("from") > firstCloudReads;
 
-authCallback("PASSWORD_RECOVERY", session);
-globalThis.__foundationHookValues.length = 6;
-rerender();
-const recoveryInputTree = App();
-const newPasswordInput = find(
-  recoveryInputTree,
-  (node) => node?.type === "input" && node.props?.id === "new-password",
-);
-const confirmationInput = find(
-  recoveryInputTree,
-  (node) => node?.type === "input" && node.props?.id === "confirm-password",
-);
-newPasswordInput.props.onChange({
-  target: { value: "correct-horse-battery-staple" },
+await act(async () => {
+  document.querySelector("button.secondary-action").click();
+  await flush();
+  authCallback("SIGNED_OUT", null);
 });
-confirmationInput.props.onChange({
-  target: { value: "correct-horse-battery-staple" },
+const readsBeforeSignedOut = countCalls("from");
+
+await setInput("email", "owner@example.com");
+await setInput("password", "correct-horse-battery-staple");
+await act(async () => {
+  document
+    .querySelector("form.auth-form")
+    .dispatchEvent(new window.SubmitEvent("submit", { bubbles: true }));
+  await flush();
 });
-rerender();
-const recoveryTree = App();
-const recovery = text(recoveryTree);
-const recoveryForm = find(
-  recoveryTree,
-  (node) => node?.type === "form" && typeof node.props?.onSubmit === "function",
+const genericSignInError = text().includes(
+  "Sign-in failed. Check your email and password.",
 );
-await recoveryForm.props.onSubmit({ preventDefault() {} });
 
-await import(mainUrl);
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("FORGOT PASSWORD?"))
+    .click();
+  await flush();
+});
+const resetMessage = text().includes(
+  "If this account exists, a reset link is on its way.",
+);
+const signedOutReadBlocked = countCalls("from") === readsBeforeSignedOut;
 
-const includes = (values, expected) =>
-  expected.every((value) => values.includes(value));
+await act(async () => {
+  authCallback("PASSWORD_RECOVERY", session);
+});
+const recoveryShown = text().includes("OWNER RECOVERY");
+await setInput("new-password", "correct-horse-battery-staple");
+await setInput("confirm-password", "correct-horse-battery-staple");
+await act(async () => {
+  document
+    .querySelector("form.auth-form")
+    .dispatchEvent(new window.SubmitEvent("submit", { bubbles: true }));
+  await flush();
+});
+const recoveryExited =
+  text().includes("APP FOUNDATION") && !text().includes("OWNER RECOVERY");
+
 const behavior = {
-  cloud_calls: calls,
-  mounted_root: globalThis.__foundationMounts[0]?.[0] ?? null,
-  offline_ui: includes(offline, [
-    "OFFLINE · SAVED ON DEVICE",
-    "CONNECT TO SIGN OUT",
-  ]),
-  online_ui: includes(online, [
-    "READY",
-    "AUTHENTICATED",
-    "PROTECTED",
-    "OFFLINE READY",
-  ]),
-  recovery_ui: includes(recovery, [
-    "NEW PASSWORD",
-    "OWNER RECOVERY",
-    "SAVE PASSWORD",
-  ]),
-  reconnected_ui: includes(reconnected, ["SYNCED", "SIGN OUT"]),
-  restored_session: includes(loading, ["LOADING"]) && online.length > 0,
-  signed_out_ui: includes(signedOut, [
-    "OWNER ACCESS",
-    "SIGN IN",
-    "FORGOT PASSWORD?",
-    "ACCOUNT REQUIRED · NO GUEST ACCESS",
-  ]),
+  browser_safe_client:
+    hasCall(
+      "createClient",
+      (call) =>
+        call[1] === "https://example.supabase.co" &&
+        call[2] === "publishable-test-key",
+    ) && !JSON.stringify(calls).includes("service_role"),
+  generic_sign_in_error: genericSignInError,
+  mounted_application:
+    root.childElementCount > 0 && text().includes("DC TRAINING"),
+  offline_sign_out_safe:
+    offline.includes("OFFLINE · SAVED ON DEVICE") && signOutDisabled === true,
+  protected_owner_record:
+    hasCall("from", (call) => call[1] === "foundation_profiles") &&
+    hasCall("eq", (call) => call[1] === "user_id" && call[2] === "owner-1") &&
+    signedOutReadBlocked,
+  recovery_completed:
+    recoveryShown &&
+    recoveryExited &&
+    hasCall("updateUser") &&
+    hasCall("signOut", (call) => call[1]?.scope === "others") &&
+    window.location.pathname === "/",
+  reset_request_private:
+    resetMessage &&
+    hasCall(
+      "resetPasswordForEmail",
+      (call) =>
+        call[1] === "owner@example.com" &&
+        call[2]?.redirectTo ===
+          "https://dc-training.test/account/update-password",
+    ),
+  session_restored:
+    loading &&
+    signedIn.includes("AUTHENTICATED") &&
+    signedIn.includes("PROTECTED"),
+  sign_in_submitted: hasCall(
+    "signInWithPassword",
+    (call) =>
+      call[1]?.email === "owner@example.com" &&
+      call[1]?.password === "correct-horse-battery-staple",
+  ),
+  reconnect_refetched: reconnectRefetched && reconnected.includes("SYNCED"),
 };
 
 process.stdout.write(

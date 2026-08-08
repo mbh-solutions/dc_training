@@ -6,7 +6,7 @@ proof = "The foundation characterization captures owner sign-in, recovery, cloud
 
 [characterization]
 captured_behavior = "The current foundation provides owner authentication, a protected owner record, the approved Home shell, installable PWA behavior, temporary offline launch, and reconnection."
-proof = "tests/characterization/foundation-shell.characterization.mjs mounts the real app, restores a session through retained hook state, drives offline, reconnection, and PASSWORD_RECOVERY callbacks, enters credentials through rendered inputs, submits the real forms, and records the resulting Supabase calls on both exact base and head revisions."
+proof = "tests/characterization/foundation-shell.characterization.mjs mounts src/main.tsx through React createRoot in a DOM, lets real hooks and effects drive session restoration and reconnection, submits rendered auth forms through DOM events, verifies recovery exits, and records Supabase-boundary calls on both exact base and head revisions."
 
 [separation_of_concerns]
 before = "The React foundation had explicit UI and Supabase client boundaries but no repository-level Supportability Gate contract."
@@ -34,7 +34,7 @@ completed_step = "Added one deterministic foundation characterization and one so
 [review_handoff]
 summary = "Review exact foundation characterization, high-risk auth/UI coverage, explicit dependency direction, maximum complexity 10, and unchanged owner-visible behavior."
 remaining_risks = [
-    "Browser interaction remains proven by the completed live foundation checks; the automated onboarding test covers module loading and safe unconfigured startup.",
+    "Live Supabase RLS, deployed PWA caching, and iPhone installation remain deployment evidence; characterization covers React lifecycle and the browser client boundary.",
 ]
 
 [human_review]

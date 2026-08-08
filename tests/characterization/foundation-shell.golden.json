@@ -1,58 +1,12 @@
 {
-  "cloud_calls": [
-    [
-      "createClient",
-      "https://example.supabase.co",
-      "publishable-test-key",
-      {
-        "autoRefreshToken": true,
-        "detectSessionInUrl": true,
-        "persistSession": true
-      }
-    ],
-    ["getSession"],
-    ["onAuthStateChange"],
-    ["from", "foundation_profiles"],
-    ["select", "status"],
-    ["eq", "user_id", "owner-1"],
-    ["maybeSingle"],
-    ["signOut", null],
-    ["from", "foundation_profiles"],
-    ["select", "status"],
-    ["eq", "user_id", "owner-1"],
-    ["maybeSingle"],
-    [
-      "signInWithPassword",
-      {
-        "email": "owner@example.com",
-        "password": "correct-horse-battery-staple"
-      }
-    ],
-    [
-      "resetPasswordForEmail",
-      "owner@example.com",
-      {
-        "redirectTo": "https://dc-training.test/account/update-password"
-      }
-    ],
-    [
-      "updateUser",
-      {
-        "password": "correct-horse-battery-staple"
-      }
-    ],
-    [
-      "signOut",
-      {
-        "scope": "others"
-      }
-    ]
-  ],
-  "mounted_root": "root",
-  "offline_ui": true,
-  "online_ui": true,
-  "recovery_ui": true,
-  "reconnected_ui": true,
-  "restored_session": true,
-  "signed_out_ui": true
+  "browser_safe_client": true,
+  "generic_sign_in_error": true,
+  "mounted_application": true,
+  "offline_sign_out_safe": true,
+  "protected_owner_record": true,
+  "recovery_completed": true,
+  "reset_request_private": true,
+  "session_restored": true,
+  "sign_in_submitted": true,
+  "reconnect_refetched": true
 }
