@@ -11,26 +11,32 @@ responsibility_changes = [
 ]
 simplified_functions = [
     "App",
-    "App.anonymous@28:42",
-    "App.anonymous@53:13",
-    "App.anonymous@53:13.anonymous@62:14",
-    "App.anonymous@53:13.anonymous@68:42",
-    "App.anonymous@53:13.anonymous@73:54",
-    "App.anonymous@53:13.anonymous@79:12",
-    "App.anonymous@53:13.handleOffline",
-    "App.anonymous@53:13.handleOnline",
-    "App.anonymous@86:13",
-    "App.anonymous@95:40",
-    "App.handleSignOut",
+    "FoundationHome",
+    "FoundationHome.anonymous@59:20",
     "LoadingScreen",
     "NetworkStatus",
-    "NetworkStatus.anonymous@180:40",
     "ResetPasswordScreen",
     "ResetPasswordScreen.handleSubmit",
     "SetupScreen",
     "SignInScreen",
     "SignInScreen.handlePasswordReset",
     "SignInScreen.handleSubmit",
+    "useAuthSession",
+    "useAuthSession.anonymous@13:13",
+    "useAuthSession.anonymous@13:13.anonymous@19:42",
+    "useAuthSession.anonymous@13:13.anonymous@24:54",
+    "useAuthSession.anonymous@13:13.anonymous@30:12",
+    "useAuthSession.anonymous@34:5",
+    "useAuthSession.anonymous@37:31",
+    "useFoundationProfile",
+    "useFoundationProfile.anonymous@12:13",
+    "useFoundationProfile.anonymous@12:13.anonymous@29:13",
+    "useFoundationProfile.anonymous@12:13.anonymous@42:12",
+    "useOnline",
+    "useOnline.anonymous@6:13",
+    "useOnline.anonymous@6:13.anonymous@12:12",
+    "useOnline.anonymous@6:13.handleOffline",
+    "useOnline.anonymous@6:13.handleOnline",
 ]
 boundary_rationale = [
     "App retains only top-level screen composition and authentication-screen presentation; focused hooks own stateful lifecycles and FoundationHome owns Home presentation.",
@@ -63,7 +69,7 @@ citations = ["src/hooks/use-foundation-profile.ts:24-39"]
 [[completion_report.claims]]
 id = "claim-browser-client-boundary"
 text = "The browser client uses only the configured Supabase URL and publishable key with persistent, URL-detecting, auto-refresh authentication."
-citations = ["src/lib/supabase.ts:3-19"]
+citations = ["src/lib/supabase.ts:3-24"]
 
 [[completion_report.claims]]
 id = "claim-safe-react-mount"
