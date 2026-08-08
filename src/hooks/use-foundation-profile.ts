@@ -49,7 +49,7 @@ export function useFoundationProfile(session: Session | null, online: boolean) {
   }, [online, session]);
 
   const profileAccess =
-    profileResult?.userId === session?.user.id
+    profileResult && profileResult.userId === session?.user.id
       ? profileResult.state
       : "pending";
   return { cloudStatus, profileAccess, syncState };
