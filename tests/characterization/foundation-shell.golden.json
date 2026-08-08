@@ -1,9 +1,25 @@
 {
-  "account_required": true,
-  "cloud_record": true,
-  "offline_status": true,
-  "owner_password_auth": true,
-  "password_recovery": true,
-  "react_root": true,
-  "supabase_client": true
+  "cloud_calls": [
+    [
+      "createClient",
+      "https://example.supabase.co",
+      "publishable-test-key",
+      {
+        "autoRefreshToken": true,
+        "detectSessionInUrl": true,
+        "persistSession": true
+      }
+    ],
+    ["getSession"],
+    ["onAuthStateChange"],
+    ["from", "foundation_profiles"],
+    ["select", "status"],
+    ["eq", "user_id", "owner-1"],
+    ["maybeSingle"]
+  ],
+  "mounted_root": "root",
+  "offline_ui": true,
+  "online_ui": true,
+  "recovery_ui": true,
+  "signed_out_ui": true
 }
