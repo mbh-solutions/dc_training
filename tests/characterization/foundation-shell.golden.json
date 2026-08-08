@@ -1,5 +1,6 @@
 {
   "browser_safe_client": true,
+  "cold_start_offline": true,
   "generic_sign_in_error": true,
   "mounted_application": true,
   "offline_sign_out_safe": true,
@@ -8,5 +9,6 @@
   "reset_request_private": true,
   "session_restored": true,
   "sign_in_submitted": true,
+  "sign_out_submitted": true,
   "reconnect_refetched": true
 }

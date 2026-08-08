@@ -207,6 +207,10 @@ const setInput = async (id, value) => {
   });
 };
 
+Object.defineProperty(window.navigator, "onLine", {
+  configurable: true,
+  value: false,
+});
 await act(async () => {
   await import(pathToFileURL(path.join(target, "src/main.tsx")).href);
 });
@@ -218,8 +222,22 @@ await act(async () => {
   }
   await flush();
 });
-const signedIn = text();
-const firstCloudReads = countCalls("from");
+const coldOffline = text();
+const coldSignOutDisabled = document.querySelector(
+  "button.secondary-action",
+)?.disabled;
+const coldStartNoCloudRead = countCalls("from") === 0;
+
+Object.defineProperty(window.navigator, "onLine", {
+  configurable: true,
+  value: true,
+});
+await act(async () => {
+  window.dispatchEvent(new window.Event("online"));
+  await flush();
+});
+const firstOnline = text();
+const firstOnlineCloudReads = countCalls("from");
 
 Object.defineProperty(window.navigator, "onLine", {
   configurable: true,
@@ -242,11 +260,14 @@ await act(async () => {
   await flush();
 });
 const reconnected = text();
-const reconnectRefetched = countCalls("from") > firstCloudReads;
+const reconnectRefetched = countCalls("from") > firstOnlineCloudReads;
 
 await act(async () => {
   document.querySelector("button.secondary-action").click();
   await flush();
+});
+const signOutSubmitted = hasCall("signOut", (call) => call[1] === undefined);
+await act(async () => {
   authCallback("SIGNED_OUT", null);
 });
 const readsBeforeSignedOut = countCalls("from");
@@ -297,6 +318,10 @@ const behavior = {
         call[1] === "https://example.supabase.co" &&
         call[2] === "publishable-test-key",
     ) && !JSON.stringify(calls).includes("service_role"),
+  cold_start_offline:
+    coldStartNoCloudRead &&
+    coldOffline.includes("OFFLINE · SAVED ON DEVICE") &&
+    coldSignOutDisabled === true,
   generic_sign_in_error: genericSignInError,
   mounted_application:
     root.childElementCount > 0 && text().includes("DC TRAINING"),
@@ -323,14 +348,15 @@ const behavior = {
     ),
   session_restored:
     loading &&
-    signedIn.includes("AUTHENTICATED") &&
-    signedIn.includes("PROTECTED"),
+    coldOffline.includes("AUTHENTICATED") &&
+    firstOnline.includes("PROTECTED"),
   sign_in_submitted: hasCall(
     "signInWithPassword",
     (call) =>
       call[1]?.email === "owner@example.com" &&
       call[1]?.password === "correct-horse-battery-staple",
   ),
+  sign_out_submitted: signOutSubmitted,
   reconnect_refetched: reconnectRefetched && reconnected.includes("SYNCED"),
 };
 
