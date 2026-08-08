@@ -365,7 +365,10 @@ const behavior = {
       "createClient",
       (call) =>
         call[1] === "https://example.supabase.co" &&
-        call[2] === "publishable-test-key",
+        call[2] === "publishable-test-key" &&
+        call[3]?.autoRefreshToken === true &&
+        call[3]?.detectSessionInUrl === true &&
+        call[3]?.persistSession === true,
     ) && !JSON.stringify(calls).includes("service_role"),
   cold_start_offline:
     coldStartNoCloudRead &&
@@ -379,12 +382,16 @@ const behavior = {
     offline.includes("OFFLINE · SAVED ON DEVICE") && signOutDisabled === true,
   protected_owner_record:
     hasCall("from", (call) => call[1] === "foundation_profiles") &&
+    hasCall("select", (call) => call[1] === "status") &&
     hasCall("eq", (call) => call[1] === "user_id" && call[2] === "owner-1") &&
     signedOutReadBlocked,
   recovery_completed:
     recoveryShown &&
     recoveryExited &&
-    hasCall("updateUser") &&
+    hasCall(
+      "updateUser",
+      (call) => call[1]?.password === "correct-horse-battery-staple",
+    ) &&
     hasCall("signOut", (call) => call[1]?.scope === "others") &&
     window.location.pathname === "/",
   reset_request_private:
