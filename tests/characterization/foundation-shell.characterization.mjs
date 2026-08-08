@@ -42,11 +42,22 @@ const client = {
       calls.push(["onAuthStateChange"]);
       return { data: { subscription: { unsubscribe() {} } } };
     },
+    resetPasswordForEmail: async (email, options) => {
+      calls.push(["resetPasswordForEmail", email, options]);
+      return { error: null };
+    },
     signInWithPassword: async (credentials) => {
       calls.push(["signInWithPassword", credentials]);
       return { error: null };
     },
-    signOut: async () => ({ error: null }),
+    signOut: async (options) => {
+      calls.push(["signOut", options]);
+      return { error: null };
+    },
+    updateUser: async (attributes) => {
+      calls.push(["updateUser", attributes]);
+      return { error: null };
+    },
   },
   from(table) {
     calls.push(["from", table]);
@@ -223,9 +234,15 @@ globalThis.__foundationStates.push(
   "synced",
   "PROTECTED",
 );
-const online = text(App());
+const onlineTree = App();
+const online = text(onlineTree);
 for (const effect of globalThis.__foundationEffects.splice(0)) effect();
 await new Promise((resolve) => setImmediate(resolve));
+const signOutButton = find(
+  onlineTree,
+  (node) => node?.type === "button" && text(node).includes("SIGN OUT"),
+);
+await signOutButton.props.onClick();
 
 Object.defineProperty(globalThis, "navigator", {
   configurable: true,
@@ -264,6 +281,11 @@ const signInForm = find(
   (node) => node?.type === "form" && typeof node.props?.onSubmit === "function",
 );
 await signInForm.props.onSubmit({ preventDefault() {} });
+const resetButton = find(
+  signedOutTree,
+  (node) => node?.type === "button" && text(node).includes("FORGOT PASSWORD?"),
+);
+await resetButton.props.onClick();
 globalThis.__foundationStates.push(
   session,
   false,
@@ -271,8 +293,18 @@ globalThis.__foundationStates.push(
   true,
   "idle",
   "NOT CHECKED",
+  "correct-horse-battery-staple",
+  "correct-horse-battery-staple",
+  "",
+  false,
 );
-const recovery = text(App());
+const recoveryTree = App();
+const recovery = text(recoveryTree);
+const recoveryForm = find(
+  recoveryTree,
+  (node) => node?.type === "form" && typeof node.props?.onSubmit === "function",
+);
+await recoveryForm.props.onSubmit({ preventDefault() {} });
 
 await import(mainUrl);
 

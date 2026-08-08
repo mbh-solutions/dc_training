@@ -16,11 +16,31 @@
     ["select", "status"],
     ["eq", "user_id", "owner-1"],
     ["maybeSingle"],
+    ["signOut", null],
     [
       "signInWithPassword",
       {
         "email": "owner@example.com",
         "password": "correct-horse-battery-staple"
+      }
+    ],
+    [
+      "resetPasswordForEmail",
+      "owner@example.com",
+      {
+        "redirectTo": "https://dc-training.test/account/update-password"
+      }
+    ],
+    [
+      "updateUser",
+      {
+        "password": "correct-horse-battery-staple"
+      }
+    ],
+    [
+      "signOut",
+      {
+        "scope": "others"
       }
     ]
   ],
