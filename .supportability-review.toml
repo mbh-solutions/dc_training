@@ -1,22 +1,27 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Adopt repository enforcement without changing the deployed DC Training application behavior."
-proof = "The foundation characterization captures owner sign-in, recovery, cloud-record access, offline status, React mounting, and browser-safe Supabase construction before and after this onboarding repair."
+intended_behavior = "Preserve the owner workflows while making online foundation-profile authorization fail closed on missing data or query errors."
+proof = "The foundation characterization mounts the real application and verifies both profile failure paths hide the protected shell and locally sign out."
 
 [characterization]
-captured_behavior = "The current foundation provides owner authentication, a protected owner record, the approved Home shell, installable PWA behavior, temporary offline launch, and reconnection."
-proof = "tests/characterization/foundation-shell.characterization.mjs mounts src/main.tsx through React createRoot in a DOM, lets real hooks and effects drive session restoration and reconnection, submits rendered auth forms through DOM events, verifies recovery exits, and records Supabase-boundary calls on both exact base and head revisions."
+captured_behavior = "The foundation provides owner authentication, protected profile authorization, the approved Home shell, temporary offline launch, reconnection, and password recovery."
+proof = "tests/characterization/foundation-shell.characterization.mjs mounts src/main.tsx through React createRoot, drives real effects and form events, verifies profile absence and query errors fail closed, and records Supabase-boundary calls."
 
 [separation_of_concerns]
-before = "The React foundation had explicit UI and Supabase client boundaries but no repository-level Supportability Gate contract."
-after = "The application boundaries remain unchanged while fixed TypeScript complexity, import-boundary, coverage, and semantic-review evidence become repository policy."
+before = "App owned session lifecycle, network listeners, profile authorization, route selection, and Home presentation; the Supabase module also parsed callback URLs."
+after = "App only selects screens and composes focused auth, network, profile-authorization, callback-parsing, client-construction, and Home-presentation boundaries."
 
 [architecture]
-dependency_direction = "src/main.tsx composes src/App.tsx; src/App.tsx depends on src/lib/supabase.ts; the Supabase client boundary does not import UI composition."
+dependency_direction = "src/main.tsx mounts App; App composes focused hooks and FoundationHome; hooks depend on callback parsing or the Supabase client; neither library module imports UI."
 reviewed_paths = [
     "src/App.tsx",
+    "src/FoundationHome.tsx",
+    "src/hooks/use-auth-session.ts",
+    "src/hooks/use-foundation-profile.ts",
+    "src/hooks/use-online.ts",
     "src/index.css",
+    "src/lib/auth-callback.ts",
     "src/lib/supabase.ts",
     "src/main.tsx",
     "src/vite-env.d.ts",
@@ -24,30 +29,60 @@ reviewed_paths = [
 
 [responsibility_boundary]
 path = "src/App.tsx"
-owns = "Owner authentication state, the foundation profile read, and approved Home-shell presentation."
-does_not_own = "Supabase client construction, database policy, build configuration, service-worker generation, or future workout-domain behavior."
+owns = "Top-level screen selection plus sign-in, recovery, loading, and setup screen presentation."
+does_not_own = "Auth lifecycle, network listeners, profile queries, Home presentation, callback parsing, Supabase construction, database policy, or future workout behavior."
 
 [incremental_refactor]
-target = "Complete the smallest evidence packet required by the active repository gate."
-completed_step = "Added one deterministic foundation characterization and one source-loading coverage test; formatted existing source and made NodeNext imports explicit."
+target = "Correct the three exact semantic findings without expanding the product scope."
+completed_step = "Extracted focused lifecycle and presentation boundaries, separated callback parsing, and made profile query errors fail closed."
 
 [review_handoff]
-summary = "Review exact foundation characterization, high-risk auth/UI coverage, explicit dependency direction, maximum complexity 10, and unchanged owner-visible behavior."
+summary = "Review the thin App composition, fail-closed profile guard, focused dependency direction, and real React characterization."
 remaining_risks = [
-    "Live Supabase RLS, deployed PWA caching, and iPhone installation remain deployment evidence; characterization covers React lifecycle and the browser client boundary.",
+    "Live Supabase RLS, deployed PWA caching, and iPhone installation remain deployment evidence outside source characterization.",
 ]
 
 [human_review]
-naming = "App and Supabase boundaries use direct product and platform names."
-cohesion = "Characterization owns behavior capture; the focused module test owns executable source coverage."
-intended_behavior = "Owner authentication, recovery, protected cloud status, offline status, and Home-shell presentation remain unchanged."
-reviewability = "The repair is limited to gate-required evidence plus mechanical formatting, explicit NodeNext imports, and a safe missing-root guard."
+naming = "Each hook names its one lifecycle; FoundationHome and auth-callback name their direct responsibilities."
+cohesion = "App composes; hooks own stateful effects; FoundationHome presents; library modules parse callback input or construct the client."
+intended_behavior = "Owner authentication, recovery, cloud status, offline shell, and Home presentation remain, while authorization errors now deny access."
+reviewability = "The correction maps directly to the three semantic findings and adds no product feature or dependency."
 
 [[module_boundaries]]
 path = "src/App.tsx"
 owner_path = "src/App.tsx"
 basis = "responsibility"
-justification = "Owns foundation authentication flow and approved Home-shell presentation."
+justification = "Owns top-level screen selection and authentication-screen presentation only."
+
+[[module_boundaries]]
+path = "src/FoundationHome.tsx"
+owner_path = "src/FoundationHome.tsx"
+basis = "responsibility"
+justification = "Owns approved Home-shell and network-status presentation only."
+
+[[module_boundaries]]
+path = "src/hooks/use-auth-session.ts"
+owner_path = "src/hooks/use-auth-session.ts"
+basis = "responsibility"
+justification = "Owns Supabase session lifecycle and recovery state."
+
+[[module_boundaries]]
+path = "src/hooks/use-foundation-profile.ts"
+owner_path = "src/hooks/use-foundation-profile.ts"
+basis = "responsibility"
+justification = "Owns fail-closed foundation-profile authorization and cloud status."
+
+[[module_boundaries]]
+path = "src/hooks/use-online.ts"
+owner_path = "src/hooks/use-online.ts"
+basis = "responsibility"
+justification = "Owns browser connectivity observation."
+
+[[module_boundaries]]
+path = "src/lib/auth-callback.ts"
+owner_path = "src/lib/auth-callback.ts"
+basis = "responsibility"
+justification = "Owns initial authentication callback parsing."
 
 [[module_boundaries]]
 path = "src/lib/supabase.ts"

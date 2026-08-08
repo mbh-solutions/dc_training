@@ -275,6 +275,9 @@ const reconnected = text();
 const reconnectRefetched = countCalls("from") > firstOnlineCloudReads;
 
 profileResult = { data: null, error: { message: "temporarily unavailable" } };
+const localSignOutsBeforeProfileError = calls.filter(
+  (call) => call[0] === "signOut" && call[1]?.scope === "local",
+).length;
 Object.defineProperty(window.navigator, "onLine", {
   configurable: true,
   value: false,
@@ -290,17 +293,17 @@ await act(async () => {
   window.dispatchEvent(new window.Event("online"));
   await flush();
 });
-const syncFailureShown = text().includes("SYNC FAILED · SAVED ON DEVICE");
-const readsBeforeRetry = countCalls("from");
+const profileErrorSignedOut =
+  calls.filter((call) => call[0] === "signOut" && call[1]?.scope === "local")
+    .length ===
+    localSignOutsBeforeProfileError + 1 &&
+  text().includes("OWNER ACCESS") &&
+  !text().includes("APP FOUNDATION");
 profileResult = { data: { status: "ready" }, error: null };
 await act(async () => {
-  [...document.querySelectorAll("button")]
-    .find((button) => button.textContent.includes("TRY AGAIN"))
-    .click();
+  authCallback("SIGNED_IN", session);
   await flush();
 });
-const syncRetryRecovered =
-  text().includes("SYNCED") && countCalls("from") > readsBeforeRetry;
 
 await act(async () => {
   document.querySelector("button.secondary-action").click();
@@ -338,14 +341,18 @@ const resetMessage = text().includes(
 );
 const signedOutReadBlocked = countCalls("from") === readsBeforeSignedOut;
 
+const localSignOutsBeforeMissingProfile = calls.filter(
+  (call) => call[0] === "signOut" && call[1]?.scope === "local",
+).length;
 profileResult = { data: null, error: null };
 await act(async () => {
   authCallback("SIGNED_IN", session);
   await flush();
 });
 const missingProfileSignedOut =
-  hasCall("signOut", (call) => call[1]?.scope === "local") &&
-  text().includes("OWNER ACCESS");
+  calls.filter((call) => call[0] === "signOut" && call[1]?.scope === "local")
+    .length ===
+    localSignOutsBeforeMissingProfile + 1 && text().includes("OWNER ACCESS");
 profileResult = { data: { status: "ready" }, error: null };
 
 await act(async () => {
@@ -466,7 +473,7 @@ const behavior = {
       call[1]?.password === "correct-horse-battery-staple",
   ),
   sign_out_submitted: signOutSubmitted,
-  sync_failure_recovered: syncFailureShown && syncRetryRecovered,
+  profile_error_signed_out: profileErrorSignedOut,
   reconnect_refetched: reconnectRefetched && reconnected.includes("SYNCED"),
 };
 

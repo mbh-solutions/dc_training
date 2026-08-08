@@ -1,13 +1,10 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
-import type { Session } from "@supabase/supabase-js";
-import {
-  initialAuthErrorCode,
-  isSupabaseConfigured,
-  startedFromPasswordRecovery,
-  supabase,
-} from "./lib/supabase.js";
-
-type SyncState = "idle" | "syncing" | "synced" | "failed";
+import { useState, type FormEvent } from "react";
+import FoundationHome from "./FoundationHome.jsx";
+import { useAuthSession } from "./hooks/use-auth-session.js";
+import { useFoundationProfile } from "./hooks/use-foundation-profile.js";
+import { useOnline } from "./hooks/use-online.js";
+import { initialAuthErrorCode } from "./lib/auth-callback.js";
+import { isSupabaseConfigured, supabase } from "./lib/supabase.js";
 
 const genericSignInError = "Sign-in failed. Check your email and password.";
 const initialAuthMessage =
@@ -16,181 +13,36 @@ const initialAuthMessage =
     : "";
 
 function App() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loadingSession, setLoadingSession] = useState(true);
-  const [recoveringPassword, setRecoveringPassword] = useState(
-    startedFromPasswordRecovery,
+  const online = useOnline();
+  const {
+    finishPasswordRecovery,
+    loadingSession,
+    recoveringPassword,
+    session,
+    signOut,
+  } = useAuthSession();
+  const { accessDenied, cloudStatus, syncState } = useFoundationProfile(
+    recoveringPassword ? null : session,
+    online,
   );
-  const [online, setOnline] = useState(navigator.onLine);
-  const [syncState, setSyncState] = useState<SyncState>("idle");
-  const [cloudStatus, setCloudStatus] = useState("NOT CHECKED");
-
-  const refreshCloudStatus = useCallback(async () => {
-    if (!supabase || !session || !navigator.onLine) return;
-
-    setSyncState("syncing");
-    const { data, error } = await supabase
-      .from("foundation_profiles")
-      .select("status")
-      .eq("user_id", session.user.id)
-      .maybeSingle();
-
-    if (error) {
-      setCloudStatus("UNAVAILABLE");
-      setSyncState("failed");
-      return;
-    }
-
-    if (!data) {
-      await supabase.auth.signOut({ scope: "local" });
-      return;
-    }
-
-    setCloudStatus(data.status === "ready" ? "PROTECTED" : "CONNECTED");
-    setSyncState("synced");
-  }, [session]);
-
-  useEffect(() => {
-    const handleOnline = () => setOnline(true);
-    const handleOffline = () => setOnline(false);
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
-    if (!supabase) {
-      setLoadingSession(false);
-      return () => {
-        window.removeEventListener("online", handleOnline);
-        window.removeEventListener("offline", handleOffline);
-      };
-    }
-
-    void supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoadingSession(false);
-    });
-
-    const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      setSession(nextSession);
-      if (event === "PASSWORD_RECOVERY") setRecoveringPassword(true);
-      setLoadingSession(false);
-    });
-
-    return () => {
-      data.subscription.unsubscribe();
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (session && online) void refreshCloudStatus();
-  }, [online, refreshCloudStatus, session]);
 
   if (loadingSession) return <LoadingScreen />;
   if (!isSupabaseConfigured) return <SetupScreen />;
-  if (!session) return <SignInScreen initialMessage={initialAuthMessage} />;
+  if (!session || accessDenied)
+    return <SignInScreen initialMessage={initialAuthMessage} />;
   if (recoveringPassword) {
-    return (
-      <ResetPasswordScreen onComplete={() => setRecoveringPassword(false)} />
-    );
+    return <ResetPasswordScreen onComplete={finishPasswordRecovery} />;
   }
-
-  const handleSignOut = async () => {
-    if (!supabase || !online) return;
-    await supabase.auth.signOut();
-  };
 
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <div>
-          <p className="eyebrow">PRIVATE TRAINING LOG</p>
-          <h1>DC TRAINING</h1>
-        </div>
-        <span className="foundation-mark" aria-label="Foundation ready">
-          F
-        </span>
-      </header>
-
-      <NetworkStatus
-        online={online}
-        syncState={syncState}
-        retry={refreshCloudStatus}
-      />
-
-      <main>
-        <section className="foundation-card" aria-labelledby="foundation-title">
-          <p className="section-label">APP FOUNDATION</p>
-          <h2 id="foundation-title">READY</h2>
-          <p className="foundation-copy">
-            Owner-only access, protected cloud data, and offline shell are
-            connected.
-          </p>
-
-          <dl className="proof-list">
-            <div>
-              <dt>OWNER ACCOUNT</dt>
-              <dd>AUTHENTICATED</dd>
-            </div>
-            <div>
-              <dt>CLOUD RECORD</dt>
-              <dd>{cloudStatus}</dd>
-            </div>
-            <div>
-              <dt>PWA SHELL</dt>
-              <dd>OFFLINE READY</dd>
-            </div>
-          </dl>
-        </section>
-
-        <p className="account-email">
-          SIGNED IN AS {session.user.email?.toUpperCase()}
-        </p>
-        <button
-          className="secondary-action"
-          type="button"
-          onClick={handleSignOut}
-          disabled={!online}
-        >
-          SIGN OUT
-        </button>
-        {!online && <p className="quiet-note">CONNECT TO SIGN OUT</p>}
-      </main>
-    </div>
+    <FoundationHome
+      cloudStatus={cloudStatus}
+      email={session.user.email}
+      online={online}
+      onSignOut={signOut}
+      syncState={syncState}
+    />
   );
-}
-
-function NetworkStatus({
-  online,
-  syncState,
-  retry,
-}: {
-  online: boolean;
-  syncState: SyncState;
-  retry: () => Promise<void>;
-}) {
-  if (!online)
-    return <div className="status-strip">OFFLINE · SAVED ON DEVICE</div>;
-
-  if (syncState === "failed") {
-    return (
-      <div className="status-strip status-strip--failed">
-        <span>SYNC FAILED · SAVED ON DEVICE</span>
-        <button type="button" onClick={() => void retry()}>
-          TRY AGAIN
-        </button>
-      </div>
-    );
-  }
-
-  const label =
-    syncState === "syncing"
-      ? "SYNCING"
-      : syncState === "synced"
-        ? "SYNCED"
-        : "ONLINE";
-  return <div className="status-strip status-strip--quiet">{label}</div>;
 }
 
 function SignInScreen({ initialMessage = "" }: { initialMessage?: string }) {
