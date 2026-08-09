@@ -8,8 +8,10 @@
         "src/hooks/use-auth-session.ts",
         "src/hooks/use-foundation-profile.ts",
         "src/hooks/use-online.ts",
+        "src/hooks/use-owner-access.ts",
         "src/lib/auth-actions.ts",
         "src/lib/auth-callback.ts",
+        "src/lib/offline-owner-session.ts",
         "src/lib/supabase.ts",
         "src/main.tsx"
       ],

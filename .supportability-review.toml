@@ -1,19 +1,19 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Preserve the owner workflows while requiring online foundation-profile authorization or a matching user-bound authorization persisted by a prior successful query for temporary offline reopening."
-proof = "The foundation characterization mounts the real application, represents a prior authorized load for offline reopening, and exercises both profile failure paths; App hides protected UI until the focused profile boundary authorizes the current user."
+intended_behavior = "Preserve the owner workflows while requiring a live current-user profile result online and a cryptographically verified, unexpired, project-signed owner session for temporary offline reopening."
+proof = "The foundation characterization mounts the real application with a signed ES256 test session, delegates getClaims to the installed Supabase client, and exercises both profile failure paths; App hides protected UI until the focused owner-access boundary authorizes the current user."
 
 [characterization]
 captured_behavior = "The foundation provides owner authentication, protected profile authorization, the approved Home shell, temporary offline launch, reconnection, and password recovery."
-proof = "tests/characterization/foundation-shell.characterization.mjs mounts src/main.tsx through React createRoot, drives real effects, forms, profile-failure paths, and records Supabase-boundary calls while preserving compatible observable behavior."
+proof = "tests/characterization/foundation-shell.characterization.mjs mounts src/main.tsx through React createRoot, drives real effects, forms, signed-session verification through the installed Supabase client, profile-failure paths, and records boundary calls while preserving compatible observable behavior."
 
 [separation_of_concerns]
 before = "App owned session lifecycle, network listeners, profile authorization, route selection, and Home presentation; the Supabase module also parsed callback URLs."
-after = "App only selects screens; focused modules own auth-screen forms, Supabase auth actions, session state, network state, profile authorization, callback parsing, client construction, and Home presentation."
+after = "App only selects screens; focused modules separately own auth-screen forms, Supabase auth actions, session state, network state, profile loading, owner-access enforcement, offline signed-session verification, callback parsing, client construction, and Home presentation."
 
 [architecture]
-dependency_direction = "src/main.tsx mounts App; App composes AuthScreens, focused hooks, and FoundationHome; AuthScreens delegates client calls to auth-actions; hooks and auth-actions depend on callback parsing or the Supabase client; library modules do not import UI."
+dependency_direction = "src/main.tsx mounts App; App composes AuthScreens, focused hooks, and FoundationHome; use-owner-access delegates offline proof to offline-owner-session; hooks and auth actions depend on focused library modules or the Supabase client; library modules do not import UI."
 reviewed_paths = [
     "src/App.tsx",
     "src/AuthScreens.tsx",
@@ -21,9 +21,11 @@ reviewed_paths = [
     "src/hooks/use-auth-session.ts",
     "src/hooks/use-foundation-profile.ts",
     "src/hooks/use-online.ts",
+    "src/hooks/use-owner-access.ts",
     "src/index.css",
     "src/lib/auth-actions.ts",
     "src/lib/auth-callback.ts",
+    "src/lib/offline-owner-session.ts",
     "src/lib/supabase.ts",
     "src/main.tsx",
 ]
@@ -35,19 +37,19 @@ does_not_own = "Auth forms or client calls, auth lifecycle, network listeners, p
 
 [incremental_refactor]
 target = "Correct the exact semantic findings without expanding the product scope."
-completed_step = "Made profile authorization pending by default, persisted only successful user-bound authorization for offline reopening, extracted auth screens and client actions, and retained focused lifecycle, callback, and Home boundaries."
+completed_step = "Replaced the client-mutable offline marker with pinned-JWKS session verification, separated owner access from profile and cloud state, extracted auth screens and client actions, and retained focused lifecycle, callback, and Home boundaries."
 
 [review_handoff]
-summary = "Review pending-by-default profile authorization, user-bound offline authorization persistence, thin App composition, delegated auth actions, focused dependency direction, and real React characterization."
+summary = "Review pending-by-default owner access, pinned-JWKS offline session verification, separated profile state, thin App composition, delegated auth actions, focused dependency direction, and real React characterization."
 remaining_risks = [
     "Live Supabase RLS, deployed PWA caching, and iPhone installation remain deployment evidence outside source characterization.",
 ]
 
 [human_review]
 naming = "Each hook and auth action names one concrete responsibility; AuthScreens, FoundationHome, and auth-callback name their direct boundaries."
-cohesion = "App composes; AuthScreens owns form presentation and validation; auth-actions owns client workflows; hooks own stateful effects; FoundationHome presents."
-intended_behavior = "Owner authentication, recovery, cloud status, authorized offline shell, and Home presentation remain, while unproven or failed authorization hides Home."
-reviewability = "The correction maps directly to the captured authorization and mixed-auth-workflow findings and adds no product feature or dependency."
+cohesion = "App composes; AuthScreens owns form presentation and validation; profile state, owner access, offline token proof, auth actions, and session lifecycle have focused boundaries; FoundationHome presents."
+intended_behavior = "Owner authentication, recovery, cloud status, signed-session offline shell, and Home presentation remain, while unverified or failed authorization hides Home and locally signs out."
+reviewability = "The correction maps directly to the captured untrusted-storage and mixed-responsibility findings and adds no product feature, schema, or dependency."
 
 [[module_boundaries]]
 path = "src/App.tsx"
@@ -77,7 +79,13 @@ justification = "Owns Supabase session lifecycle and recovery state."
 path = "src/hooks/use-foundation-profile.ts"
 owner_path = "src/hooks/use-foundation-profile.ts"
 basis = "responsibility"
-justification = "Owns fail-closed foundation-profile authorization, user-bound offline authorization persistence, and cloud status."
+justification = "Owns the current-user foundation-profile query and its cloud and synchronization presentation state."
+
+[[module_boundaries]]
+path = "src/hooks/use-owner-access.ts"
+owner_path = "src/hooks/use-owner-access.ts"
+basis = "responsibility"
+justification = "Owns online and offline owner-access state plus local sign-out enforcement while delegating profile loading and token verification."
 
 [[module_boundaries]]
 path = "src/hooks/use-online.ts"
@@ -98,10 +106,16 @@ basis = "responsibility"
 justification = "Owns initial authentication callback parsing."
 
 [[module_boundaries]]
+path = "src/lib/offline-owner-session.ts"
+owner_path = "src/lib/offline-owner-session.ts"
+basis = "responsibility"
+justification = "Owns fail-closed verification of a cached session against build-pinned Supabase signing keys, issuer, audience, expiry, role, anonymity, and owner subject."
+
+[[module_boundaries]]
 path = "src/lib/supabase.ts"
 owner_path = "src/lib/supabase.ts"
 basis = "responsibility"
-justification = "Owns browser-safe Supabase client construction and environment validation."
+justification = "Owns browser-safe Supabase client construction and public environment configuration, including the pinned JWKS and owner-subject digest."
 
 [[module_boundaries]]
 path = "src/main.tsx"

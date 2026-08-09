@@ -45,9 +45,45 @@ try {
 }
 
 const ts = require("typescript");
+const {
+  createClient: createVerificationClient,
+} = require("@supabase/supabase-js");
 const { JSDOM } = definitionRequire("jsdom");
 const calls = [];
-const session = { user: { email: "owner@example.com", id: "owner-1" } };
+const offlineAuthJwks = {
+  keys: [
+    {
+      alg: "ES256",
+      crv: "P-256",
+      ext: true,
+      key_ops: ["verify"],
+      kid: "foundation-test-key",
+      kty: "EC",
+      use: "sig",
+      x: "7B1IiuxQLUBKu_UmjGEJrOEfvD4-NHLg9wpU5c4gW0E",
+      y: "NTs3pjIiVGEAhx_076fE5DKTIgkJWuB-z5ndfhdmR8g",
+    },
+  ],
+};
+const offlineOwnerSubjectSha256 =
+  "391887cbcf922e19d672df700739c4a3c74e35ee3d57e7ad97506cd331cd953c";
+const offlineAccessToken =
+  "eyJhbGciOiJFUzI1NiIsImtpZCI6ImZvdW5kYXRpb24tdGVzdC1rZXkiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjo0MTAyNDQ0ODAwLCJpYXQiOjE3MDAwMDAwMDAsImlzcyI6Imh0dHBzOi8vZXhhbXBsZS5zdXBhYmFzZS5jby9hdXRoL3YxIiwiaXNfYW5vbnltb3VzIjpmYWxzZSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJzZXNzaW9uX2lkIjoiZm91bmRhdGlvbi10ZXN0LXNlc3Npb24iLCJzdWIiOiJvd25lci0xIn0.j0an6z1YaPcK1U9h4dJE34hIjL2fR-c7b5Y-H8ncAQKDrsXnuFHW5CKKQ51aC09BZ07TmVYJJQgKoTi7lTsTxw";
+const session = {
+  access_token: offlineAccessToken,
+  user: { email: "owner@example.com", id: "owner-1" },
+};
+const verificationClient = createVerificationClient(
+  "https://example.supabase.co",
+  "publishable-test-key",
+  {
+    auth: {
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      persistSession: false,
+    },
+  },
+);
 const sessionResolvers = [];
 let authCallback;
 let profileResult = { data: { status: "ready" }, error: null };
@@ -55,6 +91,10 @@ let updateResult = { error: null };
 
 const client = {
   auth: {
+    getClaims: async (token, options) => {
+      calls.push(["getClaims", token, options]);
+      return verificationClient.auth.getClaims(token, options);
+    },
     getSession: () => {
       calls.push(["getSession"]);
       return new Promise((resolve) => sessionResolvers.push(resolve));
@@ -120,6 +160,8 @@ Object.assign(globalThis, {
   __foundationCalls: calls,
   __foundationClient: client,
   __foundationEnv: {
+    VITE_SUPABASE_AUTH_JWKS: JSON.stringify(offlineAuthJwks),
+    VITE_SUPABASE_OWNER_SUB_SHA256: offlineOwnerSubjectSha256,
     VITE_SUPABASE_PUBLISHABLE_KEY: "publishable-test-key",
     VITE_SUPABASE_URL: "https://example.supabase.co",
   },
@@ -128,10 +170,6 @@ Object.defineProperty(globalThis, "navigator", {
   configurable: true,
   value: dom.window.navigator,
 });
-dom.window.localStorage.setItem(
-  "dc-training.foundation-profile-user-id",
-  session.user.id,
-);
 
 const moduleUrl = (source) =>
   `data:text/javascript,${encodeURIComponent(source)}`;
@@ -206,6 +244,11 @@ const { act } = await import(reactUrl);
 const root = document.getElementById("root");
 const text = () => root.textContent ?? "";
 const flush = () => new Promise((resolve) => setImmediate(resolve));
+const settleLoading = async () => {
+  for (let attempt = 0; attempt < 20 && text().includes("LOADING"); attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+};
 const hasCall = (name, predicate = () => true) =>
   calls.some((call) => call[0] === name && predicate(call));
 const countCalls = (name) => calls.filter((call) => call[0] === name).length;
@@ -238,6 +281,7 @@ await act(async () => {
   }
   await flush();
 });
+await act(settleLoading);
 const coldOffline = text();
 const coldSignOutDisabled = document.querySelector(
   "button.secondary-action",
@@ -262,6 +306,7 @@ Object.defineProperty(window.navigator, "onLine", {
 await act(async () => {
   window.dispatchEvent(new window.Event("offline"));
 });
+await act(settleLoading);
 const offline = text();
 const signOutDisabled = document.querySelector(
   "button.secondary-action",

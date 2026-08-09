@@ -8,6 +8,7 @@ import FoundationHome from "./FoundationHome.jsx";
 import { useAuthSession } from "./hooks/use-auth-session.js";
 import { useFoundationProfile } from "./hooks/use-foundation-profile.js";
 import { useOnline } from "./hooks/use-online.js";
+import { useOwnerAccess } from "./hooks/use-owner-access.js";
 import { initialAuthErrorCode } from "./lib/auth-callback.js";
 import { isSupabaseConfigured } from "./lib/supabase.js";
 
@@ -25,10 +26,12 @@ function App() {
     session,
     signOut,
   } = useAuthSession();
-  const { cloudStatus, profileAccess, syncState } = useFoundationProfile(
-    recoveringPassword ? null : session,
+  const activeSession = recoveringPassword ? null : session;
+  const { cloudStatus, profileState, syncState } = useFoundationProfile(
+    activeSession,
     online,
   );
+  const profileAccess = useOwnerAccess(activeSession, online, profileState);
 
   if (loadingSession) return <LoadingScreen />;
   if (!isSupabaseConfigured) return <SetupScreen />;
