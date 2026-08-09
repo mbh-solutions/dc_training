@@ -25,9 +25,20 @@ const result = JSON.parse(captured);
 const workoutTracerExists = existsSync(
   path.join(target, "src/WorkoutTracer.tsx"),
 );
+const baselineMarker = "tests/characterization/a1-workout-v1.baseline";
+const initialBase =
+  existsSync(path.join(target, baselineMarker)) &&
+  !existsSync(
+    path.join(
+      process.env.SUPPORTABILITY_CHARACTERIZATION_DEFINITION ?? process.cwd(),
+      baselineMarker,
+    ),
+  );
 const runtimeContract = workoutTracerExists
   ? result.behavior.a1_workout_completion
-  : result.behavior.a1_assignment_round_trip;
+  : initialBase
+    ? result.behavior.a1_assignment_round_trip
+    : false;
 
 write(
   JSON.stringify({
