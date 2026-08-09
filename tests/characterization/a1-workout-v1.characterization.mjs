@@ -24,6 +24,19 @@ const tokenize = (source) => {
       index += comment[0].length;
       continue;
     }
+    if (rest[0] === "`") {
+      index += quotedLength(rest, "`");
+      tokens.push("template");
+      continue;
+    }
+    if (rest[0] === "/") {
+      const length = regexLength(rest);
+      if (length > 1) {
+        index += length;
+        tokens.push("regex");
+        continue;
+      }
+    }
     const token =
       /^(?:\s+|[A-Za-z_$][\w$]*|\d+n?|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|.)/.exec(
         rest,
@@ -32,6 +45,27 @@ const tokenize = (source) => {
     if (!/^\s+$/.test(token)) tokens.push(token);
   }
   return tokens;
+};
+const quotedLength = (source, quote) => {
+  for (let index = 1; index < source.length; index += 1) {
+    if (source[index] === "\\") index += 1;
+    else if (source[index] === quote) return index + 1;
+  }
+  return source.length;
+};
+const regexLength = (source) => {
+  let inClass = false;
+  for (let index = 1; index < source.length; index += 1) {
+    if (source[index] === "\n" || source[index] === "\r") return 1;
+    if (source[index] === "\\") index += 1;
+    else if (source[index] === "[") inClass = true;
+    else if (source[index] === "]") inClass = false;
+    else if (source[index] === "/" && !inClass) {
+      while (/[a-z]/i.test(source[index + 1] ?? "")) index += 1;
+      return index + 1;
+    }
+  }
+  return 1;
 };
 const hasSequence = (tokens, expected) =>
   tokens.some((_, index) =>
@@ -43,12 +77,14 @@ const sourceHasSequences = (relativePath, sequences) => {
   );
   return sequences.every((sequence) => hasSequence(tokens, sequence));
 };
-const tokenizerRejectsComments = !hasSequence(
-  tokenize("/* export function Spoof() {} */"),
-  ["export", "function", "Spoof", "("],
-);
+const spoof = ["export", "function", "Spoof", "("];
+const tokenizerRejectsSpoofs = [
+  "/* export function Spoof() {} */",
+  "`export function Spoof() {}`",
+  "/export function Spoof\\(/",
+].every((source) => !hasSequence(tokenize(source), spoof));
 const surfaceContract = workoutTracerExists
-  ? tokenizerRejectsComments &&
+  ? tokenizerRejectsSpoofs &&
     sourceHasSequences("src/WorkoutTracer.tsx", [
       ["export", "function", "WorkoutTracer", "("],
       ["export", "function", "WorkoutComplete", "("],
@@ -67,7 +103,7 @@ const surfaceContract = workoutTracerExists
       [".", "last-workout", "{"],
     ])
   : initialBase &&
-    tokenizerRejectsComments &&
+    tokenizerRejectsSpoofs &&
     sourceHasSequences("tests/a1-assignment.e2e.mjs", [
       ["a1_assignment_round_trip", ":"],
     ]);
