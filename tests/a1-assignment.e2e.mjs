@@ -1058,10 +1058,12 @@ const a1WorkoutCompletion =
   hasCall(
     "rpc",
     (call) =>
-      call[1] === "save_a1_workout_step" &&
-      call[2]?.p_weights?.[0]?.amount === "100.5" &&
-      call[2]?.p_weights?.[0]?.unit === "lb" &&
-      JSON.stringify(call[2]?.p_reps) === JSON.stringify([8, 4, 2]),
+      JSON.stringify([call[1], call[2]?.p_weights?.[0], call[2]?.p_reps]) ===
+      JSON.stringify([
+        "save_a1_workout_step",
+        { amount: "100.5", unit: "lb" },
+        [8, 4, 2],
+      ]),
   );
 
 const behavior = {
@@ -1108,13 +1110,22 @@ const behavior = {
     hasCall(
       "rpc",
       (call) =>
-        call[1] === "save_rotation_assignment" &&
-        call[2]?.p_slot === "A1" &&
-        call[2]?.p_body_part === "chest" &&
-        call[2]?.p_protocol === "rest_pause" &&
-        call[2]?.p_structure === "11-15" &&
-        JSON.stringify(call[2]?.p_target_sets) ===
-          JSON.stringify([{ min: 11, max: 15 }]),
+        JSON.stringify([
+          call[1],
+          call[2]?.p_slot,
+          call[2]?.p_body_part,
+          call[2]?.p_protocol,
+          call[2]?.p_structure,
+          call[2]?.p_target_sets,
+        ]) ===
+        JSON.stringify([
+          "save_rotation_assignment",
+          "A1",
+          "chest",
+          "rest_pause",
+          "11-15",
+          [{ min: 11, max: 15 }],
+        ]),
     ),
   s02_rotation_setup:
     bPoolMatched &&

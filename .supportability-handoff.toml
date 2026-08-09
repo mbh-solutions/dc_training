@@ -62,6 +62,7 @@ simplified_functions = [
     "useWorkout",
     "useWorkout.anonymous@102:13",
     "useWorkout.anonymous@66:28",
+    "useWorkout.anonymous@66:28.anonymous@73:46",
     "useWorkout.dismissCompleted",
     "useWorkout.saveStep",
     "useWorkout.saveStep.anonymous@150:14",

@@ -64,13 +64,13 @@ export function useWorkout(userId: string, online: boolean) {
   const [steps, setSteps] = useState<WorkoutStep[]>([]);
 
   const load = useCallback(async () => {
-    if (!supabase || !online) {
+    if (!online) {
       setLoading(false);
       return;
     }
     setLoading(true);
     const [rotationResult, workoutResult] = await fetchWorkoutState(userId);
-    if (rotationResult.error || workoutResult.error) {
+    if ([rotationResult, workoutResult].some((result) => result.error)) {
       setMessage("WORKOUT STATE COULD NOT BE LOADED");
       setLoading(false);
       return;
