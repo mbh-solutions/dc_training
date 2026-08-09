@@ -43,7 +43,11 @@ const rotationStyles = `
 .choice-card--selected .choice-dot { border: 5px solid #25100f; background: var(--red); box-shadow: 0 0 0 2px var(--red); }
 .dc-badge { border: 1px solid var(--red); border-radius: 4px; padding: 4px 7px; color: var(--white); font-size: .72rem; }
 .info-action { min-width: 44px; min-height: 44px; margin: -8px 0 12px; border: 1px solid var(--line); border-radius: 50%; color: var(--white); background: transparent; cursor: pointer; }
-.protocol-info { margin: 0 0 14px; border-left: 2px solid var(--red); padding: 10px 14px; color: #bdbdba; line-height: 1.4; white-space: pre-line; }
+.info-backdrop { position: fixed; inset: 0; z-index: 20; display: flex; align-items: flex-end; background: rgba(0,0,0,.7); }
+.info-sheet { width: 100%; max-width: 560px; margin: 0 auto; border: 1px solid var(--line); border-radius: 16px 16px 0 0; padding: 22px; background: var(--panel); }
+.info-sheet-close { float: right; min-width: 44px; min-height: 44px; border: 0; color: var(--white); background: transparent; font-size: 1.8rem; cursor: pointer; }
+.protocol-info { clear: both; margin: 20px 0; border-left: 2px solid var(--red); padding: 10px 14px; color: #bdbdba; line-height: 1.4; white-space: pre-line; }
+.info-sheet-action { width: 100%; min-height: 52px; border: 0; border-radius: 6px; color: var(--white); background: var(--red); font-weight: 800; cursor: pointer; }
 .exercise-heading, .review-exercise { margin: 5px 0 30px; font-size: clamp(2rem,10vw,3.2rem); text-transform: uppercase; }
 .custom-sets { display: grid; gap: 14px; margin-top: 18px; }
 .set-count, .target-pair { display: grid; gap: 8px; color: var(--gray); font-size: .8rem; }
@@ -149,7 +153,11 @@ function RotationSetupView(props: Props) {
             >
               ⓘ
             </button>
-            {props.showProtocolInfo && <p className="protocol-info">{info}</p>}
+            <InfoSheet
+              info={info}
+              open={props.showProtocolInfo}
+              onClose={() => props.setShowProtocolInfo(() => false)}
+            />
           </>
         )}
         <ChoiceList
@@ -200,9 +208,11 @@ function RotationSetupView(props: Props) {
               >
                 ⓘ
               </button>
-              {props.showProtocolInfo && (
-                <p className="protocol-info">{info}</p>
-              )}
+              <InfoSheet
+                info={info}
+                open={props.showProtocolInfo}
+                onClose={() => props.setShowProtocolInfo(() => false)}
+              />
             </>
           )}
           {props.structure === "custom" && (
@@ -249,6 +259,41 @@ function RotationSetupView(props: Props) {
         {props.saving ? "SAVING" : "SAVE"}
       </FooterButton>
     </Shell>
+  );
+}
+
+function InfoSheet({
+  info,
+  onClose,
+  open,
+}: {
+  info: string;
+  onClose: () => void;
+  open: boolean;
+}) {
+  if (!open) return null;
+  return (
+    <div className="info-backdrop">
+      <section
+        aria-label="PROTOCOL INFORMATION"
+        aria-modal="true"
+        className="info-sheet"
+        role="dialog"
+      >
+        <button
+          aria-label="CLOSE INFORMATION"
+          className="info-sheet-close"
+          type="button"
+          onClick={onClose}
+        >
+          ×
+        </button>
+        <p className="protocol-info">{info}</p>
+        <button className="info-sheet-action" type="button" onClick={onClose}>
+          GOT IT
+        </button>
+      </section>
+    </div>
   );
 }
 

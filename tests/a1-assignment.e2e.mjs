@@ -559,6 +559,11 @@ const protocolGuidance = text().includes(
   "Classic DC uses one rest-pause work set.",
 );
 await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("GOT IT"))
+    .click(),
+);
+await act(async () =>
   document.querySelector('input[value="rest_pause"]').click(),
 );
 await act(async () => {
@@ -721,6 +726,53 @@ const s02CloudBoundaries =
       call[2]?.p_structure === "none",
   );
 
+await act(async () => assignmentCard("B1", "CALVES").click());
+await act(async () => document.querySelector('input[name="exercise"]').click());
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE"))
+    .click(),
+);
+await act(async () =>
+  document.querySelector('input[value="straight_set"]').click(),
+);
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE"))
+    .click(),
+);
+await act(async () =>
+  document.querySelector('input[value="single-10-12"]').click(),
+);
+await act(async () =>
+  document
+    .querySelector('button[aria-label="CALVES structure information"]')
+    .click(),
+);
+const calfSheet = document.querySelector('[role="dialog"]');
+const calfInformationSheet =
+  calfSheet?.textContent.includes("Lower slowly over 5 seconds.") &&
+  calfSheet.textContent.includes("Hold the bottom position for 15 seconds.") &&
+  calfSheet.textContent.includes("Explode upward onto your toes.") &&
+  !calfSheet.textContent.toLowerCase().includes("countdown");
+await act(async () =>
+  document.querySelector('button[aria-label="CLOSE INFORMATION"]').click(),
+);
+assert.equal(document.querySelector('[role="dialog"]'), null);
+await act(async () =>
+  document
+    .querySelector('button[aria-label="CALVES structure information"]')
+    .click(),
+);
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("GOT IT"))
+    .click(),
+);
+assert.equal(document.querySelector('[role="dialog"]'), null);
+for (let index = 0; index < 3; index += 1)
+  await act(async () => document.querySelector("button.back-action").click());
+
 await act(async () => {
   [...document.querySelectorAll("button")]
     .find((button) => button.textContent.includes("Incline barbell press"))
@@ -794,6 +846,7 @@ const behavior = {
   s02_rotation_setup:
     bPoolMatched &&
     bCustomReviewed &&
+    calfInformationSheet &&
     fullAbsPool &&
     absProtocols &&
     completeReload &&
