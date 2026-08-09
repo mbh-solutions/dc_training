@@ -5,53 +5,57 @@ architecture_judgment = "PASS"
 base_sha = "0ac2f1c2237f16efab599ef8c76627d65232ac6d"
 overall_result = "PASS"
 responsibility_changes = [
-    "FoundationHome now routes the authenticated owner into the bounded A1 chest assignment flow while App continues to provide the authenticated owner identifier.",
-    "RotationSetup owns explicit exercise, protocol, target-range, review, save, and restore state for A1 only.",
+    "FoundationHome now owns only signed-in surface selection while HomeScreen renders the signed-in Home.",
+    "useRotationAssignment owns A1 assignment loading and persistence; RotationSetup owns editor state and navigation; RotationSetupView renders the flow.",
     "The database migration owns the fixed A1/chest data contract and owner-only row policies.",
 ]
 simplified_functions = [
     "App",
     "ChoiceList",
-    "ChoiceList.anonymous@749:20",
-    "ChoiceList.anonymous@749:20.anonymous@759:23",
+    "ChoiceList.anonymous@860:20",
+    "ChoiceList.anonymous@860:20.anonymous@870:23",
     "FooterButton",
     "FoundationHome",
     "FoundationHome.anonymous@26:17",
-    "FoundationHome.anonymous@75:20",
+    "FoundationHome.anonymous@37:23",
+    "HomeScreen",
     "RotationSetup",
-    "RotationSetup.anonymous@444:13",
-    "RotationSetup.anonymous@444:13.anonymous@452:13",
-    "RotationSetup.anonymous@444:13.anonymous@462:12",
-    "RotationSetup.anonymous@620:17",
-    "RotationSetup.anonymous@624:40",
-    "RotationSetup.anonymous@630:20",
-    "RotationSetup.anonymous@647:17",
-    "RotationSetup.anonymous@659:21",
-    "RotationSetup.anonymous@671:27",
-    "RotationSetup.anonymous@682:27",
-    "RotationSetup.anonymous@689:20",
-    "RotationSetup.anonymous@701:15",
-    "RotationSetup.anonymous@723:48",
     "RotationSetup.editAssignment",
-    "RotationSetup.renderProtocol",
-    "RotationSetup.renderProtocol.anonymous@574:15",
-    "RotationSetup.renderProtocol.anonymous@582:18",
-    "RotationSetup.renderProtocol.anonymous@582:18.anonymous@582:44",
-    "RotationSetup.renderProtocol.anonymous@598:19",
-    "RotationSetup.renderProtocol.anonymous@602:18",
-    "RotationSetup.renderSetup",
     "RotationSetup.save",
     "RotationSetup.selectExercise",
     "RotationSetup.selectProtocol",
+    "RotationSetupView",
+    "RotationSetupView.anonymous@731:17",
+    "RotationSetupView.anonymous@735:40",
+    "RotationSetupView.anonymous@741:20",
+    "RotationSetupView.anonymous@758:17",
+    "RotationSetupView.anonymous@770:21",
+    "RotationSetupView.anonymous@782:27",
+    "RotationSetupView.anonymous@793:27",
+    "RotationSetupView.anonymous@800:20",
+    "RotationSetupView.anonymous@812:15",
+    "RotationSetupView.anonymous@834:48",
+    "RotationSetupView.renderProtocol",
+    "RotationSetupView.renderProtocol.anonymous@685:15",
+    "RotationSetupView.renderProtocol.anonymous@693:18",
+    "RotationSetupView.renderProtocol.anonymous@693:18.anonymous@693:44",
+    "RotationSetupView.renderProtocol.anonymous@709:19",
+    "RotationSetupView.renderProtocol.anonymous@713:18",
+    "RotationSetupView.renderSetup",
     "Shell",
     "formatTargetRange",
     "protocolLabel",
     "targetRange",
+    "useRotationAssignment",
+    "useRotationAssignment.anonymous@457:13",
+    "useRotationAssignment.anonymous@457:13.anonymous@465:13",
+    "useRotationAssignment.anonymous@457:13.anonymous@475:12",
+    "useRotationAssignment.saveAssignment",
     "validRange",
 ]
 boundary_rationale = [
-    "App remains top-level authenticated composition; FoundationHome owns signed-in presentation and its one current product flow.",
-    "RotationSetup uses the existing Supabase client directly for one owner-keyed A1 record; no generalized workout model or new dependency was introduced.",
+    "App remains top-level authenticated composition; FoundationHome selects signed-in surfaces; HomeScreen renders Home.",
+    "useRotationAssignment is the focused Supabase client boundary; RotationSetup owns editor state and navigation; RotationSetupView owns detailed flow rendering.",
 ]
 remaining_risks = [
     "Live production deployment and browser round-trip evidence remain external to deterministic source characterization until the protected merge deploys.",
@@ -76,9 +80,9 @@ gate_coverage = [
 [[completion_report.claims]]
 id = "claim-a1-owner-boundary"
 text = "The authenticated user identifier supplied by App is passed to RotationSetup, which filters reads by that owner and writes the same owner identifier in the single A1 upsert."
-citations = ["src/App.tsx:50-58", "src/FoundationHome.tsx:23-28", "src/FoundationHome.tsx:444-465", "src/FoundationHome.tsx:507-534"]
+citations = ["src/App.tsx:50-58", "src/FoundationHome.tsx:23-28", "src/FoundationHome.tsx:449-500", "src/FoundationHome.tsx:554-565"]
 
 [[completion_report.claims]]
 id = "claim-a1-explicit-contract"
 text = "A1 offers only the nine fixed chest exercises, explicit rest-pause or straight-set protocols, and validated preset or positive-integer custom rest-pause ranges before review."
-citations = ["src/FoundationHome.tsx:112-122", "src/FoundationHome.tsx:408-427", "src/FoundationHome.tsx:615-693"]
+citations = ["src/FoundationHome.tsx:132-142", "src/FoundationHome.tsx:428-447", "src/FoundationHome.tsx:726-804"]
