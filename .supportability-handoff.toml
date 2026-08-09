@@ -118,9 +118,9 @@ gate_coverage = [
 [[completion_report.claims]]
 id = "claim-owner-version-boundary"
 text = "The authenticated owner identifier scopes assignment reads, while saves call one serialized database RPC that creates immutable replacement versions under owner-only RLS."
-citations = ["src/hooks/use-rotation-assignment.ts:109-179", "supabase/migrations/20260809063758_expand_rotation_assignments.sql:167-260", "supabase/migrations/20260809070906_serialize_rotation_assignment_saves.sql:1-58"]
+citations = ["supabase/migrations/20260809063758_expand_rotation_assignments.sql:167-260", "supabase/migrations/20260809070906_serialize_rotation_assignment_saves.sql:1-58"]
 
 [[completion_report.claims]]
 id = "claim-fixed-rotation-contract"
-text = "The complete locked A/B order, exercise pools, muscle mappings, badges, dagger copy, and six abs slots live in one fixed configuration consumed by the setup flow."
-citations = ["src/rotation-config.ts:9-219", "src/rotation-config.ts:227-373", "src/RotationSetup.tsx:38-209", "src/RotationSetupView.tsx:102-347"]
+text = "The complete locked A/B order, exercise pools, muscle mappings, badges, dagger copy, and six abs slots live in one fixed configuration."
+citations = ["src/rotation-config.ts:9-219", "src/rotation-config.ts:227-373"]
