@@ -21,6 +21,17 @@
       ],
       "id": "foundation-shell-v2",
       "kind": "regression"
+    },
+    {
+      "covers": [
+        "src/RotationSetupFlow.tsx",
+        "src/hooks/use-rotation-editor.ts",
+        "src/hooks/use-rotation-flow.ts",
+        "src/rotation-assignment-draft.ts",
+        "src/rotation-config.ts"
+      ],
+      "id": "rotation-setup-v1",
+      "kind": "regression"
     }
   ],
   "schema_version": "1.0"

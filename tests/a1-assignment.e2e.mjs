@@ -88,7 +88,7 @@ const verificationClient = createVerificationClient(
 const sessionResolvers = [];
 let authCallback;
 let profileResult = { data: { status: "ready" }, error: null };
-let assignmentResult = { data: null, error: null };
+let assignmentResult = { data: [], error: null };
 let updateResult = { error: null };
 
 const client = {
@@ -143,6 +143,9 @@ const client = {
           ? profileResult
           : assignmentResult;
       },
+      then(resolve, reject) {
+        return Promise.resolve(assignmentResult).then(resolve, reject);
+      },
       async upsert(values, options) {
         calls.push(["upsert", table, values, options]);
         assignmentResult = { data: values, error: null };
@@ -150,6 +153,36 @@ const client = {
       },
     };
     return query;
+  },
+  async rpc(name, values) {
+    calls.push(["rpc", name, values]);
+    const previous = assignmentResult.data.find(
+      (row) =>
+        row.active &&
+        row.slot === values.p_slot &&
+        row.body_part === values.p_body_part,
+    );
+    const row = {
+      active: true,
+      assignment_id: `assignment-${calls.length}`,
+      body_part: values.p_body_part,
+      exercise: values.p_exercise,
+      protocol: values.p_protocol,
+      replaced_assignment_id: previous?.assignment_id ?? null,
+      slot: values.p_slot,
+      structure: values.p_structure,
+      target_sets: values.p_target_sets,
+    };
+    assignmentResult = {
+      data: [
+        ...assignmentResult.data.map((item) =>
+          item === previous ? { ...item, active: false } : item,
+        ),
+        row,
+      ],
+      error: null,
+    };
+    return { data: row, error: null };
   },
 };
 
@@ -272,6 +305,16 @@ const setInput = async (id, value) => {
     input.dispatchEvent(new window.Event("input", { bubbles: true }));
     await flush();
   });
+};
+const assignmentCard = (workout, position) => {
+  const section = [...document.querySelectorAll(".workout-group")].find(
+    (candidate) =>
+      candidate.querySelector(".rotation-label")?.textContent ===
+      `${workout} WORKOUT`,
+  );
+  return [...(section?.querySelectorAll("button.assignment-card") ?? [])].find(
+    (button) => button.querySelector("span")?.textContent === position,
+  );
 };
 
 Object.defineProperty(window.navigator, "onLine", {
@@ -509,11 +552,16 @@ const protocolInitiallyEmpty =
   ).disabled;
 await act(async () =>
   document
-    .querySelector('button[aria-label="Chest protocol information"]')
+    .querySelector('button[aria-label="CHEST protocol information"]')
     .click(),
 );
 const protocolGuidance = text().includes(
   "Classic DC uses one rest-pause work set.",
+);
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("GOT IT"))
+    .click(),
 );
 await act(async () =>
   document.querySelector('input[value="rest_pause"]').click(),
@@ -525,7 +573,7 @@ await act(async () => {
 });
 
 const rangeInitiallyEmpty =
-  document.querySelectorAll('input[name="range"]:checked').length === 0 &&
+  document.querySelectorAll('input[name="structure"]:checked').length === 0 &&
   [...document.querySelectorAll("button")].find((button) =>
     button.textContent.includes("CONTINUE"),
   ).disabled;
@@ -548,7 +596,7 @@ await act(async () => {
     .find((button) => button.textContent.includes("CONTINUE"))
     .click();
 });
-const upsertsBeforeSave = calls.filter((call) => call[0] === "upsert").length;
+const savesBeforeSave = calls.filter((call) => call[0] === "rpc").length;
 await act(async () => {
   [...document.querySelectorAll("button")]
     .find((button) => button.textContent.trim() === "SAVE")
@@ -556,8 +604,8 @@ await act(async () => {
   await flush();
 });
 const savedExactlyOnce =
-  calls.filter((call) => call[0] === "upsert").length ===
-    upsertsBeforeSave + 1 && text().includes("Incline barbell press");
+  calls.filter((call) => call[0] === "rpc").length === savesBeforeSave + 1 &&
+  text().includes("Incline barbell press");
 
 await act(async () => authCallback("SIGNED_OUT", null));
 await act(async () => {
@@ -576,6 +624,154 @@ const restoredAfterRemount =
   text().includes("A1 WORKOUT") &&
   text().includes("Incline barbell press") &&
   text().includes("11–15");
+
+await act(async () => assignmentCard("B1", "FOREARMS").click());
+const bPoolMatched =
+  document.querySelectorAll('input[name="exercise"]').length === 11;
+await act(async () => document.querySelector('input[name="exercise"]').click());
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE"))
+    .click(),
+);
+await act(async () =>
+  document.querySelector('input[value="straight_set"]').click(),
+);
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE"))
+    .click(),
+);
+await act(async () => document.querySelector('input[value="custom"]').click());
+await setInput("custom-set-count", "2");
+await setInput("custom-min-0", "10");
+await setInput("custom-max-0", "12");
+await setInput("custom-min-1", "20");
+await setInput("custom-max-1", "20");
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE"))
+    .click(),
+);
+const bCustomReviewed =
+  text().includes("B1 · FOREARMS") && text().includes("10–12 + 20");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "SAVE")
+    .click();
+  await flush();
+});
+
+await act(async () => assignmentCard("B1", "ABS 1").click());
+const fullAbsPool =
+  document.querySelectorAll('input[name="exercise"]').length === 11;
+await act(async () => document.querySelector('input[name="exercise"]').click());
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE"))
+    .click(),
+);
+const absProtocols =
+  document.querySelectorAll('input[name="protocol"]').length === 2 &&
+  !text().includes("REST-PAUSE");
+await act(async () =>
+  document.querySelector('input[value="timed_hold"]').click(),
+);
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE"))
+    .click(),
+);
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "SAVE")
+    .click();
+  await flush();
+});
+
+await act(async () => authCallback("SIGNED_OUT", null));
+await act(async () => {
+  authCallback("SIGNED_IN", session);
+  await flush();
+});
+await act(settleLoading);
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("ROTATION SETUP"))
+    .click();
+  await flush();
+});
+await act(settleLoading);
+const completeReload =
+  text().includes("Incline barbell press") &&
+  text().includes("Alternating hammer curl") &&
+  text().includes("10–12 + 20") &&
+  text().includes("High-pulley cable crunch") &&
+  text().includes("TIMED HOLD");
+const s02CloudBoundaries =
+  hasCall(
+    "rpc",
+    (call) =>
+      call[2]?.p_slot === "B1" &&
+      call[2]?.p_body_part === "forearms" &&
+      call[2]?.p_structure === "custom" &&
+      call[2]?.p_target_sets?.length === 2,
+  ) &&
+  hasCall(
+    "rpc",
+    (call) =>
+      call[2]?.p_slot === "B1" &&
+      call[2]?.p_body_part === "abs_1" &&
+      call[2]?.p_protocol === "timed_hold" &&
+      call[2]?.p_structure === "none",
+  );
+
+await act(async () => assignmentCard("B1", "CALVES").click());
+await act(async () => document.querySelector('input[name="exercise"]').click());
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE"))
+    .click(),
+);
+await act(async () =>
+  document.querySelector('input[value="straight_set"]').click(),
+);
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE"))
+    .click(),
+);
+await act(async () =>
+  document.querySelector('input[value="single-10-12"]').click(),
+);
+await act(async () =>
+  document
+    .querySelector('button[aria-label="CALVES structure information"]')
+    .click(),
+);
+const calfSheet = document.querySelector('[role="dialog"]');
+const calfInformationSheet =
+  calfSheet?.textContent.includes("Lower slowly over 5 seconds.") &&
+  calfSheet.textContent.includes("Hold the bottom position for 15 seconds.") &&
+  calfSheet.textContent.includes("Explode upward onto your toes.") &&
+  !calfSheet.textContent.toLowerCase().includes("countdown");
+await act(async () =>
+  document.querySelector('button[aria-label="CLOSE INFORMATION"]').click(),
+);
+assert.equal(document.querySelector('[role="dialog"]'), null);
+await act(async () =>
+  document
+    .querySelector('button[aria-label="CALVES structure information"]')
+    .click(),
+);
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("GOT IT"))
+    .click(),
+);
+assert.equal(document.querySelector('[role="dialog"]'), null);
+for (let index = 0; index < 3; index += 1)
+  await act(async () => document.querySelector("button.back-action").click());
 
 await act(async () => {
   [...document.querySelectorAll("button")]
@@ -635,19 +831,26 @@ const behavior = {
     hasCall("eq", (call) => call[1] === "user_id" && call[2] === "owner-1") &&
     signedOutReadBlocked,
   rotation_assignment_boundary:
-    hasCall("from", (call) => call[1] === "rotation_assignments") &&
+    hasCall("from", (call) => call[1] === "rotation_assignment_versions") &&
     hasCall(
-      "upsert",
+      "rpc",
       (call) =>
-        call[1] === "rotation_assignments" &&
-        call[2]?.user_id === "owner-1" &&
-        call[2]?.slot === "A1" &&
-        call[2]?.body_part === "chest" &&
-        call[2]?.protocol === "rest_pause" &&
-        call[2]?.target_min === 11 &&
-        call[2]?.target_max === 15 &&
-        call[3]?.onConflict === "user_id,slot",
+        call[1] === "save_rotation_assignment" &&
+        call[2]?.p_slot === "A1" &&
+        call[2]?.p_body_part === "chest" &&
+        call[2]?.p_protocol === "rest_pause" &&
+        call[2]?.p_structure === "11-15" &&
+        JSON.stringify(call[2]?.p_target_sets) ===
+          JSON.stringify([{ min: 11, max: 15 }]),
     ),
+  s02_rotation_setup:
+    bPoolMatched &&
+    bCustomReviewed &&
+    calfInformationSheet &&
+    fullAbsPool &&
+    absProtocols &&
+    completeReload &&
+    s02CloudBoundaries,
   recovery_failure_retained: recoveryFailureRetained,
   recovery_rejects_mismatch: recoveryMismatchRejected,
   recovery_rejects_short_password: recoveryShortPasswordRejected,
@@ -684,10 +887,24 @@ const behavior = {
   reconnect_refetched: reconnectRefetched && reconnected.includes("SYNCED"),
 };
 
+const a1Detail = {
+  approvedChestPool,
+  backPreserved,
+  emptyA1,
+  exerciseContinueDisabled,
+  protocolGuidance,
+  protocolInitiallyEmpty,
+  rangeInitiallyEmpty,
+  replacementClearsDownstream,
+  restoredAfterRemount,
+  reviewComplete,
+  savedExactlyOnce,
+};
+
 assert.deepEqual(
   Object.entries(behavior).filter(([, passed]) => !passed),
   [],
-  "Every A1 characterization behavior must pass",
+  `Every A1 characterization behavior must pass: ${JSON.stringify(a1Detail)}`,
 );
 
 process.stdout.write(

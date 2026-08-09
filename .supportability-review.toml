@@ -1,152 +1,95 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Preserve the qualified owner foundation and add one authenticated A1 chest assignment path with explicit exercise, protocol, and range selection, one cloud save, and restored state."
-proof = "tests/a1-assignment.e2e.mjs mounts the real React application, drives select-review-back-save-remount through the A1 UI, records one Supabase upsert keyed by owner and A1, and verifies restored state; the registered foundation characterization remains byte-stable."
+intended_behavior = "Preserve the qualified owner foundation and let the authenticated owner configure every locked A/B rotation slot plus the six fixed abs slots with explicit exercise, protocol, structure, review, replacement lineage, and restored state without starting a workout."
+proof = "tests/a1-assignment.e2e.mjs mounts the real React application and drives A1 rest-pause, B1 custom straight sets, timed abs, review/back/save/edit/reload, calf information-sheet dismissal, and remount restoration; tests/rotation-config.test.mjs verifies the complete locked order, pools, mappings, badges, and display labels."
 
 [characterization]
-captured_behavior = "The foundation behaviors remain and the owner can configure and restore one A1 chest assignment without preselected choices."
-proof = "The registered foundation characterization remains unchanged and passing; tests/a1-assignment.e2e.mjs separately mounts src/main.tsx, drives the full A1 assignment UI, verifies all nine approved chest exercises, preserves review-back state, records exactly one owner-keyed upsert, and remounts from cloud data."
+captured_behavior = "The foundation behaviors remain and the owner can configure and restore all 36 locked rotation and abs assignments without preselected choices."
+proof = "The registered characterization preserves the qualified foundation behavior; tests/a1-assignment.e2e.mjs mounts src/main.tsx and verifies the S02 setup flow, while tests/rotation-config.test.mjs verifies every locked configuration entry and mapping."
 
 [separation_of_concerns]
 before = "App owned session lifecycle, network listeners, profile authorization, route selection, and Home presentation; the Supabase module also parsed callback URLs."
 after = "App still selects authentication versus the signed-in surface; focused modules separately own signed-in surface selection, Home rendering, assignment client validation and calls, editor state, and flow rendering."
 
 [architecture]
-dependency_direction = "src/main.tsx mounts App; App composes authentication and FoundationHome and uses the Supabase client for callback handling; FoundationHome imports HomeScreen and RotationSetup; RotationSetup imports the assignment hook and RotationSetupView; the assignment hook uses the Supabase client for assignment persistence."
+dependency_direction = "src/main.tsx mounts App; App composes authentication and FoundationHome; FoundationHome selects HomeScreen or RotationSetup; RotationSetup composes focused editor-state, navigation, draft, presentation, and assignment boundaries; only the assignment hook reaches the Supabase client."
 reviewed_paths = [
-    "src/App.tsx",
-    "src/AuthScreens.tsx",
-    "src/FoundationHome.tsx",
-    "src/HomeScreen.tsx",
     "src/RotationSetup.tsx",
+    "src/RotationSetupFlow.tsx",
     "src/RotationSetupView.tsx",
-    "src/hooks/use-auth-session.ts",
-    "src/hooks/use-foundation-profile.ts",
-    "src/hooks/use-online.ts",
-    "src/hooks/use-owner-access.ts",
+    "src/hooks/use-rotation-editor.ts",
+    "src/hooks/use-rotation-flow.ts",
     "src/hooks/use-rotation-assignment.ts",
-    "src/index.css",
-    "src/lib/auth-actions.ts",
-    "src/lib/auth-callback.ts",
-    "src/lib/offline-owner-session.ts",
-    "src/lib/supabase.ts",
-    "src/main.tsx",
+    "src/rotation-assignment-draft.ts",
+    "src/rotation-config.ts",
 ]
 
 [responsibility_boundary]
-path = "src/App.tsx"
-owns = "Top-level authenticated screen selection and composition."
-does_not_own = "Assignment form state or persistence, auth forms or lifecycle, profile queries, Home presentation, Supabase construction, database policy, or future workout behavior."
+path = "src/rotation-config.ts"
+owns = "The fixed S02 rotation order, choices, mappings, badges, and instructional copy."
+does_not_own = "React state, rendering, Supabase calls, database policy, or workout execution."
 
 [incremental_refactor]
 target = "Correct the exact semantic findings without expanding the product scope."
-completed_step = "Added only the A1 chest assignment flow with focused signed-in routing, Home, assignment-data, editor-state, and flow-view modules."
+completed_step = "Expanded the existing setup flow and data boundary to the complete locked A/B rotation and six abs slots, using one fixed config module and one versioned save RPC."
 
 [review_handoff]
-summary = "Review the unchanged owner-access boundary plus focused signed-in routing, Home, assignment-data, editor-state, and A1 flow-view modules with real React characterization."
+summary = "Review the fixed rotation config, existing editor/view boundary, owner-scoped serialized assignment hook, three additive migrations, and real React characterization."
 remaining_risks = [
-    "Live Supabase RLS and deployed runtime evidence remain external to deterministic source characterization.",
+    "The retained legacy assignment table is temporary rollback compatibility and should be removed only after the new contract is proven in production.",
 ]
 
 [human_review]
-naming = "Each hook and auth action names one concrete responsibility; AuthScreens, FoundationHome, and auth-callback name their direct boundaries."
-cohesion = "Each changed module owns one boundary: signed-in routing, Home rendering, validated assignment client calls, editor state/navigation, or flow rendering."
-intended_behavior = "Qualified owner foundation remains; authenticated owner gains exactly one A1 chest assignment path with explicit choices and durable restoration."
-reviewability = "The change is limited to focused signed-in UI/data modules, one migration, and focused characterization; no dependency or generalized workout model was added."
-
-[[module_boundaries]]
-path = "src/App.tsx"
-owner_path = "src/App.tsx"
-basis = "responsibility"
-justification = "Owns top-level screen selection and composition only."
-
-[[module_boundaries]]
-path = "src/AuthScreens.tsx"
-owner_path = "src/AuthScreens.tsx"
-basis = "responsibility"
-justification = "Owns authentication and recovery form presentation, local form state, and input validation while delegating client workflows."
-
-[[module_boundaries]]
-path = "src/FoundationHome.tsx"
-owner_path = "src/FoundationHome.tsx"
-basis = "responsibility"
-justification = "Owns signed-in selection between HomeScreen and RotationSetup only."
-
-[[module_boundaries]]
-path = "src/HomeScreen.tsx"
-owner_path = "src/HomeScreen.tsx"
-basis = "responsibility"
-justification = "Owns signed-in Home and network-status presentation only."
+naming = "The changed config, setup component, controlled view, and assignment hook name their direct responsibilities."
+cohesion = "The config contains fixed choices; the draft module derives valid targets; focused hooks own editor state and navigation; RotationSetup wires save orchestration; RotationSetupFlow routes screens; RotationSetupView presents them; the assignment hook owns validated cloud calls."
+intended_behavior = "Qualified owner foundation remains; authenticated owner gains the complete fixed S02 rotation and abs setup with durable replacement history."
+reviewability = "The change reuses the existing setup modules, adds one fixed config module, three additive migrations, and focused checks; no dependency or workout execution model was added."
 
 [[module_boundaries]]
 path = "src/RotationSetup.tsx"
 owner_path = "src/RotationSetup.tsx"
 basis = "responsibility"
-justification = "Owns A1 editor state, validation, and navigation while delegating data access and rendering."
+justification = "Owns setup-boundary composition and save orchestration while delegating editor state, edit hydration, navigation, draft validation, routing, fixed data, persistence, and rendering."
+
+[[module_boundaries]]
+path = "src/RotationSetupFlow.tsx"
+owner_path = "src/RotationSetupFlow.tsx"
+basis = "responsibility"
+justification = "Owns setup-screen route selection only and delegates every screen's presentation."
 
 [[module_boundaries]]
 path = "src/RotationSetupView.tsx"
 owner_path = "src/RotationSetupView.tsx"
 basis = "responsibility"
-justification = "Owns controlled A1 flow presentation only."
+justification = "Owns controlled rotation and abs setup presentation only."
+
+[[module_boundaries]]
+path = "src/hooks/use-rotation-editor.ts"
+owner_path = "src/hooks/use-rotation-editor.ts"
+basis = "responsibility"
+justification = "Owns rotation editor field state, selection mutations, and saved-assignment hydration only."
+
+[[module_boundaries]]
+path = "src/hooks/use-rotation-flow.ts"
+owner_path = "src/hooks/use-rotation-flow.ts"
+basis = "responsibility"
+justification = "Owns the setup screen state and navigation transitions only."
 
 [[module_boundaries]]
 path = "src/hooks/use-rotation-assignment.ts"
 owner_path = "src/hooks/use-rotation-assignment.ts"
 basis = "responsibility"
-justification = "Owns validation, loading, and persistence of the current owner's A1 assignment."
+justification = "Owns returned-row validation, loading, and versioned persistence of the current owner's rotation assignments."
 
 [[module_boundaries]]
-path = "src/hooks/use-auth-session.ts"
-owner_path = "src/hooks/use-auth-session.ts"
+path = "src/rotation-assignment-draft.ts"
+owner_path = "src/rotation-assignment-draft.ts"
 basis = "responsibility"
-justification = "Owns Supabase session lifecycle and recovery state."
+justification = "Owns editable-target conversion, numeric target validation, and assignment-draft derivation."
 
 [[module_boundaries]]
-path = "src/hooks/use-foundation-profile.ts"
-owner_path = "src/hooks/use-foundation-profile.ts"
+path = "src/rotation-config.ts"
+owner_path = "src/rotation-config.ts"
 basis = "responsibility"
-justification = "Owns the current-user foundation-profile query and its cloud and synchronization presentation state."
-
-[[module_boundaries]]
-path = "src/hooks/use-owner-access.ts"
-owner_path = "src/hooks/use-owner-access.ts"
-basis = "responsibility"
-justification = "Owns online and offline owner-access state plus local sign-out enforcement while delegating profile loading and token verification."
-
-[[module_boundaries]]
-path = "src/hooks/use-online.ts"
-owner_path = "src/hooks/use-online.ts"
-basis = "responsibility"
-justification = "Owns browser connectivity observation."
-
-[[module_boundaries]]
-path = "src/lib/auth-actions.ts"
-owner_path = "src/lib/auth-actions.ts"
-basis = "responsibility"
-justification = "Owns focused Supabase owner-authentication client workflows without UI state or presentation."
-
-[[module_boundaries]]
-path = "src/lib/auth-callback.ts"
-owner_path = "src/lib/auth-callback.ts"
-basis = "responsibility"
-justification = "Owns initial authentication callback parsing."
-
-[[module_boundaries]]
-path = "src/lib/offline-owner-session.ts"
-owner_path = "src/lib/offline-owner-session.ts"
-basis = "responsibility"
-justification = "Owns fail-closed verification of a cached session against build-pinned Supabase signing keys, issuer, audience, expiry, role, anonymity, and owner subject."
-
-[[module_boundaries]]
-path = "src/lib/supabase.ts"
-owner_path = "src/lib/supabase.ts"
-basis = "responsibility"
-justification = "Owns browser-safe Supabase client construction and public environment configuration, including the pinned JWKS and owner-subject digest."
-
-[[module_boundaries]]
-path = "src/main.tsx"
-owner_path = "src/main.tsx"
-basis = "responsibility"
-justification = "Owns React root creation and top-level application mounting."
+justification = "Owns the fixed S02 order, exercise pools, protocols, structure choices, muscle mappings, badges, and protocol information copy."

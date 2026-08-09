@@ -1,136 +1,89 @@
-import { useState } from "react";
-import RotationSetupView from "./RotationSetupView.jsx";
+import RotationSetupFlow from "./RotationSetupFlow.jsx";
+import { EXERCISES, categoryFor, protocolChoices } from "./rotation-config.js";
 import {
-  CHEST_EXERCISES,
-  useRotationAssignment,
-  type Protocol,
+  assignmentKey,
+  useRotationAssignments,
 } from "./hooks/use-rotation-assignment.js";
+import { useRotationEditor } from "./hooks/use-rotation-editor.js";
+import { useRotationFlow } from "./hooks/use-rotation-flow.js";
+import { resolveAssignmentDraft } from "./rotation-assignment-draft.js";
 
-type ChestExercise = (typeof CHEST_EXERCISES)[number];
-export type RangeChoice = "11-15" | "15-20" | "custom";
-export type Screen = "setup" | "exercise" | "protocol" | "range" | "review";
-const POSTGRES_INTEGER_MAX = 2_147_483_647;
-
-type RotationSetupProps = {
-  onBack: () => void;
-  userId: string;
-};
-
-function targetRange(
-  rangeChoice: RangeChoice | "",
-  customMin: string,
-  customMax: string,
-) {
-  if (rangeChoice === "11-15") return [11, 15];
-  if (rangeChoice === "15-20") return [15, 20];
-  return [Number(customMin), Number(customMax)];
-}
-
-function validRange(rangeChoice: RangeChoice | "", target: number[]) {
-  if (rangeChoice === "11-15" || rangeChoice === "15-20") return true;
-  return (
-    rangeChoice === "custom" &&
-    Number.isInteger(target[0]) &&
-    Number.isInteger(target[1]) &&
-    target[0] > 0 &&
-    target[0] <= POSTGRES_INTEGER_MAX &&
-    target[1] <= POSTGRES_INTEGER_MAX &&
-    target[1] >= target[0]
-  );
-}
+type RotationSetupProps = { onBack: () => void; userId: string };
 
 function RotationSetup({ onBack, userId }: RotationSetupProps) {
-  const [screen, setScreen] = useState<Screen>("setup");
-  const [exercise, setExercise] = useState<ChestExercise | "">("");
-  const [protocol, setProtocol] = useState<Protocol | "">("");
-  const [rangeChoice, setRangeChoice] = useState<RangeChoice | "">("");
-  const [customMin, setCustomMin] = useState("");
-  const [customMax, setCustomMax] = useState("");
-  const [showProtocolInfo, setShowProtocolInfo] = useState(false);
   const { loadState, message, saved, saveAssignment, saving } =
-    useRotationAssignment(userId);
+    useRotationAssignments(userId);
+  const editor = useRotationEditor(saved);
+  const { availableStructures, structureValid, targets } =
+    resolveAssignmentDraft(
+      editor.position,
+      editor.exercise,
+      editor.protocol,
+      editor.structure,
+      editor.customTargets,
+    );
+  const flow = useRotationFlow(availableStructures.length > 0);
+  const assignment = saved[assignmentKey(editor.slot, editor.position)] ?? null;
 
-  const target = targetRange(rangeChoice, customMin, customMax);
-  const rangeValid = validRange(rangeChoice, target);
-
-  const selectProtocol = (next: Protocol) => {
-    if (next !== protocol) {
-      setRangeChoice("");
-      setCustomMin("");
-      setCustomMax("");
-    }
-    setProtocol(next);
-  };
-
-  const selectExercise = (next: ChestExercise) => {
-    if (next !== exercise) {
-      setProtocol("");
-      setRangeChoice("");
-      setCustomMin("");
-      setCustomMax("");
-    }
-    setExercise(next);
-  };
-
-  const editAssignment = () => {
-    if (saved) {
-      setExercise(saved.exercise);
-      setProtocol(saved.protocol);
-      if (saved.protocol === "rest_pause") {
-        const preset = `${saved.target_min}-${saved.target_max}`;
-        if (preset === "11-15" || preset === "15-20") {
-          setRangeChoice(preset);
-        } else {
-          setRangeChoice("custom");
-          setCustomMin(String(saved.target_min));
-          setCustomMax(String(saved.target_max));
-        }
-      }
-    }
-    setScreen("exercise");
+  const editAssignment: typeof editor.editAssignment = (slot, position) => {
+    editor.editAssignment(slot, position);
+    flow.beginEdit();
   };
 
   const save = async () => {
-    if (!exercise || !protocol || (protocol === "rest_pause" && !rangeValid))
+    if (
+      !editor.exercise ||
+      !editor.protocol ||
+      !structureValid ||
+      !(await saveAssignment(
+        editor.slot,
+        editor.position,
+        editor.exercise,
+        editor.protocol,
+        availableStructures.length ? editor.structure : "none",
+        targets,
+      ))
+    )
       return;
-    if (await saveAssignment(exercise, protocol, target)) setScreen("setup");
+    flow.saveCompleted();
   };
 
   return (
-    <RotationSetupView
-      customMax={customMax}
-      customMin={customMin}
+    <RotationSetupFlow
+      assignment={assignment}
+      availableExercises={EXERCISES[categoryFor(editor.position)]}
+      availableProtocols={protocolChoices(editor.position, editor.exercise)}
+      availableStructures={availableStructures}
+      customTargets={editor.customTargets}
       editAssignment={editAssignment}
-      exercise={exercise}
+      exercise={editor.exercise}
       loadState={loadState}
       message={message}
       onBack={onBack}
-      onExerciseBack={() => setScreen("setup")}
-      onExerciseContinue={() => setScreen("protocol")}
-      onProtocolBack={() => setScreen("exercise")}
-      onProtocolContinue={() =>
-        setScreen(protocol === "rest_pause" ? "range" : "review")
-      }
-      onRangeBack={() => setScreen("protocol")}
-      onRangeContinue={() => setScreen("review")}
-      onReviewBack={() =>
-        setScreen(protocol === "rest_pause" ? "range" : "protocol")
-      }
-      protocol={protocol}
-      rangeChoice={rangeChoice}
-      rangeValid={rangeValid}
-      saved={saved}
+      onExerciseBack={flow.onExerciseBack}
+      onExerciseContinue={flow.onExerciseContinue}
+      onProtocolBack={flow.onProtocolBack}
+      onProtocolContinue={flow.onProtocolContinue}
+      onReviewBack={flow.onReviewBack}
+      onStructureBack={flow.onStructureBack}
+      onStructureContinue={flow.onStructureContinue}
+      position={editor.position}
+      protocol={editor.protocol}
       save={save}
+      saved={saved}
       saving={saving}
-      screen={screen}
-      selectExercise={selectExercise}
-      selectProtocol={selectProtocol}
-      setCustomMax={setCustomMax}
-      setCustomMin={setCustomMin}
-      setRangeChoice={setRangeChoice}
-      setShowProtocolInfo={setShowProtocolInfo}
-      showProtocolInfo={showProtocolInfo}
-      target={target}
+      screen={flow.screen}
+      selectExercise={editor.selectExercise}
+      selectProtocol={editor.selectProtocol}
+      selectStructure={editor.selectStructure}
+      setCustomSetCount={editor.setCustomSetCount}
+      setShowProtocolInfo={editor.setShowProtocolInfo}
+      showProtocolInfo={editor.showProtocolInfo}
+      slot={editor.slot}
+      structure={editor.structure}
+      structureValid={structureValid}
+      targets={targets}
+      updateCustomTarget={editor.updateCustomTarget}
     />
   );
 }
