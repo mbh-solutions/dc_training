@@ -47,13 +47,15 @@ simplified_functions = [
     "RotationSetupView.renderSetup",
     "Shell",
     "formatTargetRange",
+    "hasFixedA1Fields",
+    "hasValidTargets",
     "isAssignment",
     "protocolLabel",
     "targetRange",
     "useRotationAssignment",
-    "useRotationAssignment.anonymous@60:13",
-    "useRotationAssignment.anonymous@60:13.anonymous@68:13",
-    "useRotationAssignment.anonymous@60:13.anonymous@78:12",
+    "useRotationAssignment.anonymous@66:13",
+    "useRotationAssignment.anonymous@66:13.anonymous@74:13",
+    "useRotationAssignment.anonymous@66:13.anonymous@84:12",
     "useRotationAssignment.saveAssignment",
     "validRange",
 ]
@@ -84,9 +86,9 @@ gate_coverage = [
 [[completion_report.claims]]
 id = "claim-a1-owner-boundary"
 text = "The authenticated user identifier supplied by App is passed to RotationSetup, which filters reads by that owner and writes the same owner identifier in the single A1 upsert."
-citations = ["src/App.tsx:50-58", "src/FoundationHome.tsx:17-23", "src/hooks/use-rotation-assignment.ts:52-102", "src/RotationSetup.tsx:94-105"]
+citations = ["src/App.tsx:50-58", "src/FoundationHome.tsx:17-23", "src/hooks/use-rotation-assignment.ts:58-108", "src/RotationSetup.tsx:94-105"]
 
 [[completion_report.claims]]
 id = "claim-a1-explicit-contract"
 text = "A1 offers only the nine fixed chest exercises, explicit rest-pause or straight-set protocols, and validated preset or positive-integer custom rest-pause ranges before review."
-citations = ["src/hooks/use-rotation-assignment.ts:4-49", "src/RotationSetup.tsx:20-41", "src/RotationSetupView.tsx:405-485"]
+citations = ["src/hooks/use-rotation-assignment.ts:4-57", "src/RotationSetup.tsx:20-41", "src/RotationSetupView.tsx:405-485"]
