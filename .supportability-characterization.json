@@ -5,17 +5,21 @@
         "src/App.tsx",
         "src/AuthScreens.tsx",
         "src/FoundationHome.tsx",
+        "src/HomeScreen.tsx",
+        "src/RotationSetup.tsx",
+        "src/RotationSetupView.tsx",
         "src/hooks/use-auth-session.ts",
         "src/hooks/use-foundation-profile.ts",
         "src/hooks/use-online.ts",
         "src/hooks/use-owner-access.ts",
+        "src/hooks/use-rotation-assignment.ts",
         "src/lib/auth-actions.ts",
         "src/lib/auth-callback.ts",
         "src/lib/offline-owner-session.ts",
         "src/lib/supabase.ts",
         "src/main.tsx"
       ],
-      "id": "foundation-shell",
+      "id": "foundation-shell-v2",
       "kind": "regression"
     }
   ],

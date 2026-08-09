@@ -10,18 +10,22 @@ proof = "The registered foundation characterization remains unchanged and passin
 
 [separation_of_concerns]
 before = "App owned session lifecycle, network listeners, profile authorization, route selection, and Home presentation; the Supabase module also parsed callback URLs."
-after = "App still selects authentication versus the signed-in surface; FoundationHome selects Home versus A1 setup; HomeScreen renders Home; useRotationAssignment owns assignment client calls; RotationSetup owns editor state; RotationSetupView renders the flow."
+after = "App still selects authentication versus the signed-in surface; focused modules separately own signed-in surface selection, Home rendering, assignment client validation and calls, editor state, and flow rendering."
 
 [architecture]
-dependency_direction = "src/main.tsx mounts App; App composes authentication and FoundationHome; FoundationHome delegates Home rendering, assignment client calls, editor state, and flow rendering to focused same-file boundaries; foundation hooks retain their existing leaf dependencies."
+dependency_direction = "src/main.tsx mounts App; App composes authentication and FoundationHome; FoundationHome imports HomeScreen and RotationSetup; RotationSetup imports the assignment hook and RotationSetupView; only the assignment hook imports the Supabase client."
 reviewed_paths = [
     "src/App.tsx",
     "src/AuthScreens.tsx",
     "src/FoundationHome.tsx",
+    "src/HomeScreen.tsx",
+    "src/RotationSetup.tsx",
+    "src/RotationSetupView.tsx",
     "src/hooks/use-auth-session.ts",
     "src/hooks/use-foundation-profile.ts",
     "src/hooks/use-online.ts",
     "src/hooks/use-owner-access.ts",
+    "src/hooks/use-rotation-assignment.ts",
     "src/index.css",
     "src/lib/auth-actions.ts",
     "src/lib/auth-callback.ts",
@@ -37,19 +41,19 @@ does_not_own = "Assignment form state or persistence, auth forms or lifecycle, p
 
 [incremental_refactor]
 target = "Correct the exact semantic findings without expanding the product scope."
-completed_step = "Added only the A1 chest assignment flow with focused Home, assignment-data, editor-state, and flow-view boundaries, reusing the existing shell, CSS, Supabase client, and owner authorization boundary."
+completed_step = "Added only the A1 chest assignment flow with focused signed-in routing, Home, assignment-data, editor-state, and flow-view modules."
 
 [review_handoff]
-summary = "Review the unchanged owner-access boundary plus focused Home, assignment-data, editor-state, and A1 flow-view boundaries with real React characterization."
+summary = "Review the unchanged owner-access boundary plus focused signed-in routing, Home, assignment-data, editor-state, and A1 flow-view modules with real React characterization."
 remaining_risks = [
     "Live Supabase RLS and deployed runtime evidence remain external to deterministic source characterization.",
 ]
 
 [human_review]
 naming = "Each hook and auth action names one concrete responsibility; AuthScreens, FoundationHome, and auth-callback name their direct boundaries."
-cohesion = "App composes; FoundationHome routes signed-in surfaces; HomeScreen renders Home; useRotationAssignment owns assignment client calls; RotationSetup owns editor state; RotationSetupView renders the flow."
+cohesion = "Each changed module owns one boundary: signed-in routing, Home rendering, validated assignment client calls, editor state/navigation, or flow rendering."
 intended_behavior = "Qualified owner foundation remains; authenticated owner gains exactly one A1 chest assignment path with explicit choices and durable restoration."
-reviewability = "The change is limited to the existing signed-in component, one migration, and focused characterization; no dependency or generalized workout model was added."
+reviewability = "The change is limited to focused signed-in UI/data modules, one migration, and focused characterization; no dependency or generalized workout model was added."
 
 [[module_boundaries]]
 path = "src/App.tsx"
@@ -67,7 +71,31 @@ justification = "Owns authentication and recovery form presentation, local form 
 path = "src/FoundationHome.tsx"
 owner_path = "src/FoundationHome.tsx"
 basis = "responsibility"
-justification = "Owns signed-in selection between HomeScreen and RotationSetup; focused same-file boundaries own rendering, editor state, and assignment client calls."
+justification = "Owns signed-in selection between HomeScreen and RotationSetup only."
+
+[[module_boundaries]]
+path = "src/HomeScreen.tsx"
+owner_path = "src/HomeScreen.tsx"
+basis = "responsibility"
+justification = "Owns signed-in Home and network-status presentation only."
+
+[[module_boundaries]]
+path = "src/RotationSetup.tsx"
+owner_path = "src/RotationSetup.tsx"
+basis = "responsibility"
+justification = "Owns A1 editor state, validation, and navigation while delegating data access and rendering."
+
+[[module_boundaries]]
+path = "src/RotationSetupView.tsx"
+owner_path = "src/RotationSetupView.tsx"
+basis = "responsibility"
+justification = "Owns controlled A1 flow presentation only."
+
+[[module_boundaries]]
+path = "src/hooks/use-rotation-assignment.ts"
+owner_path = "src/hooks/use-rotation-assignment.ts"
+basis = "responsibility"
+justification = "Owns validation, loading, and persistence of the current owner's A1 assignment."
 
 [[module_boundaries]]
 path = "src/hooks/use-auth-session.ts"

@@ -3,10 +3,13 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 test("A1 assignment uses only the approved chest pool and explicit ranges", () => {
-  const source = readFileSync(
-    new URL("../src/FoundationHome.tsx", import.meta.url),
-    "utf8",
-  );
+  const source = [
+    "../src/RotationSetup.tsx",
+    "../src/RotationSetupView.tsx",
+    "../src/hooks/use-rotation-assignment.ts",
+  ]
+    .map((path) => readFileSync(new URL(path, import.meta.url), "utf8"))
+    .join("\n");
   const chestPool = source.match(
     /const CHEST_EXERCISES = \[([\s\S]*?)\] as const;/,
   )?.[1];
