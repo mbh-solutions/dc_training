@@ -96,6 +96,7 @@ simplified_functions = [
     "validWorkout",
     "validWorkoutStep",
     "weightMicrograms",
+    "workoutStateError",
 ]
 boundary_rationale = [
     "WorkoutTracer renders controlled A1 screens without reaching Supabase.",
@@ -126,12 +127,12 @@ gate_coverage = [
 [[completion_report.claims]]
 id = "claim-owner-workout-boundary"
 text = "The client loads only the authenticated owner's rotation and in-progress workout state, validates returned rows, and invokes focused start, save, and undo RPCs."
-citations = ["src/workout-api.ts:27-75", "src/workout-api.ts:77-156", "src/workout-domain.ts:35-174", "supabase/migrations/20260809133046_create_a1_workouts.sql:73-91"]
+citations = ["src/workout-api.ts:27-75", "src/workout-api.ts:77-152"]
 
 [[completion_report.claims]]
 id = "claim-exact-weight-conversion"
 text = "Weight conversion parses allowed decimal increments into integer micrograms and derives display rounding from that canonical integer value."
-citations = ["src/weight-conversion.ts:7-42"]
+citations = ["src/weight-conversion.ts:7-34"]
 
 [[completion_report.claims]]
 id = "claim-workout-presentation"
