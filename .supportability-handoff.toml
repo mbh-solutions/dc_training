@@ -6,7 +6,7 @@ base_sha = "7d64356fc530dd3dcc65ca13fe858f928ddd13ee"
 overall_result = "PASS"
 responsibility_changes = [
     "rotation-config centralizes the fixed A/B and abs setup contract while existing setup modules keep state and presentation separate.",
-    "rotation-assignment-draft owns target conversion and validation while RotationSetupFlow owns screen routing.",
+    "rotation-assignment-draft owns target conversion and validation, focused hooks own editor state and navigation, and RotationSetupFlow owns screen routing.",
     "useRotationAssignments validates returned versioned rows and performs loading and persistence through one security-invoker RPC.",
     "The additive migrations enforce replacement lineage, active-version uniqueness, RLS, validation, the lineage index, and per-assignment save serialization.",
 ]
@@ -97,7 +97,7 @@ simplified_functions = [
 ]
 boundary_rationale = [
     "rotation-config contains fixed domain choices without React state, rendering, or cloud calls.",
-    "The assignment hook performs validated Supabase calls; the draft module validates targets; RotationSetup keeps editor state and navigation; RotationSetupFlow routes; RotationSetupView presents each screen.",
+    "The assignment hook performs validated Supabase calls; focused editor and flow hooks own state and navigation; RotationSetup wires save orchestration; RotationSetupFlow routes; RotationSetupView presents each screen.",
 ]
 remaining_risks = [
     "Live production deployment evidence remains external to deterministic source characterization until the protected merge deploys.",

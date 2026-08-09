@@ -25,6 +25,8 @@
     {
       "covers": [
         "src/RotationSetupFlow.tsx",
+        "src/hooks/use-rotation-editor.ts",
+        "src/hooks/use-rotation-flow.ts",
         "src/rotation-assignment-draft.ts",
         "src/rotation-config.ts"
       ],

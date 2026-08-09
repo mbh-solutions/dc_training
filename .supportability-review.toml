@@ -13,11 +13,13 @@ before = "App owned session lifecycle, network listeners, profile authorization,
 after = "App still selects authentication versus the signed-in surface; focused modules separately own signed-in surface selection, Home rendering, assignment client validation and calls, editor state, and flow rendering."
 
 [architecture]
-dependency_direction = "src/main.tsx mounts App; App composes authentication and FoundationHome; FoundationHome selects HomeScreen or RotationSetup; RotationSetup delegates draft validation to rotation-assignment-draft, screen routing to RotationSetupFlow, presentation to RotationSetupView, and persistence to the assignment hook; the hook calls the security-invoker save RPC through the Supabase client."
+dependency_direction = "src/main.tsx mounts App; App composes authentication and FoundationHome; FoundationHome selects HomeScreen or RotationSetup; RotationSetup composes focused editor-state, navigation, draft, presentation, and assignment boundaries; only the assignment hook reaches the Supabase client."
 reviewed_paths = [
     "src/RotationSetup.tsx",
     "src/RotationSetupFlow.tsx",
     "src/RotationSetupView.tsx",
+    "src/hooks/use-rotation-editor.ts",
+    "src/hooks/use-rotation-flow.ts",
     "src/hooks/use-rotation-assignment.ts",
     "src/rotation-assignment-draft.ts",
     "src/rotation-config.ts",
@@ -40,7 +42,7 @@ remaining_risks = [
 
 [human_review]
 naming = "The changed config, setup component, controlled view, and assignment hook name their direct responsibilities."
-cohesion = "The config contains fixed choices; the draft module owns target derivation and validation; RotationSetup owns editor state; RotationSetupFlow routes screens; RotationSetupView presents them; the hook owns validated cloud calls."
+cohesion = "The config contains fixed choices; the draft module derives valid targets; focused hooks own editor state and navigation; RotationSetup wires save orchestration; RotationSetupFlow routes screens; RotationSetupView presents them; the assignment hook owns validated cloud calls."
 intended_behavior = "Qualified owner foundation remains; authenticated owner gains the complete fixed S02 rotation and abs setup with durable replacement history."
 reviewability = "The change reuses the existing setup modules, adds one fixed config module, three additive migrations, and focused checks; no dependency or workout execution model was added."
 
@@ -48,7 +50,7 @@ reviewability = "The change reuses the existing setup modules, adds one fixed co
 path = "src/RotationSetup.tsx"
 owner_path = "src/RotationSetup.tsx"
 basis = "responsibility"
-justification = "Owns rotation editor state, navigation, edit selection, and save orchestration while delegating draft validation, routing, fixed data, persistence, and rendering."
+justification = "Owns setup-boundary composition and save orchestration while delegating editor state, edit hydration, navigation, draft validation, routing, fixed data, persistence, and rendering."
 
 [[module_boundaries]]
 path = "src/RotationSetupFlow.tsx"
@@ -61,6 +63,18 @@ path = "src/RotationSetupView.tsx"
 owner_path = "src/RotationSetupView.tsx"
 basis = "responsibility"
 justification = "Owns controlled rotation and abs setup presentation only."
+
+[[module_boundaries]]
+path = "src/hooks/use-rotation-editor.ts"
+owner_path = "src/hooks/use-rotation-editor.ts"
+basis = "responsibility"
+justification = "Owns rotation editor field state, selection mutations, and saved-assignment hydration only."
+
+[[module_boundaries]]
+path = "src/hooks/use-rotation-flow.ts"
+owner_path = "src/hooks/use-rotation-flow.ts"
+basis = "responsibility"
+justification = "Owns the setup screen state and navigation transitions only."
 
 [[module_boundaries]]
 path = "src/hooks/use-rotation-assignment.ts"

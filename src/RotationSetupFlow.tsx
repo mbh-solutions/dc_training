@@ -6,8 +6,7 @@ import {
   StructureScreen,
   type Props,
 } from "./RotationSetupView.jsx";
-
-export type Screen = "setup" | "exercise" | "protocol" | "structure" | "review";
+import type { Screen } from "./hooks/use-rotation-flow.js";
 
 function RotationSetupFlow(props: Props & { screen: Screen }) {
   if (props.screen === "setup") return <SetupScreen {...props} />;
