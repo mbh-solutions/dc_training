@@ -13,7 +13,7 @@ before = "App owned session lifecycle, network listeners, profile authorization,
 after = "App still selects authentication versus the signed-in surface; focused modules separately own signed-in surface selection, Home rendering, assignment client validation and calls, editor state, and flow rendering."
 
 [architecture]
-dependency_direction = "src/main.tsx mounts App; App composes authentication and FoundationHome; FoundationHome imports HomeScreen and RotationSetup; RotationSetup imports the assignment hook and RotationSetupView; only the assignment hook imports the Supabase client."
+dependency_direction = "src/main.tsx mounts App; App composes authentication and FoundationHome and uses the Supabase client for callback handling; FoundationHome imports HomeScreen and RotationSetup; RotationSetup imports the assignment hook and RotationSetupView; the assignment hook uses the Supabase client for assignment persistence."
 reviewed_paths = [
     "src/App.tsx",
     "src/AuthScreens.tsx",
