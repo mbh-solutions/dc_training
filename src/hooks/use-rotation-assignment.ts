@@ -11,6 +11,7 @@ import {
   type TargetSet,
   type WorkoutSlot,
 } from "../rotation-config.js";
+import { validTargetSets } from "../rotation-assignment-draft.js";
 import { supabase } from "../lib/supabase.js";
 
 export type Assignment = {
@@ -25,28 +26,8 @@ export type Assignment = {
   target_sets: TargetSet[];
 };
 
-const POSTGRES_INTEGER_MAX = 2_147_483_647;
-
 export function assignmentKey(slot: WorkoutSlot, position: AssignmentPosition) {
   return `${slot}:${position}`;
-}
-
-export function validTargetSets(value: unknown): value is TargetSet[] {
-  return (
-    Array.isArray(value) &&
-    value.length <= 10 &&
-    value.every(
-      (target) =>
-        target &&
-        typeof target === "object" &&
-        Number.isInteger((target as TargetSet).min) &&
-        Number.isInteger((target as TargetSet).max) &&
-        (target as TargetSet).min > 0 &&
-        (target as TargetSet).min <= POSTGRES_INTEGER_MAX &&
-        (target as TargetSet).max <= POSTGRES_INTEGER_MAX &&
-        (target as TargetSet).max >= (target as TargetSet).min,
-    )
-  );
 }
 
 function isAssignment(value: unknown): value is Assignment {

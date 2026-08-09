@@ -14,9 +14,7 @@ import {
   assignmentKey,
   type Assignment,
 } from "./hooks/use-rotation-assignment.js";
-import type { Screen } from "./RotationSetup.js";
-
-type DraftTarget = { max: string; min: string };
+import type { DraftTarget } from "./rotation-assignment-draft.js";
 
 const rotationStyles = `
 .rotation-shell { display: flex; flex-direction: column; }
@@ -62,7 +60,7 @@ const rotationStyles = `
 .flow-action { margin-top: 28px; }
 `;
 
-type Props = {
+export type Props = {
   assignment: Assignment | null;
   availableExercises: readonly string[];
   availableProtocols: readonly Choice[];
@@ -85,7 +83,6 @@ type Props = {
   save: () => Promise<void>;
   saved: Record<string, Assignment>;
   saving: boolean;
-  screen: Screen;
   selectExercise: (exercise: string) => void;
   selectProtocol: (protocol: Protocol) => void;
   selectStructure: (structure: string) => void;
@@ -103,136 +100,132 @@ type Props = {
   ) => void;
 };
 
-function RotationSetupView(props: Props) {
+export function ExerciseScreen(props: Props) {
   const subtitle = `${props.slot} · ${positionLabel(props.position)}`;
-
-  if (props.screen === "setup") return <SetupScreen {...props} />;
-
-  if (props.screen === "exercise")
-    return (
-      <Shell
-        title="SELECT EXERCISE"
-        subtitle={subtitle}
-        onBack={props.onExerciseBack}
+  return (
+    <Shell
+      title="SELECT EXERCISE"
+      subtitle={subtitle}
+      onBack={props.onExerciseBack}
+    >
+      <ChoiceList
+        name="exercise"
+        options={props.availableExercises.map((label) => ({
+          label,
+          value: label,
+        }))}
+        selected={props.exercise}
+        onSelect={props.selectExercise}
+      />
+      <FooterButton
+        disabled={!props.exercise}
+        onClick={props.onExerciseContinue}
       >
-        <ChoiceList
-          name="exercise"
-          options={props.availableExercises.map((label) => ({
-            label,
-            value: label,
-          }))}
-          selected={props.exercise}
-          onSelect={props.selectExercise}
-        />
-        <FooterButton
-          disabled={!props.exercise}
-          onClick={props.onExerciseContinue}
-        >
-          CONTINUE
-        </FooterButton>
-      </Shell>
-    );
+        CONTINUE
+      </FooterButton>
+    </Shell>
+  );
+}
 
-  if (props.screen === "protocol") {
-    const info = protocolInfo(props.position, props.exercise);
-    return (
-      <Shell
-        title="SET PROTOCOL"
-        subtitle={subtitle}
-        onBack={props.onProtocolBack}
-      >
-        <h2 className="exercise-heading">{props.exercise}</h2>
-        <p className="section-label rotation-label">PROTOCOL</p>
-        {info && (
-          <>
-            <button
-              className="info-action"
-              type="button"
-              aria-label={`${positionLabel(props.position)} protocol information`}
-              onClick={() => props.setShowProtocolInfo((shown) => !shown)}
-            >
-              ⓘ
-            </button>
-            <InfoSheet
-              info={info}
-              open={props.showProtocolInfo}
-              onClose={() => props.setShowProtocolInfo(() => false)}
-            />
-          </>
-        )}
-        <ChoiceList
-          name="protocol"
-          options={props.availableProtocols}
-          selected={props.protocol}
-          onSelect={(value) => props.selectProtocol(value as Protocol)}
-        />
-        <FooterButton
-          disabled={!props.protocol}
-          onClick={props.onProtocolContinue}
-        >
-          CONTINUE
-        </FooterButton>
-      </Shell>
-    );
-  }
-
-  if (props.screen === "structure")
-    return (() => {
-      const info = props.availableStructures.find(
-        (choice) => choice.value === props.structure,
-      )?.info;
-      return (
-        <Shell
-          title={
-            props.protocol === "rest_pause"
-              ? "SET TARGET RANGE"
-              : "SET STRUCTURE"
-          }
-          subtitle={subtitle}
-          onBack={props.onStructureBack}
-        >
-          <h2 className="exercise-heading">{props.exercise}</h2>
-          <ChoiceList
-            name="structure"
-            options={props.availableStructures}
-            selected={props.structure}
-            onSelect={props.selectStructure}
-          />
-          {info && (
-            <>
-              <button
-                className="info-action"
-                type="button"
-                aria-label={`${positionLabel(props.position)} structure information`}
-                onClick={() => props.setShowProtocolInfo((shown) => !shown)}
-              >
-                ⓘ
-              </button>
-              <InfoSheet
-                info={info}
-                open={props.showProtocolInfo}
-                onClose={() => props.setShowProtocolInfo(() => false)}
-              />
-            </>
-          )}
-          {props.structure === "custom" && (
-            <CustomTargets
-              protocol={props.protocol as Protocol}
-              targets={props.customTargets}
-              setCount={props.setCustomSetCount}
-              update={props.updateCustomTarget}
-            />
-          )}
-          <FooterButton
-            disabled={!props.structureValid}
-            onClick={props.onStructureContinue}
+export function ProtocolScreen(props: Props) {
+  const info = protocolInfo(props.position, props.exercise);
+  return (
+    <Shell
+      title="SET PROTOCOL"
+      subtitle={`${props.slot} · ${positionLabel(props.position)}`}
+      onBack={props.onProtocolBack}
+    >
+      <h2 className="exercise-heading">{props.exercise}</h2>
+      <p className="section-label rotation-label">PROTOCOL</p>
+      {info && (
+        <>
+          <button
+            className="info-action"
+            type="button"
+            aria-label={`${positionLabel(props.position)} protocol information`}
+            onClick={() => props.setShowProtocolInfo((shown) => !shown)}
           >
-            CONTINUE
-          </FooterButton>
-        </Shell>
-      );
-    })();
+            ⓘ
+          </button>
+          <InfoSheet
+            info={info}
+            open={props.showProtocolInfo}
+            onClose={() => props.setShowProtocolInfo(() => false)}
+          />
+        </>
+      )}
+      <ChoiceList
+        name="protocol"
+        options={props.availableProtocols}
+        selected={props.protocol}
+        onSelect={(value) => props.selectProtocol(value as Protocol)}
+      />
+      <FooterButton
+        disabled={!props.protocol}
+        onClick={props.onProtocolContinue}
+      >
+        CONTINUE
+      </FooterButton>
+    </Shell>
+  );
+}
 
+export function StructureScreen(props: Props) {
+  const info = props.availableStructures.find(
+    (choice) => choice.value === props.structure,
+  )?.info;
+  return (
+    <Shell
+      title={
+        props.protocol === "rest_pause" ? "SET TARGET RANGE" : "SET STRUCTURE"
+      }
+      subtitle={`${props.slot} · ${positionLabel(props.position)}`}
+      onBack={props.onStructureBack}
+    >
+      <h2 className="exercise-heading">{props.exercise}</h2>
+      <ChoiceList
+        name="structure"
+        options={props.availableStructures}
+        selected={props.structure}
+        onSelect={props.selectStructure}
+      />
+      {info && (
+        <>
+          <button
+            className="info-action"
+            type="button"
+            aria-label={`${positionLabel(props.position)} structure information`}
+            onClick={() => props.setShowProtocolInfo((shown) => !shown)}
+          >
+            ⓘ
+          </button>
+          <InfoSheet
+            info={info}
+            open={props.showProtocolInfo}
+            onClose={() => props.setShowProtocolInfo(() => false)}
+          />
+        </>
+      )}
+      {props.structure === "custom" && (
+        <CustomTargets
+          protocol={props.protocol as Protocol}
+          targets={props.customTargets}
+          setCount={props.setCustomSetCount}
+          update={props.updateCustomTarget}
+        />
+      )}
+      <FooterButton
+        disabled={!props.structureValid}
+        onClick={props.onStructureContinue}
+      >
+        CONTINUE
+      </FooterButton>
+    </Shell>
+  );
+}
+
+export function ReviewScreen(props: Props) {
+  const subtitle = `${props.slot} · ${positionLabel(props.position)}`;
   return (
     <Shell
       title="REVIEW ASSIGNMENT"
@@ -297,7 +290,7 @@ function InfoSheet({
   );
 }
 
-function SetupScreen(props: Props) {
+export function SetupScreen(props: Props) {
   return (
     <Shell title="ROTATION SETUP" onBack={props.onBack}>
       {WORKOUT_SLOTS.map((workout) => (
@@ -510,5 +503,3 @@ function Shell({
     </>
   );
 }
-
-export default RotationSetupView;

@@ -1,40 +1,24 @@
 import { useState } from "react";
-import RotationSetupView from "./RotationSetupView.jsx";
+import RotationSetupFlow, { type Screen } from "./RotationSetupFlow.jsx";
 import {
   EXERCISES,
   categoryFor,
   protocolChoices,
-  structureChoices,
   type AssignmentPosition,
   type Protocol,
-  type TargetSet,
   type WorkoutSlot,
 } from "./rotation-config.js";
 import {
   assignmentKey,
   useRotationAssignments,
-  validTargetSets,
 } from "./hooks/use-rotation-assignment.js";
-
-export type Screen = "setup" | "exercise" | "protocol" | "structure" | "review";
+import {
+  draftTargets,
+  resolveAssignmentDraft,
+  type DraftTarget,
+} from "./rotation-assignment-draft.js";
 
 type RotationSetupProps = { onBack: () => void; userId: string };
-type DraftTarget = { max: string; min: string };
-
-function draftTargets(targets: readonly TargetSet[]): DraftTarget[] {
-  return targets.map(({ min, max }) => ({
-    min: String(min),
-    max: String(max),
-  }));
-}
-
-function parsedTargets(targets: readonly DraftTarget[]): TargetSet[] {
-  return targets.map(({ min, max }) => ({
-    min: Number(min),
-    max: Number(max),
-  }));
-}
-
 function RotationSetup({ onBack, userId }: RotationSetupProps) {
   const [screen, setScreen] = useState<Screen>("setup");
   const [slot, setSlot] = useState<WorkoutSlot>("A1");
@@ -50,21 +34,14 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
     useRotationAssignments(userId);
 
   const assignment = saved[assignmentKey(slot, position)] ?? null;
-  const availableStructures = protocol
-    ? structureChoices(position, exercise, protocol)
-    : [];
-  const selectedStructure = availableStructures.find(
-    (choice) => choice.value === structure,
-  );
-  const targets =
-    structure === "custom"
-      ? parsedTargets(customTargets)
-      : [...(selectedStructure?.targets ?? [])];
-  const structureValid =
-    availableStructures.length === 0
-      ? true
-      : Boolean(selectedStructure) &&
-        (structure !== "custom" || validTargetSets(targets));
+  const { availableStructures, structureValid, targets } =
+    resolveAssignmentDraft(
+      position,
+      exercise,
+      protocol,
+      structure,
+      customTargets,
+    );
 
   const resetDownstream = () => {
     setProtocol("");
@@ -114,11 +91,7 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
 
   const selectStructure = (next: string) => {
     setStructure(next);
-    const preset = structureChoices(
-      position,
-      exercise,
-      protocol as Protocol,
-    ).find((choice) => choice.value === next);
+    const preset = availableStructures.find((choice) => choice.value === next);
     setCustomTargets(
       next === "custom"
         ? [{ min: "", max: "" }]
@@ -165,7 +138,7 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
   };
 
   return (
-    <RotationSetupView
+    <RotationSetupFlow
       assignment={assignment}
       availableExercises={EXERCISES[categoryFor(position)]}
       availableProtocols={protocolChoices(position, exercise)}
