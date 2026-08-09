@@ -56,7 +56,7 @@ const quotedLength = (source, quote) => {
 const regexLength = (source) => {
   let inClass = false;
   for (let index = 1; index < source.length; index += 1) {
-    if (source[index] === "\n" || source[index] === "\r") return 1;
+    if ("\n\r".includes(source[index])) return 1;
     if (source[index] === "\\") index += 1;
     else if (source[index] === "[") inClass = true;
     else if (source[index] === "]") inClass = false;
