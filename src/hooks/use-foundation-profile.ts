@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase.js";
 
+const profileAuthorizationKey = "dc-training.foundation-profile-user-id";
+
 type SyncState = "idle" | "syncing" | "synced";
 type ProfileAccess = "authorized" | "denied";
 type ProfileResult = { state: ProfileAccess; userId: string };
@@ -34,10 +36,12 @@ export function useFoundationProfile(session: Session | null, online: boolean) {
         if (!active) return;
         if (error || !data) {
           setProfileResult({ state: "denied", userId: session.user.id });
+          window.localStorage.removeItem(profileAuthorizationKey);
           await client.auth.signOut({ scope: "local" });
           return;
         }
 
+        window.localStorage.setItem(profileAuthorizationKey, session.user.id);
         setProfileResult({ state: "authorized", userId: session.user.id });
         setCloudStatus(data.status === "ready" ? "PROTECTED" : "CONNECTED");
         setSyncState("synced");
@@ -48,9 +52,13 @@ export function useFoundationProfile(session: Session | null, online: boolean) {
     };
   }, [online, session]);
 
-  const profileAccess =
+  const profileAccess: ProfileAccess | "pending" =
     profileResult && profileResult.userId === session?.user.id
       ? profileResult.state
+      : !online &&
+          window.localStorage.getItem(profileAuthorizationKey) ===
+            session?.user.id
+        ? "authorized"
       : "pending";
   return { cloudStatus, profileAccess, syncState };
 }

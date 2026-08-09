@@ -36,7 +36,7 @@ function App() {
   if (recoveringPassword) {
     return <ResetPasswordScreen onComplete={finishPasswordRecovery} />;
   }
-  if (online && profileAccess !== "authorized") {
+  if (profileAccess !== "authorized") {
     return profileAccess === "denied" ? (
       <SignInScreen initialMessage={initialAuthMessage} />
     ) : (

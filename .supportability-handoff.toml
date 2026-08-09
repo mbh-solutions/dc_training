@@ -6,7 +6,7 @@ base_sha = "b37f75211a1bf45076a1333f0ee999b41661cf51"
 overall_result = "PASS"
 responsibility_changes = [
     "App now selects screens and composes focused auth-screen, auth-session, connectivity, profile-authorization, and Home-presentation boundaries.",
-    "Online profile access is pending until the current user's query succeeds; missing data and query errors deny access and locally sign out.",
+    "Profile access stays pending until an online current-user query succeeds or an offline session matches authorization persisted by a prior successful query; missing data and query errors clear that proof, deny access, and locally sign out.",
     "Authentication screens delegate Supabase sign-in, reset-request, and recovery-completion workflows to focused auth actions.",
     "Authentication callback parsing is separate from publishable-key-only Supabase client construction.",
 ]
@@ -37,9 +37,9 @@ simplified_functions = [
     "useAuthSession.anonymous@33:46",
     "useAuthSession.anonymous@37:31",
     "useFoundationProfile",
-    "useFoundationProfile.anonymous@16:13",
-    "useFoundationProfile.anonymous@16:13.anonymous@33:13",
-    "useFoundationProfile.anonymous@16:13.anonymous@46:12",
+    "useFoundationProfile.anonymous@18:13",
+    "useFoundationProfile.anonymous@18:13.anonymous@35:13",
+    "useFoundationProfile.anonymous@18:13.anonymous@50:12",
     "useOnline",
     "useOnline.anonymous@6:13",
     "useOnline.anonymous@6:13.anonymous@12:12",
@@ -71,8 +71,8 @@ gate_coverage = [
 
 [[completion_report.claims]]
 id = "claim-owner-profile-boundary"
-text = "Online profile access starts pending for the current user, App withholds Home until authorization succeeds, and a user-scoped query denies access and locally signs out on missing data or errors."
-citations = ["src/App.tsx:35-45", "src/hooks/use-foundation-profile.ts:28-55"]
+text = "App withholds Home until an online current-user query succeeds or an offline session matches user-bound authorization persisted by a prior successful query; missing data and query errors clear that proof, deny access, and locally sign out."
+citations = ["src/App.tsx:35-45", "src/hooks/use-foundation-profile.ts:30-63"]
 
 [[completion_report.claims]]
 id = "claim-browser-client-boundary"

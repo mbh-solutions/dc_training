@@ -128,6 +128,10 @@ Object.defineProperty(globalThis, "navigator", {
   configurable: true,
   value: dom.window.navigator,
 });
+dom.window.localStorage.setItem(
+  "dc-training.foundation-profile-user-id",
+  session.user.id,
+);
 
 const moduleUrl = (source) =>
   `data:text/javascript,${encodeURIComponent(source)}`;

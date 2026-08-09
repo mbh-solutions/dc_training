@@ -1,8 +1,8 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Preserve the owner workflows while making online foundation-profile authorization fail closed on missing data or query errors."
-proof = "The foundation characterization mounts the real application and exercises both profile failure paths; App hides online protected UI until the focused profile boundary authorizes the current user."
+intended_behavior = "Preserve the owner workflows while requiring online foundation-profile authorization or a matching user-bound authorization persisted by a prior successful query for temporary offline reopening."
+proof = "The foundation characterization mounts the real application, represents a prior authorized load for offline reopening, and exercises both profile failure paths; App hides protected UI until the focused profile boundary authorizes the current user."
 
 [characterization]
 captured_behavior = "The foundation provides owner authentication, protected profile authorization, the approved Home shell, temporary offline launch, reconnection, and password recovery."
@@ -35,10 +35,10 @@ does_not_own = "Auth forms or client calls, auth lifecycle, network listeners, p
 
 [incremental_refactor]
 target = "Correct the exact semantic findings without expanding the product scope."
-completed_step = "Made online profile authorization pending by default, extracted auth screens and client actions, and retained focused lifecycle, callback, and Home boundaries."
+completed_step = "Made profile authorization pending by default, persisted only successful user-bound authorization for offline reopening, extracted auth screens and client actions, and retained focused lifecycle, callback, and Home boundaries."
 
 [review_handoff]
-summary = "Review pending-by-default online profile authorization, thin App composition, delegated auth actions, focused dependency direction, and real React characterization."
+summary = "Review pending-by-default profile authorization, user-bound offline authorization persistence, thin App composition, delegated auth actions, focused dependency direction, and real React characterization."
 remaining_risks = [
     "Live Supabase RLS, deployed PWA caching, and iPhone installation remain deployment evidence outside source characterization.",
 ]
@@ -46,8 +46,8 @@ remaining_risks = [
 [human_review]
 naming = "Each hook and auth action names one concrete responsibility; AuthScreens, FoundationHome, and auth-callback name their direct boundaries."
 cohesion = "App composes; AuthScreens owns form presentation and validation; auth-actions owns client workflows; hooks own stateful effects; FoundationHome presents."
-intended_behavior = "Owner authentication, recovery, cloud status, offline shell, and Home presentation remain, while authorization errors now deny access."
-reviewability = "The correction maps directly to the pending-authorization and mixed-auth-workflow findings and adds no product feature or dependency."
+intended_behavior = "Owner authentication, recovery, cloud status, authorized offline shell, and Home presentation remain, while unproven or failed authorization hides Home."
+reviewability = "The correction maps directly to the captured authorization and mixed-auth-workflow findings and adds no product feature or dependency."
 
 [[module_boundaries]]
 path = "src/App.tsx"
@@ -77,7 +77,7 @@ justification = "Owns Supabase session lifecycle and recovery state."
 path = "src/hooks/use-foundation-profile.ts"
 owner_path = "src/hooks/use-foundation-profile.ts"
 basis = "responsibility"
-justification = "Owns fail-closed foundation-profile authorization and cloud status."
+justification = "Owns fail-closed foundation-profile authorization, user-bound offline authorization persistence, and cloud status."
 
 [[module_boundaries]]
 path = "src/hooks/use-online.ts"
