@@ -116,9 +116,9 @@ gate_coverage = [
 ]
 
 [[completion_report.claims]]
-id = "claim-owner-version-boundary"
-text = "The authenticated owner identifier scopes assignment reads, while saves call one serialized database RPC that creates immutable replacement versions under owner-only RLS."
-citations = ["supabase/migrations/20260809063758_expand_rotation_assignments.sql:167-260", "supabase/migrations/20260809070906_serialize_rotation_assignment_saves.sql:1-58"]
+id = "claim-versioned-assignment-boundary"
+text = "The updated client loads versioned assignment rows and persists through the save_rotation_assignment RPC, validating the returned row before updating local state."
+citations = ["src/hooks/use-rotation-assignment.ts:121-124", "src/hooks/use-rotation-assignment.ts:160-167", "src/hooks/use-rotation-assignment.ts:169-170", "src/hooks/use-rotation-assignment.ts:174-177"]
 
 [[completion_report.claims]]
 id = "claim-fixed-rotation-contract"
