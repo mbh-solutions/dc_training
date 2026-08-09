@@ -99,8 +99,8 @@ const surfaceContract = workoutTracerExists
       ["250000000n"],
     ]) &&
     sourceHasSequences("src/index.css", [
-      [".", "rotation-tracker", ","],
-      [".", "last-workout", "{"],
+      [".", "rotation", "-", "tracker", ","],
+      [".", "last", "-", "workout", "{"],
     ])
   : initialBase &&
     tokenizerRejectsSpoofs &&
