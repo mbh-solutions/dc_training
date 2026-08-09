@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire, registerHooks } from "node:module";
@@ -682,6 +683,12 @@ const behavior = {
   profile_error_handled: profileErrorHandled,
   reconnect_refetched: reconnectRefetched && reconnected.includes("SYNCED"),
 };
+
+assert.deepEqual(
+  Object.entries(behavior).filter(([, passed]) => !passed),
+  [],
+  "Every A1 characterization behavior must pass",
+);
 
 process.stdout.write(
   JSON.stringify({
