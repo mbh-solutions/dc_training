@@ -471,7 +471,8 @@ await act(async () => {
 });
 const recoveryExited =
   text().includes("APP FOUNDATION") && !text().includes("OWNER RECOVERY");
-const mountedApplication = root.childElementCount > 0 && text().includes("DC TRAINING");
+const mountedApplication =
+  root.childElementCount > 0 && text().includes("DC TRAINING");
 
 await act(async () => {
   [...document.querySelectorAll("button")]
@@ -489,10 +490,10 @@ await act(async () => {
     .click();
 });
 const exerciseRadios = [...document.querySelectorAll('input[name="exercise"]')];
-const approvedChestPool =
-  exerciseRadios.length === 9 && !text().includes("†");
-const exerciseContinueDisabled = [...document.querySelectorAll("button")]
-  .find((button) => button.textContent.includes("CONTINUE")).disabled;
+const approvedChestPool = exerciseRadios.length === 9 && !text().includes("†");
+const exerciseContinueDisabled = [...document.querySelectorAll("button")].find(
+  (button) => button.textContent.includes("CONTINUE"),
+).disabled;
 await act(async () => exerciseRadios[0].click());
 await act(async () => {
   [...document.querySelectorAll("button")]
@@ -502,15 +503,20 @@ await act(async () => {
 
 const protocolInitiallyEmpty =
   document.querySelectorAll('input[name="protocol"]:checked').length === 0 &&
-  [...document.querySelectorAll("button")]
-    .find((button) => button.textContent.includes("CONTINUE")).disabled;
+  [...document.querySelectorAll("button")].find((button) =>
+    button.textContent.includes("CONTINUE"),
+  ).disabled;
 await act(async () =>
-  document.querySelector('button[aria-label="Chest protocol information"]').click(),
+  document
+    .querySelector('button[aria-label="Chest protocol information"]')
+    .click(),
 );
 const protocolGuidance = text().includes(
   "Classic DC uses one rest-pause work set.",
 );
-await act(async () => document.querySelector('input[value="rest_pause"]').click());
+await act(async () =>
+  document.querySelector('input[value="rest_pause"]').click(),
+);
 await act(async () => {
   [...document.querySelectorAll("button")]
     .find((button) => button.textContent.includes("CONTINUE"))
@@ -519,8 +525,9 @@ await act(async () => {
 
 const rangeInitiallyEmpty =
   document.querySelectorAll('input[name="range"]:checked').length === 0 &&
-  [...document.querySelectorAll("button")]
-    .find((button) => button.textContent.includes("CONTINUE")).disabled;
+  [...document.querySelectorAll("button")].find((button) =>
+    button.textContent.includes("CONTINUE"),
+  ).disabled;
 await act(async () => document.querySelector('input[value="11-15"]').click());
 await act(async () => {
   [...document.querySelectorAll("button")]
@@ -548,8 +555,8 @@ await act(async () => {
   await flush();
 });
 const savedExactlyOnce =
-  calls.filter((call) => call[0] === "upsert").length === upsertsBeforeSave + 1 &&
-  text().includes("Incline barbell press");
+  calls.filter((call) => call[0] === "upsert").length ===
+    upsertsBeforeSave + 1 && text().includes("Incline barbell press");
 
 await act(async () => authCallback("SIGNED_OUT", null));
 await act(async () => {
@@ -597,8 +604,7 @@ const behavior = {
     coldSignOutDisabled === true,
   expired_recovery_explained: expiredRecoveryExplained,
   generic_sign_in_error: genericSignInError,
-  mounted_application:
-    mountedApplication,
+  mounted_application: mountedApplication,
   missing_profile_signed_out: missingProfileSignedOut,
   offline_sign_out_safe:
     offline.includes("OFFLINE · SAVED ON DEVICE") && signOutDisabled === true,
