@@ -24,18 +24,18 @@ export type Assignment = {
   target_min: number | null;
 };
 
-function isAssignment(value: unknown): value is Assignment {
-  if (!value || typeof value !== "object") return false;
-  const assignment = value as Record<string, unknown>;
-  if (
-    assignment.slot !== "A1" ||
-    assignment.body_part !== "chest" ||
-    typeof assignment.exercise !== "string" ||
-    !CHEST_EXERCISES.includes(
+function hasFixedA1Fields(assignment: Record<string, unknown>) {
+  return (
+    assignment.slot === "A1" &&
+    assignment.body_part === "chest" &&
+    typeof assignment.exercise === "string" &&
+    CHEST_EXERCISES.includes(
       assignment.exercise as (typeof CHEST_EXERCISES)[number],
     )
-  )
-    return false;
+  );
+}
+
+function hasValidTargets(assignment: Record<string, unknown>) {
   if (assignment.protocol === "straight_set")
     return assignment.target_min === null && assignment.target_max === null;
   return (
@@ -47,6 +47,12 @@ function isAssignment(value: unknown): value is Assignment {
     Number(assignment.target_max) <= 2_147_483_647 &&
     Number(assignment.target_max) >= Number(assignment.target_min)
   );
+}
+
+function isAssignment(value: unknown): value is Assignment {
+  if (!value || typeof value !== "object") return false;
+  const assignment = value as Record<string, unknown>;
+  return hasFixedA1Fields(assignment) && hasValidTargets(assignment);
 }
 
 export function useRotationAssignment(userId: string) {
