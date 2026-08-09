@@ -7,14 +7,15 @@ overall_result = "PASS"
 responsibility_changes = [
     "rotation-config owns the fixed A/B and abs setup contract while existing setup modules own state and presentation.",
     "useRotationAssignment validates rows and owns owner-scoped versioned loading and persistence through one security-invoker RPC.",
-    "The additive migrations own replacement lineage, active-version uniqueness, RLS, validation, and the lineage index.",
+    "The additive migrations own replacement lineage, active-version uniqueness, RLS, validation, the lineage index, and per-assignment save serialization.",
 ]
 simplified_functions = [
     "CustomTargets",
-    "CustomTargets.anonymous@317:23",
-    "CustomTargets.anonymous@321:20",
-    "CustomTargets.anonymous@321:20.anonymous@333:25",
-    "CustomTargets.anonymous@321:20.anonymous@345:25",
+    "CustomTargets.anonymous@362:23",
+    "CustomTargets.anonymous@366:20",
+    "CustomTargets.anonymous@366:20.anonymous@378:25",
+    "CustomTargets.anonymous@366:20.anonymous@390:25",
+    "InfoSheet",
     "Review",
     "RotationSetup",
     "RotationSetup.anonymous@182:27",
@@ -36,26 +37,30 @@ simplified_functions = [
     "RotationSetup.updateCustomTarget.anonymous@144:22",
     "RotationSetup.updateCustomTarget.anonymous@144:22.anonymous@145:19",
     "RotationSetupView",
-    "RotationSetupView.anonymous@116:49",
-    "RotationSetupView.anonymous@148:24",
-    "RotationSetupView.anonymous@148:24.anonymous@148:56",
-    "RotationSetupView.anonymous@159:21",
-    "RotationSetupView.anonymous@172:13",
-    "RotationSetupView.anonymous@172:13.anonymous@174:9",
-    "RotationSetupView.anonymous@172:13.anonymous@199:26",
-    "RotationSetupView.anonymous@172:13.anonymous@199:26.anonymous@199:58",
-    "RotationSetupView.anonymous@248:54",
+    "RotationSetupView.anonymous@120:49",
+    "RotationSetupView.anonymous@152:24",
+    "RotationSetupView.anonymous@152:24.anonymous@152:56",
+    "RotationSetupView.anonymous@159:24",
+    "RotationSetupView.anonymous@159:24.anonymous@159:56",
+    "RotationSetupView.anonymous@167:21",
+    "RotationSetupView.anonymous@180:13",
+    "RotationSetupView.anonymous@180:13.anonymous@182:9",
+    "RotationSetupView.anonymous@180:13.anonymous@207:26",
+    "RotationSetupView.anonymous@180:13.anonymous@207:26.anonymous@207:58",
+    "RotationSetupView.anonymous@180:13.anonymous@214:26",
+    "RotationSetupView.anonymous@180:13.anonymous@214:26.anonymous@214:58",
+    "RotationSetupView.anonymous@258:54",
     "SetupScreen",
-    "SetupScreen.anonymous@258:26",
-    "SetupScreen.anonymous@258:26.anonymous@261:38",
-    "SetupScreen.anonymous@258:26.anonymous@261:38.anonymous@268:26",
+    "SetupScreen.anonymous@303:26",
+    "SetupScreen.anonymous@303:26.anonymous@306:38",
+    "SetupScreen.anonymous@303:26.anonymous@306:38.anonymous@313:26",
     "assignmentKey",
     "backThicknessChoices",
     "categoryFor",
     "draftTargets",
     "draftTargets.anonymous@25:22",
     "formatTargets",
-    "formatTargets.anonymous@357:14",
+    "formatTargets.anonymous@402:14",
     "hasAssignmentIdentity",
     "hasValidSelection",
     "hasValidSelection.anonymous@83:7",
@@ -112,8 +117,8 @@ gate_coverage = [
 
 [[completion_report.claims]]
 id = "claim-owner-version-boundary"
-text = "The authenticated owner identifier scopes assignment reads, while saves call one database RPC that creates immutable replacement versions under owner-only RLS."
-citations = ["src/hooks/use-rotation-assignment.ts", "supabase/migrations/20260809063758_expand_rotation_assignments.sql"]
+text = "The authenticated owner identifier scopes assignment reads, while saves call one serialized database RPC that creates immutable replacement versions under owner-only RLS."
+citations = ["src/hooks/use-rotation-assignment.ts", "supabase/migrations/20260809063758_expand_rotation_assignments.sql", "supabase/migrations/20260809070906_serialize_rotation_assignment_saves.sql"]
 
 [[completion_report.claims]]
 id = "claim-fixed-rotation-contract"

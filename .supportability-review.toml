@@ -2,7 +2,7 @@ schema_version = "1.0"
 
 [behavior]
 intended_behavior = "Preserve the qualified owner foundation and let the authenticated owner configure every locked A/B rotation slot plus the six fixed abs slots with explicit exercise, protocol, structure, review, replacement lineage, and restored state without starting a workout."
-proof = "tests/a1-assignment.e2e.mjs mounts the real React application and drives A1 rest-pause, B1 custom straight sets, timed abs, review/back/save/edit/reload, and remount restoration; tests/rotation-config.test.mjs verifies the complete locked order, pools, mappings, badges, and dagger semantics."
+proof = "tests/a1-assignment.e2e.mjs mounts the real React application and drives A1 rest-pause, B1 custom straight sets, timed abs, review/back/save/edit/reload, calf information-sheet dismissal, and remount restoration; tests/rotation-config.test.mjs verifies the complete locked order, pools, mappings, badges, and dagger semantics."
 
 [characterization]
 captured_behavior = "The foundation behaviors remain and the owner can configure and restore all 36 locked rotation and abs assignments without preselected choices."
@@ -45,7 +45,7 @@ target = "Correct the exact semantic findings without expanding the product scop
 completed_step = "Expanded the existing setup flow and data boundary to the complete locked A/B rotation and six abs slots, using one fixed config module and one versioned save RPC."
 
 [review_handoff]
-summary = "Review the fixed rotation config, existing editor/view boundary, owner-scoped versioned assignment hook, two migrations, and real React characterization."
+summary = "Review the fixed rotation config, existing editor/view boundary, owner-scoped serialized assignment hook, three additive migrations, and real React characterization."
 remaining_risks = [
     "The retained legacy assignment table is temporary rollback compatibility and should be removed only after the new contract is proven in production.",
 ]
@@ -54,7 +54,7 @@ remaining_risks = [
 naming = "Each hook and auth action names one concrete responsibility; AuthScreens, FoundationHome, and auth-callback name their direct boundaries."
 cohesion = "Each changed module owns one boundary: signed-in routing, Home rendering, validated assignment client calls, editor state/navigation, or flow rendering."
 intended_behavior = "Qualified owner foundation remains; authenticated owner gains the complete fixed S02 rotation and abs setup with durable replacement history."
-reviewability = "The change reuses the existing setup modules, adds one fixed config module, two additive migrations, and focused checks; no dependency or workout execution model was added."
+reviewability = "The change reuses the existing setup modules, adds one fixed config module, three additive migrations, and focused checks; no dependency or workout execution model was added."
 
 [[module_boundaries]]
 path = "src/App.tsx"
