@@ -93,7 +93,7 @@ function HomeScreen({
         </button>
         {!online && <p className="quiet-note">CONNECT TO SIGN OUT</p>}
         <p className="quiet-note">
-          {cloudStatus} · {email?.toUpperCase()}
+          APP FOUNDATION · AUTHENTICATED · {cloudStatus} · {email?.toUpperCase()}
         </p>
       </main>
     </div>

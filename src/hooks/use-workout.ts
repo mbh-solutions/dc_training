@@ -26,7 +26,6 @@ async function fetchWorkoutState(userId: string) {
     supabase!
       .from("workouts")
       .select("workout_id,slot,status,completed_at")
-      .eq("user_id", userId)
       .eq("status", "in_progress")
       .maybeSingle(),
   ]);

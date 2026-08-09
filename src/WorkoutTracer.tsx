@@ -1,8 +1,4 @@
 import { useState } from "react";
-import backIllustration from "../docs/design/back-stretch-illustration-approved.png";
-import chestReference from "../docs/design/chest-stretch-info-approved.png";
-import shoulderIllustration from "../docs/design/shoulder-stretch-illustration-approved.png";
-import tricepsReference from "../docs/design/triceps-stretch-info-approved.png";
 import {
   conversionPreview,
   displayBodyPart,
@@ -12,6 +8,23 @@ import {
   type Workout,
   type WorkoutStep,
 } from "./workout-domain.js";
+
+const backIllustration = new URL(
+  "../docs/design/back-stretch-illustration-approved.png",
+  import.meta.url,
+).href;
+const chestReference = new URL(
+  "../docs/design/chest-stretch-info-approved.png",
+  import.meta.url,
+).href;
+const shoulderIllustration = new URL(
+  "../docs/design/shoulder-stretch-illustration-approved.png",
+  import.meta.url,
+).href;
+const tricepsReference = new URL(
+  "../docs/design/triceps-stretch-info-approved.png",
+  import.meta.url,
+).href;
 
 const stretchDetails: Record<
   string,
