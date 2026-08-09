@@ -12,8 +12,8 @@ responsibility_changes = [
 simplified_functions = [
     "App",
     "ChoiceList",
-    "ChoiceList.anonymous@739:20",
-    "ChoiceList.anonymous@739:20.anonymous@749:23",
+    "ChoiceList.anonymous@749:20",
+    "ChoiceList.anonymous@749:20.anonymous@759:23",
     "FooterButton",
     "FoundationHome",
     "FoundationHome.anonymous@26:17",
@@ -22,25 +22,26 @@ simplified_functions = [
     "RotationSetup.anonymous@444:13",
     "RotationSetup.anonymous@444:13.anonymous@452:13",
     "RotationSetup.anonymous@444:13.anonymous@462:12",
-    "RotationSetup.anonymous@610:17",
-    "RotationSetup.anonymous@614:40",
-    "RotationSetup.anonymous@620:20",
-    "RotationSetup.anonymous@637:17",
-    "RotationSetup.anonymous@649:21",
-    "RotationSetup.anonymous@661:27",
-    "RotationSetup.anonymous@672:27",
-    "RotationSetup.anonymous@679:20",
-    "RotationSetup.anonymous@691:15",
-    "RotationSetup.anonymous@713:48",
+    "RotationSetup.anonymous@620:17",
+    "RotationSetup.anonymous@624:40",
+    "RotationSetup.anonymous@630:20",
+    "RotationSetup.anonymous@647:17",
+    "RotationSetup.anonymous@659:21",
+    "RotationSetup.anonymous@671:27",
+    "RotationSetup.anonymous@682:27",
+    "RotationSetup.anonymous@689:20",
+    "RotationSetup.anonymous@701:15",
+    "RotationSetup.anonymous@723:48",
     "RotationSetup.editAssignment",
     "RotationSetup.renderProtocol",
-    "RotationSetup.renderProtocol.anonymous@564:15",
-    "RotationSetup.renderProtocol.anonymous@572:18",
-    "RotationSetup.renderProtocol.anonymous@572:18.anonymous@572:44",
-    "RotationSetup.renderProtocol.anonymous@588:19",
-    "RotationSetup.renderProtocol.anonymous@592:18",
+    "RotationSetup.renderProtocol.anonymous@574:15",
+    "RotationSetup.renderProtocol.anonymous@582:18",
+    "RotationSetup.renderProtocol.anonymous@582:18.anonymous@582:44",
+    "RotationSetup.renderProtocol.anonymous@598:19",
+    "RotationSetup.renderProtocol.anonymous@602:18",
     "RotationSetup.renderSetup",
     "RotationSetup.save",
+    "RotationSetup.selectExercise",
     "RotationSetup.selectProtocol",
     "Shell",
     "formatTargetRange",
@@ -75,9 +76,9 @@ gate_coverage = [
 [[completion_report.claims]]
 id = "claim-a1-owner-boundary"
 text = "The authenticated user identifier supplied by App is passed to RotationSetup, which filters reads by that owner and writes the same owner identifier in the single A1 upsert."
-citations = ["src/App.tsx:50-58", "src/FoundationHome.tsx:23-28", "src/FoundationHome.tsx:444-465", "src/FoundationHome.tsx:497-524"]
+citations = ["src/App.tsx:50-58", "src/FoundationHome.tsx:23-28", "src/FoundationHome.tsx:444-465", "src/FoundationHome.tsx:507-534"]
 
 [[completion_report.claims]]
 id = "claim-a1-explicit-contract"
 text = "A1 offers only the nine fixed chest exercises, explicit rest-pause or straight-set protocols, and validated preset or positive-integer custom rest-pause ranges before review."
-citations = ["src/FoundationHome.tsx:112-122", "src/FoundationHome.tsx:408-427", "src/FoundationHome.tsx:605-683"]
+citations = ["src/FoundationHome.tsx:112-122", "src/FoundationHome.tsx:408-427", "src/FoundationHome.tsx:615-693"]
