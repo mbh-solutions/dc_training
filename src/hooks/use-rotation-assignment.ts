@@ -43,6 +43,8 @@ function isAssignment(value: unknown): value is Assignment {
     Number.isInteger(assignment.target_min) &&
     Number.isInteger(assignment.target_max) &&
     Number(assignment.target_min) > 0 &&
+    Number(assignment.target_min) <= 2_147_483_647 &&
+    Number(assignment.target_max) <= 2_147_483_647 &&
     Number(assignment.target_max) >= Number(assignment.target_min)
   );
 }

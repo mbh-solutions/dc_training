@@ -20,6 +20,8 @@ test("A1 assignment uses only the approved chest pool and explicit ranges", () =
   assert.match(source, /"15-20"/);
   assert.match(source, /"custom"/);
   assert.match(source, /Number\.isInteger\(target\[1\]\)/);
+  assert.match(source, /POSTGRES_INTEGER_MAX = 2_147_483_647/);
+  assert.equal((source.match(/max="2147483647"/g) ?? []).length, 2);
   assert.match(source, /Classic DC uses one rest-pause work set\./);
   assert.match(source, /disabled=\{loadState !== "ready"\}/);
 

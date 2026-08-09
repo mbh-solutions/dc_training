@@ -10,6 +10,7 @@ import {
 type ChestExercise = (typeof CHEST_EXERCISES)[number];
 export type RangeChoice = "11-15" | "15-20" | "custom";
 export type Screen = "setup" | "exercise" | "protocol" | "range" | "review";
+const POSTGRES_INTEGER_MAX = 2_147_483_647;
 
 type RotationSetupProps = {
   onBack: () => void;
@@ -33,6 +34,8 @@ function validRange(rangeChoice: RangeChoice | "", target: number[]) {
     Number.isInteger(target[0]) &&
     Number.isInteger(target[1]) &&
     target[0] > 0 &&
+    target[0] <= POSTGRES_INTEGER_MAX &&
+    target[1] <= POSTGRES_INTEGER_MAX &&
     target[1] >= target[0]
   );
 }

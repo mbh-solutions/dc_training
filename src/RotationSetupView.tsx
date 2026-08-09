@@ -456,6 +456,7 @@ function RotationSetupView({
                 id="custom-min"
                 type="number"
                 min="1"
+                max="2147483647"
                 inputMode="numeric"
                 value={customMin}
                 onChange={(event) => setCustomMin(event.target.value)}
@@ -467,6 +468,7 @@ function RotationSetupView({
                 id="custom-max"
                 type="number"
                 min="1"
+                max="2147483647"
                 inputMode="numeric"
                 value={customMax}
                 onChange={(event) => setCustomMax(event.target.value)}
