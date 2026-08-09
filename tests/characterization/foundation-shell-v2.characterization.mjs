@@ -1,3 +1,6 @@
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+
 const write = process.stdout.write.bind(process.stdout);
 let captured = "";
 
@@ -7,7 +10,16 @@ process.stdout.write = (chunk) => {
 };
 
 try {
-  await import("./foundation-shell.characterization.mjs");
+  const definition =
+    process.env.SUPPORTABILITY_CHARACTERIZATION_DEFINITION ?? process.cwd();
+  await import(
+    pathToFileURL(
+      path.join(
+        definition,
+        "tests/characterization/foundation-shell.characterization.mjs",
+      ),
+    ).href
+  );
 } finally {
   process.stdout.write = write;
 }

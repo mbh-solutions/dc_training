@@ -54,6 +54,7 @@ function App() {
       online={online}
       onSignOut={signOut}
       syncState={syncState}
+      userId={session.user.id}
     />
   );
 }

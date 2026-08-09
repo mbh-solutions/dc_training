@@ -2,71 +2,70 @@ schema_version = "1.0"
 
 [completion_report]
 architecture_judgment = "PASS"
-base_sha = "b37f75211a1bf45076a1333f0ee999b41661cf51"
+base_sha = "8964379be17c295ff02b8d0e7358c3cc8a45173a"
 overall_result = "PASS"
 responsibility_changes = [
-    "App now selects screens and composes focused auth-screen, auth-session, connectivity, profile-state, owner-access, and Home-presentation boundaries.",
-    "The profile hook owns only the current-user query and cloud status; the owner-access hook owns access state and local denial enforcement.",
-    "Offline access delegates to a focused verifier that checks the cached session through Supabase getClaims against build-pinned ES256 keys and exact owner claims.",
-    "Authentication screens delegate Supabase sign-in, reset-request, and recovery-completion workflows to focused auth actions.",
-    "Authentication callback parsing is separate from publishable-key-only Supabase client construction.",
+    "FoundationHome owns only signed-in surface selection while HomeScreen renders the signed-in Home.",
+    "useRotationAssignment validates external rows and owns A1 loading and persistence; RotationSetup owns editor state and navigation; RotationSetupView renders the flow.",
+    "The database migration owns the fixed A1/chest data contract and owner-only row policies.",
 ]
 simplified_functions = [
     "App",
+    "ChoiceList",
+    "ChoiceList.anonymous@538:20",
+    "ChoiceList.anonymous@538:20.anonymous@548:23",
+    "FooterButton",
     "FoundationHome",
-    "FoundationHome.anonymous@59:20",
-    "LoadingScreen",
+    "FoundationHome.anonymous@20:17",
+    "FoundationHome.anonymous@29:23",
+    "HomeScreen",
+    "HomeScreen.anonymous@66:20",
     "NetworkStatus",
-    "ResetPasswordScreen",
-    "ResetPasswordScreen.anonymous@157:23",
-    "ResetPasswordScreen.anonymous@169:23",
-    "ResetPasswordScreen.handleSubmit",
-    "SetupScreen",
-    "SignInScreen",
-    "SignInScreen.anonymous@60:23",
-    "SignInScreen.anonymous@71:23",
-    "SignInScreen.handlePasswordReset",
-    "SignInScreen.handleSubmit",
-    "claimsAuthorizeOwner",
-    "claimsAuthorizeOwner.anonymous@70:15",
-    "completeOwnerPasswordRecovery",
-    "hasAuthenticatedAudience",
-    "isPinnedJwk",
-    "isPinnedJwks",
-    "requestOwnerPasswordReset",
-    "sha256",
-    "sha256.anonymous@56:28",
-    "signInOwner",
-    "useAuthSession",
-    "useAuthSession.anonymous@13:13",
-    "useAuthSession.anonymous@13:13.anonymous@19:42",
-    "useAuthSession.anonymous@13:13.anonymous@24:54",
-    "useAuthSession.anonymous@13:13.anonymous@30:12",
-    "useAuthSession.anonymous@33:46",
-    "useAuthSession.anonymous@37:31",
-    "useFoundationProfile",
-    "useFoundationProfile.anonymous@19:13",
-    "useFoundationProfile.anonymous@19:13.anonymous@36:13",
-    "useFoundationProfile.anonymous@19:13.anonymous@48:12",
-    "useOnline",
-    "useOnline.anonymous@6:13",
-    "useOnline.anonymous@6:13.anonymous@12:12",
-    "useOnline.anonymous@6:13.handleOffline",
-    "useOnline.anonymous@6:13.handleOnline",
-    "useOwnerAccess",
-    "useOwnerAccess.anonymous@16:13",
-    "useOwnerAccess.anonymous@16:13.anonymous@23:50",
-    "useOwnerAccess.anonymous@16:13.anonymous@26:12",
-    "useOwnerAccess.anonymous@38:13",
-    "verifyOfflineOwnerSession",
+    "RotationSetup",
+    "RotationSetup.anonymous@108:23",
+    "RotationSetup.anonymous@109:27",
+    "RotationSetup.anonymous@110:23",
+    "RotationSetup.anonymous@111:27",
+    "RotationSetup.anonymous@114:20",
+    "RotationSetup.anonymous@115:24",
+    "RotationSetup.anonymous@116:21",
+    "RotationSetup.editAssignment",
+    "RotationSetup.save",
+    "RotationSetup.selectExercise",
+    "RotationSetup.selectProtocol",
+    "RotationSetupView",
+    "RotationSetupView.anonymous@417:40",
+    "RotationSetupView.anonymous@419:21",
+    "RotationSetupView.anonymous@449:21",
+    "RotationSetupView.anonymous@462:27",
+    "RotationSetupView.anonymous@474:27",
+    "RotationSetupView.anonymous@512:48",
+    "RotationSetupView.renderProtocol",
+    "RotationSetupView.renderProtocol.anonymous@380:18",
+    "RotationSetupView.renderProtocol.anonymous@380:18.anonymous@380:44",
+    "RotationSetupView.renderProtocol.anonymous@396:19",
+    "RotationSetupView.renderSetup",
+    "Shell",
+    "formatTargetRange",
+    "hasFixedA1Fields",
+    "hasValidTargets",
+    "isAssignment",
+    "protocolLabel",
+    "targetRange",
+    "useRotationAssignment",
+    "useRotationAssignment.anonymous@66:13",
+    "useRotationAssignment.anonymous@66:13.anonymous@74:13",
+    "useRotationAssignment.anonymous@66:13.anonymous@84:12",
+    "useRotationAssignment.saveAssignment",
+    "validRange",
 ]
 boundary_rationale = [
-    "App retains only top-level screen composition; AuthScreens owns forms; focused hooks separately own session, connectivity, profile state, and owner access; FoundationHome owns Home presentation.",
-    "Offline signed-session verification, auth actions, callback parsing, and Supabase client construction are focused leaf modules; library modules do not import UI.",
+    "App remains top-level authenticated composition; focused modules separately own signed-in surface selection and Home rendering.",
+    "The assignment hook is the validated Supabase boundary; RotationSetup owns editor state and navigation; RotationSetupView owns detailed flow rendering.",
 ]
 remaining_risks = [
-    "Live Supabase policy, service-worker caching, and mobile installation remain deployment evidence outside the deterministic source characterization.",
-    "Supabase signing-key rotation requires updating the build-pinned public JWKS before revocation; an expired offline token requires connectivity to refresh.",
+    "Live production deployment and browser round-trip evidence remain external to deterministic source characterization until the protected merge deploys.",
+    "Supabase leaked-password protection remains disabled and is tracked as deployment debt outside this bounded assignment slice.",
 ]
 validation_results = [
     { adapter = "typescript.tool-install.v1", arguments = ["$NPM", "install", "--prefix", "$TOOLS", "--ignore-scripts", "--no-audit", "--no-fund", "eslint@9.39.3", "@typescript-eslint/parser@8.65.0", "prettier@3.9.6", "typescript@5.9.3", "dependency-cruiser@18.1.0"], exit_code = 0 },
@@ -85,21 +84,11 @@ gate_coverage = [
 ]
 
 [[completion_report.claims]]
-id = "claim-owner-profile-boundary"
-text = "App withholds Home until owner access succeeds; while online, a current-user profile result must be ready, and an unavailable result denies access and locally signs out."
-citations = ["src/App.tsx:36-48", "src/hooks/use-foundation-profile.ts:31-57", "src/hooks/use-owner-access.ts:31-44"]
+id = "claim-a1-owner-boundary"
+text = "The authenticated user identifier supplied by App is passed to RotationSetup, which filters reads by that owner and writes the same owner identifier in the single A1 upsert."
+citations = ["src/App.tsx:50-58", "src/FoundationHome.tsx:17-23", "src/hooks/use-rotation-assignment.ts:58-121"]
 
 [[completion_report.claims]]
-id = "claim-offline-owner-proof"
-text = "Offline access requires an unexpired ES256 session verified by Supabase getClaims against build-pinned project keys, the expected issuer and audience, authenticated non-anonymous role, and the exact owner subject digest; failure denies access and locally signs out."
-citations = ["src/hooks/use-owner-access.ts:16-44", "src/lib/offline-owner-session.ts:24-109"]
-
-[[completion_report.claims]]
-id = "claim-browser-client-boundary"
-text = "The browser client uses only the configured Supabase URL and publishable key with persistent, URL-detecting, auto-refresh authentication."
-citations = ["src/lib/supabase.ts:3-30"]
-
-[[completion_report.claims]]
-id = "claim-safe-react-mount"
-text = "The entry point mounts the React application only when the root element exists."
-citations = ["src/main.tsx:6-14"]
+id = "claim-a1-explicit-contract"
+text = "A1 offers only the nine fixed chest exercises, explicit rest-pause or straight-set protocols, and validated preset or positive-integer custom rest-pause ranges before review."
+citations = ["src/hooks/use-rotation-assignment.ts:4-56", "src/RotationSetup.tsx:19-40", "src/RotationSetupView.tsx:389-482"]

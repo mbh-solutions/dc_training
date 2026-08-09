@@ -1,0 +1,42 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+
+test("A1 assignment uses only the approved chest pool and explicit ranges", () => {
+  const source = [
+    "../src/RotationSetup.tsx",
+    "../src/RotationSetupView.tsx",
+    "../src/hooks/use-rotation-assignment.ts",
+  ]
+    .map((path) => readFileSync(new URL(path, import.meta.url), "utf8"))
+    .join("\n");
+  const chestPool = source.match(
+    /const CHEST_EXERCISES = \[([\s\S]*?)\] as const;/,
+  )?.[1];
+  assert.ok(chestPool);
+  assert.equal((chestPool.match(/^\s+"/gm) ?? []).length, 9);
+  assert.doesNotMatch(chestPool, /†/);
+  assert.match(source, /"11-15"/);
+  assert.match(source, /"15-20"/);
+  assert.match(source, /"custom"/);
+  assert.match(source, /Number\.isInteger\(target\[1\]\)/);
+  assert.match(source, /POSTGRES_INTEGER_MAX = 2_147_483_647/);
+  assert.equal((source.match(/max="2147483647"/g) ?? []).length, 2);
+  assert.match(source, /Classic DC uses one rest-pause work set\./);
+  assert.match(source, /disabled=\{loadState !== "ready"\}/);
+
+  const migration = readFileSync(
+    new URL(
+      "../supabase/migrations/20260809042610_create_a1_assignment.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  assert.match(migration, /enable row level security/);
+  assert.match(migration, /auth\.uid\(\)\) = user_id/g);
+  assert.match(migration, /revoke all .* from anon, authenticated/);
+  assert.match(
+    migration,
+    /protocol = 'rest_pause' and target_min is not null and target_max is not null/,
+  );
+});
