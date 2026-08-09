@@ -10,10 +10,10 @@ proof = "The registered foundation characterization remains unchanged and passin
 
 [separation_of_concerns]
 before = "App owned session lifecycle, network listeners, profile authorization, route selection, and Home presentation; the Supabase module also parsed callback URLs."
-after = "App still selects authentication versus the signed-in surface; FoundationHome owns the existing signed-in Home plus the one bounded A1 setup flow; focused auth and access modules remain unchanged."
+after = "App still selects authentication versus the signed-in surface; FoundationHome selects Home versus A1 setup; HomeScreen renders Home; useRotationAssignment owns assignment client calls; RotationSetup owns editor state; RotationSetupView renders the flow."
 
 [architecture]
-dependency_direction = "src/main.tsx mounts App; App composes authentication and FoundationHome; FoundationHome imports only React state and the existing Supabase client for its bounded A1 assignment flow; foundation hooks retain their existing leaf dependencies."
+dependency_direction = "src/main.tsx mounts App; App composes authentication and FoundationHome; FoundationHome delegates Home rendering, assignment client calls, editor state, and flow rendering to focused same-file boundaries; foundation hooks retain their existing leaf dependencies."
 reviewed_paths = [
     "src/App.tsx",
     "src/AuthScreens.tsx",
@@ -37,17 +37,17 @@ does_not_own = "Assignment form state or persistence, auth forms or lifecycle, p
 
 [incremental_refactor]
 target = "Correct the exact semantic findings without expanding the product scope."
-completed_step = "Added only the A1 chest assignment flow, reusing the existing shell, React state, CSS, Supabase client, and owner authorization boundary."
+completed_step = "Added only the A1 chest assignment flow with focused Home, assignment-data, editor-state, and flow-view boundaries, reusing the existing shell, CSS, Supabase client, and owner authorization boundary."
 
 [review_handoff]
-summary = "Review the unchanged owner-access boundary plus the isolated A1 selection, protocol, range, review, one-upsert, and cloud-restore flow with real React characterization."
+summary = "Review the unchanged owner-access boundary plus focused Home, assignment-data, editor-state, and A1 flow-view boundaries with real React characterization."
 remaining_risks = [
     "Live Supabase RLS and deployed runtime evidence remain external to deterministic source characterization.",
 ]
 
 [human_review]
 naming = "Each hook and auth action names one concrete responsibility; AuthScreens, FoundationHome, and auth-callback name their direct boundaries."
-cohesion = "App composes; FoundationHome owns signed-in presentation and the only current product workflow; existing auth, profile, access, and session modules remain focused. Extract the workflow when S02 introduces a second implemented product surface."
+cohesion = "App composes; FoundationHome routes signed-in surfaces; HomeScreen renders Home; useRotationAssignment owns assignment client calls; RotationSetup owns editor state; RotationSetupView renders the flow."
 intended_behavior = "Qualified owner foundation remains; authenticated owner gains exactly one A1 chest assignment path with explicit choices and durable restoration."
 reviewability = "The change is limited to the existing signed-in component, one migration, and focused characterization; no dependency or generalized workout model was added."
 
@@ -67,7 +67,7 @@ justification = "Owns authentication and recovery form presentation, local form 
 path = "src/FoundationHome.tsx"
 owner_path = "src/FoundationHome.tsx"
 basis = "responsibility"
-justification = "Owns signed-in Home presentation and the bounded A1 assignment flow."
+justification = "Owns signed-in selection between HomeScreen and RotationSetup; focused same-file boundaries own rendering, editor state, and assignment client calls."
 
 [[module_boundaries]]
 path = "src/hooks/use-auth-session.ts"

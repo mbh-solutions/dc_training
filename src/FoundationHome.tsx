@@ -30,6 +30,26 @@ function FoundationHome({
   }
 
   return (
+    <HomeScreen
+      cloudStatus={cloudStatus}
+      email={email}
+      online={online}
+      onOpenRotation={() => setShowRotationSetup(true)}
+      onSignOut={onSignOut}
+      syncState={syncState}
+    />
+  );
+}
+
+function HomeScreen({
+  cloudStatus,
+  email,
+  online,
+  onOpenRotation,
+  onSignOut,
+  syncState,
+}: Omit<FoundationHomeProps, "userId"> & { onOpenRotation: () => void }) {
+  return (
     <div className="app-shell">
       <header className="app-header">
         <div>
@@ -72,7 +92,7 @@ function FoundationHome({
         <button
           className="primary-action"
           type="button"
-          onClick={() => setShowRotationSetup(true)}
+          onClick={onOpenRotation}
           disabled={!online}
         >
           ROTATION SETUP
@@ -426,20 +446,13 @@ function validRange(rangeChoice: RangeChoice | "", target: number[]) {
   );
 }
 
-function RotationSetup({ onBack, userId }: RotationSetupProps) {
-  const [screen, setScreen] = useState<Screen>("setup");
-  const [exercise, setExercise] = useState("");
-  const [protocol, setProtocol] = useState<Protocol | "">("");
-  const [rangeChoice, setRangeChoice] = useState<RangeChoice | "">("");
-  const [customMin, setCustomMin] = useState("");
-  const [customMax, setCustomMax] = useState("");
+function useRotationAssignment(userId: string) {
   const [saved, setSaved] = useState<Assignment | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "ready" | "failed">(
     "loading",
   );
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
-  const [showProtocolInfo, setShowProtocolInfo] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -463,6 +476,40 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
       active = false;
     };
   }, [userId]);
+
+  const saveAssignment = async (assignment: Assignment) => {
+    setSaving(true);
+    setMessage("");
+    const { error } = await supabase!.from("rotation_assignments").upsert(
+      {
+        ...assignment,
+        user_id: userId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,slot" },
+    );
+    setSaving(false);
+    if (error) {
+      setMessage("ASSIGNMENT COULD NOT BE SAVED");
+      return false;
+    }
+    setSaved(assignment);
+    return true;
+  };
+
+  return { loadState, message, saved, saveAssignment, saving };
+}
+
+function RotationSetup({ onBack, userId }: RotationSetupProps) {
+  const [screen, setScreen] = useState<Screen>("setup");
+  const [exercise, setExercise] = useState("");
+  const [protocol, setProtocol] = useState<Protocol | "">("");
+  const [rangeChoice, setRangeChoice] = useState<RangeChoice | "">("");
+  const [customMin, setCustomMin] = useState("");
+  const [customMax, setCustomMax] = useState("");
+  const [showProtocolInfo, setShowProtocolInfo] = useState(false);
+  const { loadState, message, saved, saveAssignment, saving } =
+    useRotationAssignment(userId);
 
   const target = targetRange(rangeChoice, customMin, customMax);
   const rangeValid = validRange(rangeChoice, target);
@@ -507,8 +554,6 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
   const save = async () => {
     if (!exercise || !protocol || (protocol === "rest_pause" && !rangeValid))
       return;
-    setSaving(true);
-    setMessage("");
     const assignment: Assignment = {
       body_part: "chest",
       exercise,
@@ -517,23 +562,89 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
       target_max: protocol === "rest_pause" ? target[1] : null,
       target_min: protocol === "rest_pause" ? target[0] : null,
     };
-    const { error } = await supabase!.from("rotation_assignments").upsert(
-      {
-        ...assignment,
-        user_id: userId,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id,slot" },
-    );
-    setSaving(false);
-    if (error) {
-      setMessage("ASSIGNMENT COULD NOT BE SAVED");
-      return;
-    }
-    setSaved(assignment);
-    setScreen("setup");
+    if (await saveAssignment(assignment)) setScreen("setup");
   };
 
+  return (
+    <RotationSetupView
+      customMax={customMax}
+      customMin={customMin}
+      editAssignment={editAssignment}
+      exercise={exercise}
+      loadState={loadState}
+      message={message}
+      onBack={onBack}
+      protocol={protocol}
+      rangeChoice={rangeChoice}
+      rangeValid={rangeValid}
+      saved={saved}
+      save={save}
+      saving={saving}
+      screen={screen}
+      selectExercise={selectExercise}
+      selectProtocol={selectProtocol}
+      setCustomMax={setCustomMax}
+      setCustomMin={setCustomMin}
+      setRangeChoice={setRangeChoice}
+      setScreen={setScreen}
+      setShowProtocolInfo={setShowProtocolInfo}
+      showProtocolInfo={showProtocolInfo}
+      target={target}
+    />
+  );
+}
+
+type RotationSetupViewProps = {
+  customMax: string;
+  customMin: string;
+  editAssignment: () => void;
+  exercise: string;
+  loadState: "loading" | "ready" | "failed";
+  message: string;
+  onBack: () => void;
+  protocol: Protocol | "";
+  rangeChoice: RangeChoice | "";
+  rangeValid: boolean;
+  saved: Assignment | null;
+  save: () => Promise<void>;
+  saving: boolean;
+  screen: Screen;
+  selectExercise: (next: string) => void;
+  selectProtocol: (next: Protocol) => void;
+  setCustomMax: (value: string) => void;
+  setCustomMin: (value: string) => void;
+  setRangeChoice: (value: RangeChoice) => void;
+  setScreen: (value: Screen) => void;
+  setShowProtocolInfo: (value: (shown: boolean) => boolean) => void;
+  showProtocolInfo: boolean;
+  target: number[];
+};
+
+function RotationSetupView({
+  customMax,
+  customMin,
+  editAssignment,
+  exercise,
+  loadState,
+  message,
+  onBack,
+  protocol,
+  rangeChoice,
+  rangeValid,
+  saved,
+  save,
+  saving,
+  screen,
+  selectExercise,
+  selectProtocol,
+  setCustomMax,
+  setCustomMin,
+  setRangeChoice,
+  setScreen,
+  setShowProtocolInfo,
+  showProtocolInfo,
+  target,
+}: RotationSetupViewProps) {
   const renderSetup = () => (
     <Shell title="ROTATION SETUP" onBack={onBack}>
       <p className="section-label rotation-label">A1 WORKOUT</p>
