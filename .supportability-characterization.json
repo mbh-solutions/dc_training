@@ -13,7 +13,6 @@
         "src/hooks/use-online.ts",
         "src/hooks/use-owner-access.ts",
         "src/hooks/use-rotation-assignment.ts",
-        "src/rotation-config.ts",
         "src/lib/auth-actions.ts",
         "src/lib/auth-callback.ts",
         "src/lib/offline-owner-session.ts",
@@ -21,6 +20,11 @@
         "src/main.tsx"
       ],
       "id": "foundation-shell-v2",
+      "kind": "regression"
+    },
+    {
+      "covers": ["src/rotation-config.ts"],
+      "id": "rotation-setup-v1",
       "kind": "regression"
     }
   ],
