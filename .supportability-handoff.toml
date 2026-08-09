@@ -2,7 +2,7 @@ schema_version = "1.0"
 
 [completion_report]
 architecture_judgment = "PASS"
-base_sha = "3913cb0b7da7da73641db3d6e868d76fc24afaed"
+base_sha = "b2fef4263d73abf866535a0fb0fdc5f27c49411e"
 overall_result = "PASS"
 responsibility_changes = [
     "FoundationHome now selects Home, Rotation Setup, active A1, or durable completion state.",
@@ -12,23 +12,23 @@ responsibility_changes = [
 ]
 simplified_functions = [
     "ExerciseEntry",
-    "ExerciseEntry.anonymous@127:43",
-    "ExerciseEntry.anonymous@130:40",
-    "ExerciseEntry.anonymous@134:19",
-    "ExerciseEntry.anonymous@135:16",
-    "ExerciseEntry.anonymous@154:22",
-    "ExerciseEntry.anonymous@154:22.anonymous@166:27",
-    "ExerciseEntry.anonymous@154:22.anonymous@166:27.anonymous@167:30",
-    "ExerciseEntry.anonymous@154:22.anonymous@166:27.anonymous@167:30.anonymous@168:33",
-    "ExerciseEntry.anonymous@154:22.anonymous@179:27",
-    "ExerciseEntry.anonymous@154:22.anonymous@179:27.anonymous@180:30",
-    "ExerciseEntry.anonymous@154:22.anonymous@179:27.anonymous@180:30.anonymous@181:33",
-    "ExerciseEntry.anonymous@154:22.anonymous@202:44",
-    "ExerciseEntry.anonymous@154:22.anonymous@202:44.anonymous@213:31",
-    "ExerciseEntry.anonymous@154:22.anonymous@202:44.anonymous@213:31.anonymous@214:31",
-    "ExerciseEntry.anonymous@154:22.anonymous@202:44.anonymous@213:31.anonymous@214:31.anonymous@215:37",
-    "ExerciseEntry.anonymous@232:18",
-    "ExerciseEntry.anonymous@240:18",
+    "ExerciseEntry.anonymous@140:43",
+    "ExerciseEntry.anonymous@143:40",
+    "ExerciseEntry.anonymous@147:19",
+    "ExerciseEntry.anonymous@148:16",
+    "ExerciseEntry.anonymous@167:22",
+    "ExerciseEntry.anonymous@167:22.anonymous@179:27",
+    "ExerciseEntry.anonymous@167:22.anonymous@179:27.anonymous@180:30",
+    "ExerciseEntry.anonymous@167:22.anonymous@179:27.anonymous@180:30.anonymous@181:33",
+    "ExerciseEntry.anonymous@167:22.anonymous@192:27",
+    "ExerciseEntry.anonymous@167:22.anonymous@192:27.anonymous@193:30",
+    "ExerciseEntry.anonymous@167:22.anonymous@192:27.anonymous@193:30.anonymous@194:33",
+    "ExerciseEntry.anonymous@167:22.anonymous@215:44",
+    "ExerciseEntry.anonymous@167:22.anonymous@215:44.anonymous@226:31",
+    "ExerciseEntry.anonymous@167:22.anonymous@215:44.anonymous@226:31.anonymous@227:31",
+    "ExerciseEntry.anonymous@167:22.anonymous@215:44.anonymous@226:31.anonymous@227:31.anonymous@228:37",
+    "ExerciseEntry.anonymous@245:18",
+    "ExerciseEntry.anonymous@253:18",
     "ExerciseEntry.save",
     "FoundationHome",
     "FoundationHome.anonymous@25:17",
@@ -39,16 +39,16 @@ simplified_functions = [
     "RotationTracker",
     "RotationTracker.anonymous@146:28",
     "StretchEntry",
-    "StretchEntry.anonymous@266:22",
-    "StretchEntry.anonymous@284:18",
-    "StretchEntry.anonymous@291:18",
-    "StretchEntry.anonymous@307:24",
-    "StretchEntry.anonymous@314:30",
+    "StretchEntry.anonymous@279:22",
+    "StretchEntry.anonymous@297:18",
+    "StretchEntry.anonymous@304:18",
     "StretchEntry.anonymous@320:24",
+    "StretchEntry.anonymous@327:30",
+    "StretchEntry.anonymous@333:24",
     "WorkoutComplete",
     "WorkoutTracer",
-    "WorkoutTracer.anonymous@105:42",
-    "WorkoutTracer.anonymous@86:33",
+    "WorkoutTracer.anonymous@118:42",
+    "WorkoutTracer.anonymous@99:33",
     "WorkoutCard",
     "WorkoutCard.anonymous@130:40",
     "conversionPreview",
@@ -60,16 +60,16 @@ simplified_functions = [
     "repIndexes",
     "setCount",
     "useWorkout",
-    "useWorkout.anonymous@103:13",
-    "useWorkout.anonymous@67:28",
+    "useWorkout.anonymous@102:13",
+    "useWorkout.anonymous@66:28",
     "useWorkout.dismissCompleted",
     "useWorkout.saveStep",
-    "useWorkout.saveStep.anonymous@151:14",
-    "useWorkout.saveStep.anonymous@151:14.anonymous@152:19",
+    "useWorkout.saveStep.anonymous@150:14",
+    "useWorkout.saveStep.anonymous@150:14.anonymous@151:19",
     "useWorkout.start",
     "useWorkout.undo",
-    "useWorkout.undo.anonymous@177:14",
-    "useWorkout.undo.anonymous@177:14.anonymous@178:19",
+    "useWorkout.undo.anonymous@176:14",
+    "useWorkout.undo.anonymous@176:14.anonymous@177:19",
     "validStepCollections",
     "validStepIdentity",
     "validStepRows",
@@ -107,7 +107,7 @@ gate_coverage = [
 [[completion_report.claims]]
 id = "claim-owner-workout-boundary"
 text = "The client loads only the authenticated owner's rotation and in-progress workout state, validates returned rows, and invokes focused start, save, and undo RPCs."
-citations = ["src/hooks/use-workout.ts:19-101", "src/hooks/use-workout.ts:107-182"]
+citations = ["src/hooks/use-workout.ts:19-104", "src/hooks/use-workout.ts:106-181"]
 
 [[completion_report.claims]]
 id = "claim-exact-weight-conversion"
@@ -117,4 +117,4 @@ citations = ["src/workout-domain.ts:44-71"]
 [[completion_report.claims]]
 id = "claim-workout-presentation"
 text = "The A1 tracer presents manual exercise entry, immediate undo, required stretch steps, and the durable completion screen through focused controlled components."
-citations = ["src/WorkoutTracer.tsx:85-117", "src/WorkoutTracer.tsx:119-353"]
+citations = ["src/WorkoutTracer.tsx:98-130", "src/WorkoutTracer.tsx:132-366"]

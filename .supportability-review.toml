@@ -5,8 +5,8 @@ intended_behavior = "Let the authenticated owner start or resume the automatical
 proof = "tests/a1-assignment.e2e.mjs mounts src/main.tsx with real React, drives Home through A1 completion, leaves/resumes, undoes/re-saves, checks exact stretch copy, retries the final operation, and returns to Home with B1. tests/workout-domain.test.mjs proves exact canonical conversion."
 
 [characterization]
-captured_behavior = "The qualified auth/offline shell and full rotation setup remain, while a1-workout-v1 captures the first complete A1 workout tracer."
-proof = "The existing foundation-shell-v2 and rotation-setup-v1 scenarios remain registered; a1-workout-v1 adds the mounted workout path without replacing their evidence."
+captured_behavior = "The qualified auth/offline shell and full rotation setup remain, while a1-workout-v1 fail-closed checks the A1 surface declarations, RPC calls, conversion constants, and Home selectors without executing target-controlled code."
+proof = "The existing foundation-shell-v2 and rotation-setup-v1 scenarios remain registered; the staged a1-workout-v1 static contract covers the new production paths, while tests/a1-assignment.e2e.mjs separately mounts the real React application and proves the complete workout path."
 
 [separation_of_concerns]
 before = "FoundationHome selected Home or Rotation Setup; no workout state, persistence, or execution UI existed."
