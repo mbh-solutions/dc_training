@@ -42,6 +42,37 @@ function sourcePools() {
   return pools;
 }
 
+function assertStructure(structure) {
+  assert.doesNotMatch(structure.label, /sumo leg press/i);
+  if (structure.value === "custom") return;
+  assert.ok(structure.targets?.length);
+  for (const target of structure.targets)
+    assert.ok(target.min > 0 && target.max >= target.min);
+}
+
+function assertExercise(position, exercise) {
+  for (const protocol of config.protocolChoices(position, exercise)) {
+    const structures = config.structureChoices(
+      position,
+      exercise,
+      protocol.value,
+    );
+    assert.ok(
+      config.categoryFor(position) === "abs" ||
+        protocol.value === "straight_set" ||
+        structures.length > 0,
+    );
+    structures.forEach(assertStructure);
+  }
+}
+
+function assertPosition(position) {
+  const exercises = config.EXERCISES[config.categoryFor(position)];
+  assert.ok(exercises.length > 0);
+  assert.ok(exercises.every((exercise) => !exercise.includes("†")));
+  for (const exercise of exercises) assertExercise(position, exercise);
+}
+
 test("every exercise category and protocol branch matches the locked ledger", () => {
   assert.deepEqual(config.EXERCISES, sourcePools());
   assert.deepEqual(config.positionsFor("A1"), [
@@ -62,33 +93,7 @@ test("every exercise category and protocol branch matches the locked ledger", ()
   ]);
 
   for (const slot of config.WORKOUT_SLOTS) {
-    for (const position of config.positionsFor(slot)) {
-      const exercises = config.EXERCISES[config.categoryFor(position)];
-      assert.ok(exercises.length > 0);
-      assert.ok(exercises.every((exercise) => !exercise.includes("†")));
-      for (const exercise of exercises) {
-        for (const protocol of config.protocolChoices(position, exercise)) {
-          const structures = config.structureChoices(
-            position,
-            exercise,
-            protocol.value,
-          );
-          assert.ok(
-            config.categoryFor(position) === "abs" ||
-              protocol.value === "straight_set" ||
-              structures.length > 0,
-          );
-          for (const structure of structures) {
-            assert.doesNotMatch(structure.label, /sumo leg press/i);
-            if (structure.value !== "custom") {
-              assert.ok(structure.targets?.length);
-              for (const target of structure.targets)
-                assert.ok(target.min > 0 && target.max >= target.min);
-            }
-          }
-        }
-      }
-    }
+    config.positionsFor(slot).forEach(assertPosition);
   }
 
   const values = (position, exercise, protocol) =>

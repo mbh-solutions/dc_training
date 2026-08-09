@@ -102,43 +102,7 @@ type Props = {
 function RotationSetupView(props: Props) {
   const subtitle = `${props.slot} · ${positionLabel(props.position)}`;
 
-  if (props.screen === "setup")
-    return (
-      <Shell title="ROTATION SETUP" onBack={props.onBack}>
-        {WORKOUT_SLOTS.map((workout) => (
-          <section className="workout-group" key={workout}>
-            <p className="section-label rotation-label">{workout} WORKOUT</p>
-            {positionsFor(workout).map((bodyPart) => {
-              const saved = props.saved[assignmentKey(workout, bodyPart)];
-              return (
-                <button
-                  className="assignment-card"
-                  type="button"
-                  key={bodyPart}
-                  onClick={() => props.editAssignment(workout, bodyPart)}
-                  disabled={props.loadState !== "ready"}
-                >
-                  <span>{positionLabel(bodyPart)}</span>
-                  <strong>
-                    {props.loadState === "loading"
-                      ? "LOADING ASSIGNMENT"
-                      : (saved?.exercise ?? "CHOOSE EXERCISE")}
-                  </strong>
-                  {saved && (
-                    <small>
-                      {protocolLabel(saved.protocol)} ·{" "}
-                      {formatTargets(saved.target_sets)}
-                    </small>
-                  )}
-                  <b aria-hidden="true">›</b>
-                </button>
-              );
-            })}
-          </section>
-        ))}
-        {props.message && <p className="form-message">{props.message}</p>}
-      </Shell>
-    );
+  if (props.screen === "setup") return <SetupScreen {...props} />;
 
   if (props.screen === "exercise")
     return (
@@ -284,6 +248,45 @@ function RotationSetupView(props: Props) {
       <FooterButton disabled={props.saving} onClick={() => void props.save()}>
         {props.saving ? "SAVING" : "SAVE"}
       </FooterButton>
+    </Shell>
+  );
+}
+
+function SetupScreen(props: Props) {
+  return (
+    <Shell title="ROTATION SETUP" onBack={props.onBack}>
+      {WORKOUT_SLOTS.map((workout) => (
+        <section className="workout-group" key={workout}>
+          <p className="section-label rotation-label">{workout} WORKOUT</p>
+          {positionsFor(workout).map((bodyPart) => {
+            const saved = props.saved[assignmentKey(workout, bodyPart)];
+            return (
+              <button
+                className="assignment-card"
+                type="button"
+                key={bodyPart}
+                onClick={() => props.editAssignment(workout, bodyPart)}
+                disabled={props.loadState !== "ready"}
+              >
+                <span>{positionLabel(bodyPart)}</span>
+                <strong>
+                  {props.loadState === "loading"
+                    ? "LOADING ASSIGNMENT"
+                    : (saved?.exercise ?? "CHOOSE EXERCISE")}
+                </strong>
+                {saved && (
+                  <small>
+                    {protocolLabel(saved.protocol)} ·{" "}
+                    {formatTargets(saved.target_sets)}
+                  </small>
+                )}
+                <b aria-hidden="true">›</b>
+              </button>
+            );
+          })}
+        </section>
+      ))}
+      {props.message && <p className="form-message">{props.message}</p>}
     </Shell>
   );
 }

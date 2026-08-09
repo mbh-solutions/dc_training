@@ -80,16 +80,21 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
     setSlot(nextSlot);
     setPosition(nextPosition);
     const current = saved[assignmentKey(nextSlot, nextPosition)];
-    setExercise(current?.exercise ?? "");
-    setProtocol(current?.protocol ?? "");
-    setStructure(
-      current?.structure === "none" ? "" : (current?.structure ?? ""),
-    );
-    setCustomTargets(
-      current?.structure === "custom"
-        ? draftTargets(current.target_sets)
-        : [{ min: "", max: "" }],
-    );
+    if (current) {
+      setExercise(current.exercise);
+      setProtocol(current.protocol);
+      setStructure(current.structure === "none" ? "" : current.structure);
+      setCustomTargets(
+        current.structure === "custom"
+          ? draftTargets(current.target_sets)
+          : [{ min: "", max: "" }],
+      );
+    } else {
+      setExercise("");
+      setProtocol("");
+      setStructure("");
+      setCustomTargets([{ min: "", max: "" }]);
+    }
     setShowProtocolInfo(false);
     setScreen("exercise");
   };

@@ -237,57 +237,48 @@ export function structureChoices(
 ): readonly StructureChoice[] {
   const bodyPart = categoryFor(position);
   if (bodyPart === "abs") return [];
-  if (protocol === "rest_pause") {
-    if (
-      bodyPart === "triceps" &&
-      /skullcrusher|extension|pullover/i.test(exercise)
-    )
-      return withBadge(
-        [
-          { label: "11–15", value: "11-15", targets: [{ min: 11, max: 15 }] },
-          { label: "15–30", value: "15-30", targets: [{ min: 15, max: 30 }] },
-          { label: "CUSTOM", value: "custom" },
-        ],
-        "15-30",
-      );
-    if (bodyPart === "hamstrings" && /leg curl/i.test(exercise))
-      return withBadge(
-        [
-          { label: "15–30", value: "15-30", targets: [{ min: 15, max: 30 }] },
-          { label: "CUSTOM", value: "custom" },
-        ],
-        "15-30",
-      );
-    if (bodyPart === "quadriceps" && exercise === "Leg extension")
-      return [{ label: "CUSTOM", value: "custom" }];
-    if (bodyPart === "chest" || bodyPart === "back_width")
-      return withBadge(genericRestPause, "11-15");
-    return genericRestPause;
-  }
+  if (protocol === "rest_pause") return restPauseChoices(bodyPart, exercise);
   if (protocol !== "straight_set") return [];
+  return straightSetChoices(bodyPart, exercise);
+}
+
+function restPauseChoices(
+  bodyPart: BodyPart,
+  exercise: string,
+): readonly StructureChoice[] {
+  if (
+    bodyPart === "triceps" &&
+    /skullcrusher|extension|pullover/i.test(exercise)
+  )
+    return withBadge(
+      [
+        { label: "11–15", value: "11-15", targets: [{ min: 11, max: 15 }] },
+        { label: "15–30", value: "15-30", targets: [{ min: 15, max: 30 }] },
+        { label: "CUSTOM", value: "custom" },
+      ],
+      "15-30",
+    );
+  if (bodyPart === "hamstrings" && /leg curl/i.test(exercise))
+    return withBadge(
+      [
+        { label: "15–30", value: "15-30", targets: [{ min: 15, max: 30 }] },
+        { label: "CUSTOM", value: "custom" },
+      ],
+      "15-30",
+    );
+  if (bodyPart === "quadriceps" && exercise === "Leg extension")
+    return [{ label: "CUSTOM", value: "custom" }];
+  if (bodyPart === "chest" || bodyPart === "back_width")
+    return withBadge(genericRestPause, "11-15");
+  return genericRestPause;
+}
+
+function straightSetChoices(
+  bodyPart: BodyPart,
+  exercise: string,
+): readonly StructureChoice[] {
   if (bodyPart === "back_thickness") {
-    return /deadlift/i.test(exercise)
-      ? [
-          {
-            badge: "DC",
-            label: "6–8 + 10–12",
-            value: "deadlift-6-8-10-12",
-            targets: [
-              { min: 6, max: 8 },
-              { min: 10, max: 12 },
-            ],
-          },
-          { label: "CUSTOM", value: "custom" },
-        ]
-      : [
-          {
-            badge: "DC",
-            label: "1 × 10–12",
-            value: "single-10-12",
-            targets: [{ min: 10, max: 12 }],
-          },
-          { label: "CUSTOM", value: "custom" },
-        ];
+    return backThicknessChoices(exercise);
   }
   if (bodyPart === "forearms")
     return [
@@ -321,28 +312,57 @@ export function structureChoices(
       { label: "CUSTOM", value: "custom" },
     ];
   if (bodyPart === "quadriceps") {
-    if (exercise === "Leg extension")
-      return [{ label: "CUSTOM", value: "custom" }];
-    const hack = exercise === "Barbell hack squat";
-    return [
-      {
-        badge: "DC",
-        label: hack ? "6–10 + 20" : "4–6 + 20",
-        value: hack ? "widowmaker-6-10-20" : "widowmaker-4-6-20",
-        targets: hack
-          ? [
-              { min: 6, max: 10 },
-              { min: 20, max: 20 },
-            ]
-          : [
-              { min: 4, max: 6 },
-              { min: 20, max: 20 },
-            ],
-      },
-      { label: "CUSTOM", value: "custom" },
-    ];
+    return quadricepsChoices(exercise);
   }
   return [];
+}
+
+function backThicknessChoices(exercise: string): readonly StructureChoice[] {
+  return /deadlift/i.test(exercise)
+    ? [
+        {
+          badge: "DC",
+          label: "6–8 + 10–12",
+          value: "deadlift-6-8-10-12",
+          targets: [
+            { min: 6, max: 8 },
+            { min: 10, max: 12 },
+          ],
+        },
+        { label: "CUSTOM", value: "custom" },
+      ]
+    : [
+        {
+          badge: "DC",
+          label: "1 × 10–12",
+          value: "single-10-12",
+          targets: [{ min: 10, max: 12 }],
+        },
+        { label: "CUSTOM", value: "custom" },
+      ];
+}
+
+function quadricepsChoices(exercise: string): readonly StructureChoice[] {
+  if (exercise === "Leg extension")
+    return [{ label: "CUSTOM", value: "custom" }];
+  const hack = exercise === "Barbell hack squat";
+  return [
+    {
+      badge: "DC",
+      label: hack ? "6–10 + 20" : "4–6 + 20",
+      value: hack ? "widowmaker-6-10-20" : "widowmaker-4-6-20",
+      targets: hack
+        ? [
+            { min: 6, max: 10 },
+            { min: 20, max: 20 },
+          ]
+        : [
+            { min: 4, max: 6 },
+            { min: 20, max: 20 },
+          ],
+    },
+    { label: "CUSTOM", value: "custom" },
+  ];
 }
 
 export function protocolInfo(position: AssignmentPosition, exercise: string) {
