@@ -1,0 +1,23 @@
+{
+  "scenarios": [
+    {
+      "covers": [
+        "src/App.tsx",
+        "src/AuthScreens.tsx",
+        "src/FoundationHome.tsx",
+        "src/hooks/use-auth-session.ts",
+        "src/hooks/use-foundation-profile.ts",
+        "src/hooks/use-online.ts",
+        "src/hooks/use-owner-access.ts",
+        "src/lib/auth-actions.ts",
+        "src/lib/auth-callback.ts",
+        "src/lib/offline-owner-session.ts",
+        "src/lib/supabase.ts",
+        "src/main.tsx"
+      ],
+      "id": "foundation-shell",
+      "kind": "regression"
+    }
+  ],
+  "schema_version": "1.0"
+}

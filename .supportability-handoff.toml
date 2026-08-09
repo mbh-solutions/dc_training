@@ -1,0 +1,105 @@
+schema_version = "1.0"
+
+[completion_report]
+architecture_judgment = "PASS"
+base_sha = "b37f75211a1bf45076a1333f0ee999b41661cf51"
+overall_result = "PASS"
+responsibility_changes = [
+    "App now selects screens and composes focused auth-screen, auth-session, connectivity, profile-state, owner-access, and Home-presentation boundaries.",
+    "The profile hook owns only the current-user query and cloud status; the owner-access hook owns access state and local denial enforcement.",
+    "Offline access delegates to a focused verifier that checks the cached session through Supabase getClaims against build-pinned ES256 keys and exact owner claims.",
+    "Authentication screens delegate Supabase sign-in, reset-request, and recovery-completion workflows to focused auth actions.",
+    "Authentication callback parsing is separate from publishable-key-only Supabase client construction.",
+]
+simplified_functions = [
+    "App",
+    "FoundationHome",
+    "FoundationHome.anonymous@59:20",
+    "LoadingScreen",
+    "NetworkStatus",
+    "ResetPasswordScreen",
+    "ResetPasswordScreen.anonymous@157:23",
+    "ResetPasswordScreen.anonymous@169:23",
+    "ResetPasswordScreen.handleSubmit",
+    "SetupScreen",
+    "SignInScreen",
+    "SignInScreen.anonymous@60:23",
+    "SignInScreen.anonymous@71:23",
+    "SignInScreen.handlePasswordReset",
+    "SignInScreen.handleSubmit",
+    "claimsAuthorizeOwner",
+    "claimsAuthorizeOwner.anonymous@70:15",
+    "completeOwnerPasswordRecovery",
+    "hasAuthenticatedAudience",
+    "isPinnedJwk",
+    "isPinnedJwks",
+    "requestOwnerPasswordReset",
+    "sha256",
+    "sha256.anonymous@56:28",
+    "signInOwner",
+    "useAuthSession",
+    "useAuthSession.anonymous@13:13",
+    "useAuthSession.anonymous@13:13.anonymous@19:42",
+    "useAuthSession.anonymous@13:13.anonymous@24:54",
+    "useAuthSession.anonymous@13:13.anonymous@30:12",
+    "useAuthSession.anonymous@33:46",
+    "useAuthSession.anonymous@37:31",
+    "useFoundationProfile",
+    "useFoundationProfile.anonymous@19:13",
+    "useFoundationProfile.anonymous@19:13.anonymous@36:13",
+    "useFoundationProfile.anonymous@19:13.anonymous@48:12",
+    "useOnline",
+    "useOnline.anonymous@6:13",
+    "useOnline.anonymous@6:13.anonymous@12:12",
+    "useOnline.anonymous@6:13.handleOffline",
+    "useOnline.anonymous@6:13.handleOnline",
+    "useOwnerAccess",
+    "useOwnerAccess.anonymous@16:13",
+    "useOwnerAccess.anonymous@16:13.anonymous@23:50",
+    "useOwnerAccess.anonymous@16:13.anonymous@26:12",
+    "useOwnerAccess.anonymous@38:13",
+    "verifyOfflineOwnerSession",
+]
+boundary_rationale = [
+    "App retains only top-level screen composition; AuthScreens owns forms; focused hooks separately own session, connectivity, profile state, and owner access; FoundationHome owns Home presentation.",
+    "Offline signed-session verification, auth actions, callback parsing, and Supabase client construction are focused leaf modules; library modules do not import UI.",
+]
+remaining_risks = [
+    "Live Supabase policy, service-worker caching, and mobile installation remain deployment evidence outside the deterministic source characterization.",
+    "Supabase signing-key rotation requires updating the build-pinned public JWKS before revocation; an expired offline token requires connectivity to refresh.",
+]
+validation_results = [
+    { adapter = "typescript.tool-install.v1", arguments = ["$NPM", "install", "--prefix", "$TOOLS", "--ignore-scripts", "--no-audit", "--no-fund", "eslint@9.39.3", "@typescript-eslint/parser@8.65.0", "prettier@3.9.6", "typescript@5.9.3", "dependency-cruiser@18.1.0"], exit_code = 0 },
+    { adapter = "typescript.target-install.v1", arguments = ["$NPM", "ci", "--ignore-scripts", "--no-audit", "--no-fund"], exit_code = 0 },
+    { adapter = "typescript.eslint.v1", arguments = ["$TOOLS/node_modules/.bin/eslint", "--config", "$TOOLS/eslint.config.mjs", "--no-config-lookup", "--no-ignore", "--no-inline-config", "$SOURCE_FILES", "$TEST_FILES"], exit_code = 0 },
+    { adapter = "typescript.prettier.v1", arguments = ["$TOOLS/node_modules/.bin/prettier", "--check", "--config", "$TOOLS/prettier.json", "--ignore-path", "$TOOLS/prettier.ignore", "$SOURCE_FILES", "$TEST_FILES"], exit_code = 0 },
+    { adapter = "typescript.c901-equivalent-touched.v1", arguments = ["$TOOLS/node_modules/.bin/eslint", "--config", "$TOOLS/eslint.config.mjs", "--no-config-lookup", "--no-ignore", "--no-inline-config", "--rule", "complexity: [error, 10]", "$SOURCE_FILES", "$TEST_FILES"], exit_code = 0 },
+    { adapter = "typescript.typecheck.v1", arguments = ["$TOOLS/node_modules/.bin/tsc", "--project", "$OUTPUT/tsconfig-check.json"], exit_code = 0 },
+    { adapter = "typescript.test.v1", arguments = ["$NODE", "--test", "--experimental-test-coverage", "--test-coverage-include=src/**", "--test-reporter=spec", "--test-reporter=lcov", "--test-reporter-destination=stdout", "--test-reporter-destination=$OUTPUT/coverage.lcov", "$TEST_FILES"], exit_code = 0 },
+    { adapter = "typescript.build.v1", arguments = ["$TOOLS/node_modules/.bin/tsc", "--project", "$OUTPUT/tsconfig-build.json"], exit_code = 0 },
+    { adapter = "typescript.import-boundaries.v1", arguments = ["$TOOLS/node_modules/.bin/depcruise", "--config", "$TOOLS/dependency-cruiser.json", "--ts-config", "$OUTPUT/tsconfig-check.json", "--", "src"], exit_code = 0 },
+]
+gate_coverage = [
+    { adapter = "typescript.c901-equivalent-touched.v1", paths = ["src"] },
+    { adapter = "typescript.import-boundaries.v1", paths = ["src"] },
+]
+
+[[completion_report.claims]]
+id = "claim-owner-profile-boundary"
+text = "App withholds Home until owner access succeeds; while online, a current-user profile result must be ready, and an unavailable result denies access and locally signs out."
+citations = ["src/App.tsx:36-48", "src/hooks/use-foundation-profile.ts:31-57", "src/hooks/use-owner-access.ts:31-44"]
+
+[[completion_report.claims]]
+id = "claim-offline-owner-proof"
+text = "Offline access requires an unexpired ES256 session verified by Supabase getClaims against build-pinned project keys, the expected issuer and audience, authenticated non-anonymous role, and the exact owner subject digest; failure denies access and locally signs out."
+citations = ["src/hooks/use-owner-access.ts:16-44", "src/lib/offline-owner-session.ts:24-109"]
+
+[[completion_report.claims]]
+id = "claim-browser-client-boundary"
+text = "The browser client uses only the configured Supabase URL and publishable key with persistent, URL-detecting, auto-refresh authentication."
+citations = ["src/lib/supabase.ts:3-30"]
+
+[[completion_report.claims]]
+id = "claim-safe-react-mount"
+text = "The entry point mounts the React application only when the root element exists."
+citations = ["src/main.tsx:6-14"]
