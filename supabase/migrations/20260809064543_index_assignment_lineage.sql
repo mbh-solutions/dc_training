@@ -1,0 +1,3 @@
+create index rotation_assignment_versions_lineage
+on public.rotation_assignment_versions (replaced_assignment_id)
+where replaced_assignment_id is not null;
