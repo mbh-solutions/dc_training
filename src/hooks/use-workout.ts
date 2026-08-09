@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { WorkoutSlot } from "../rotation-config.js";
 import {
   validWorkout,
@@ -62,6 +62,7 @@ export function useWorkout(userId: string, online: boolean) {
   const [message, setMessage] = useState("");
   const [nextSlot, setNextSlot] = useState<WorkoutSlot>("A1");
   const [steps, setSteps] = useState<WorkoutStep[]>([]);
+  const pendingOperationIds = useRef(new Map<string, string>());
 
   const load = useCallback(async () => {
     if (!online) {
@@ -127,7 +128,10 @@ export function useWorkout(userId: string, online: boolean) {
     weights: WeightEntry[] = [],
     reps: number[] = [],
   ) => {
-    const operationId = crypto.randomUUID();
+    const operationId = retryOperationId(
+      pendingOperationIds.current,
+      step.step_id,
+    );
     const { data, error } = await supabase!.rpc("save_a1_workout_step", {
       p_operation_id: operationId,
       p_reps: reps,
@@ -145,6 +149,7 @@ export function useWorkout(userId: string, online: boolean) {
       setMessage(error?.message ?? "STEP COULD NOT BE SAVED");
       return false;
     }
+    pendingOperationIds.current.delete(step.step_id);
     setMessage("");
     setNextSlot(result.next_slot);
     setSteps((current) =>
@@ -194,4 +199,10 @@ export function useWorkout(userId: string, online: boolean) {
     steps,
     undo,
   };
+}
+
+function retryOperationId(operationIds: Map<string, string>, stepId: string) {
+  const operationId = operationIds.get(stepId) ?? crypto.randomUUID();
+  operationIds.set(stepId, operationId);
+  return operationId;
 }

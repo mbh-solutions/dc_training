@@ -46,6 +46,8 @@ simplified_functions = [
     "StretchEntry.anonymous@327:30",
     "StretchEntry.anonymous@333:24",
     "WorkoutComplete",
+    "WorkoutLoadError",
+    "WorkoutLoadError.anonymous@432:38",
     "WorkoutTracer",
     "WorkoutTracer.anonymous@118:42",
     "WorkoutTracer.anonymous@99:33",
@@ -58,19 +60,20 @@ simplified_functions = [
     "fetchWorkoutSteps",
     "repCount",
     "repIndexes",
+    "retryOperationId",
     "setCount",
     "useWorkout",
-    "useWorkout.anonymous@102:13",
-    "useWorkout.anonymous@66:28",
-    "useWorkout.anonymous@66:28.anonymous@73:46",
+    "useWorkout.anonymous@103:13",
+    "useWorkout.anonymous@67:28",
+    "useWorkout.anonymous@67:28.anonymous@74:46",
     "useWorkout.dismissCompleted",
     "useWorkout.saveStep",
-    "useWorkout.saveStep.anonymous@150:14",
-    "useWorkout.saveStep.anonymous@150:14.anonymous@151:19",
+    "useWorkout.saveStep.anonymous@155:14",
+    "useWorkout.saveStep.anonymous@155:14.anonymous@156:19",
     "useWorkout.start",
     "useWorkout.undo",
-    "useWorkout.undo.anonymous@176:14",
-    "useWorkout.undo.anonymous@176:14.anonymous@177:19",
+    "useWorkout.undo.anonymous@181:14",
+    "useWorkout.undo.anonymous@181:14.anonymous@182:19",
     "validStepCollections",
     "validStepIdentity",
     "validStepRows",
@@ -108,7 +111,7 @@ gate_coverage = [
 [[completion_report.claims]]
 id = "claim-owner-workout-boundary"
 text = "The client loads only the authenticated owner's rotation and in-progress workout state, validates returned rows, and invokes focused start, save, and undo RPCs."
-citations = ["src/hooks/use-workout.ts:19-104", "src/hooks/use-workout.ts:106-181"]
+citations = ["src/hooks/use-workout.ts:19-105", "src/hooks/use-workout.ts:107-208"]
 
 [[completion_report.claims]]
 id = "claim-exact-weight-conversion"
@@ -118,4 +121,4 @@ citations = ["src/workout-domain.ts:44-71"]
 [[completion_report.claims]]
 id = "claim-workout-presentation"
 text = "The A1 tracer presents manual exercise entry, immediate undo, required stretch steps, and the durable completion screen through focused controlled components."
-citations = ["src/WorkoutTracer.tsx:98-130", "src/WorkoutTracer.tsx:132-366"]
+citations = ["src/WorkoutTracer.tsx:98-130", "src/WorkoutTracer.tsx:132-366", "src/WorkoutTracer.tsx:426-440"]

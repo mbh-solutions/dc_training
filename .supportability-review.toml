@@ -2,7 +2,7 @@ schema_version = "1.0"
 
 [behavior]
 intended_behavior = "Let the authenticated owner start or resume the automatically selected A1 workout, durably log or skip every configured exercise and required stretch, undo the latest save, complete once, and return Home with B1 next."
-proof = "tests/a1-assignment.e2e.mjs mounts src/main.tsx with real React, drives Home through A1 completion, leaves/resumes, undoes/re-saves, checks exact stretch copy, retries the final operation, and returns to Home with B1. tests/workout-domain.test.mjs proves exact canonical conversion."
+proof = "tests/a1-assignment.e2e.mjs mounts src/main.tsx with real React, drives Home through A1 completion, leaves/resumes, preserves a step operation ID across a lost response, undoes/re-saves, checks exact stretch copy, retries the final operation, and returns to Home with B1. tests/workout-domain.test.mjs proves exact canonical conversion."
 
 [characterization]
 captured_behavior = "The qualified auth/offline shell and full rotation setup remain, while a1-workout-v1 fail-closed checks the A1 surface declarations, RPC calls, conversion constants, and Home selectors without executing target-controlled code."

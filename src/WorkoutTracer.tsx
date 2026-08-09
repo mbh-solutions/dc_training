@@ -97,7 +97,7 @@ type Props = {
 
 export function WorkoutTracer(props: Props) {
   const step = props.steps.find((item) => item.status === "pending");
-  if (!step) return null;
+  if (!step) return <WorkoutLoadError {...props} />;
   return (
     <div className="app-shell workout-shell">
       <style>{workoutStyles}</style>
@@ -144,7 +144,7 @@ function ExerciseEntry({
   );
   const [saving, setSaving] = useState(false);
   const valid =
-    weights.every(({ amount }) => Number(amount) > 0) &&
+    weights.every((entry) => conversionPreview(entry) !== "") &&
     reps.every((value) => Number.isInteger(Number(value)) && Number(value) > 0);
 
   const save = async () => {
@@ -422,3 +422,19 @@ const workoutStyles = `
 .workout-complete section b { font-family: Impact, sans-serif; font-size: 4rem; }
 .workout-complete .primary-action { margin-top: auto; }
 `;
+
+function WorkoutLoadError({ message, onExit }: Props) {
+  return (
+    <main className="app-shell workout-shell workout-load-error">
+      <style>{workoutStyles}</style>
+      <h1>WORKOUT COULD NOT BE LOADED</h1>
+      <p>{message || "WORKOUT STEPS COULD NOT BE LOADED"}</p>
+      <button type="button" onClick={() => window.location.reload()}>
+        RETRY
+      </button>
+      <button type="button" onClick={onExit}>
+        LEAVE WORKOUT
+      </button>
+    </main>
+  );
+}

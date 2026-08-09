@@ -94,6 +94,7 @@ let rotationState = { last_completed_slot: null, next_slot: "A1" };
 let workoutResult = { data: null, error: null };
 let workoutSteps = [];
 let rotationAdvancements = 0;
+let loseNextWorkoutSaveResponse = true;
 const workoutOperations = new Map();
 
 const client = {
@@ -254,9 +255,10 @@ const client = {
           error: null,
         };
       }
-      const step = workoutSteps.find(
+      const stepIndex = workoutSteps.findIndex(
         (item) => item.step_id === values.p_step_id,
       );
+      const step = structuredClone(workoutSteps[stepIndex]);
       workoutOperations.set(values.p_operation_id, {
         before: structuredClone(step),
         stepId: step.step_id,
@@ -271,6 +273,7 @@ const client = {
           ) * BigInt(weight.unit === "lb" ? 226796185 : 250000000),
         ),
       }));
+      workoutSteps[stepIndex] = step;
       const completedNow = workoutSteps.every(
         (item) => item.status !== "pending",
       );
@@ -283,15 +286,12 @@ const client = {
         rotationState = { last_completed_slot: "A1", next_slot: "B1" };
         rotationAdvancements += 1;
       }
-      return {
-        data: {
-          completed_now: completedNow,
-          next_slot: rotationState.next_slot,
-          step,
-          workout: workoutResult.data,
-        },
-        error: null,
-      };
+      return workoutSaveResponse({
+        completed_now: completedNow,
+        next_slot: rotationState.next_slot,
+        step,
+        workout: workoutResult.data,
+      });
     }
     if (name === "undo_a1_workout_step") {
       const operation = workoutOperations.get(values.p_operation_id);
@@ -979,6 +979,9 @@ const startedA1 =
   text().toUpperCase().includes("INCLINE BARBELL PRESS") &&
   text().includes("1 OF 5");
 await saveExercise("100.5");
+const responseLossRetried =
+  text().includes("NETWORK RESPONSE LOST") && workoutOperations.size === 1;
+await saveExercise("100.5");
 const undoOffered = text().includes("SAVED") && text().includes("UNDO");
 await act(async () => {
   [...document.querySelectorAll("button")]
@@ -1047,6 +1050,7 @@ const homeAdvancedOnce =
   );
 const a1WorkoutCompletion =
   startedA1 &&
+  responseLossRetried &&
   undoOffered &&
   undoRestored &&
   stretchCopyExact &&
@@ -1208,3 +1212,9 @@ process.stdout.write(
     schema_version: "1.0",
   }),
 );
+
+function workoutSaveResponse(data) {
+  if (!loseNextWorkoutSaveResponse) return { data, error: null };
+  loseNextWorkoutSaveResponse = false;
+  return { data: null, error: { message: "NETWORK RESPONSE LOST" } };
+}
