@@ -23,7 +23,7 @@ const result = JSON.parse(captured);
 write(
   JSON.stringify({
     behavior: {
-      a1_assignment_round_trip: result.behavior.a1_assignment_round_trip,
+      s02_rotation_setup: result.behavior.s02_rotation_setup,
     },
     scenario: "rotation-setup-v1",
     schema_version: "1.0",
