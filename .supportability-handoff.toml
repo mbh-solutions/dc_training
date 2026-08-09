@@ -2,7 +2,7 @@ schema_version = "1.0"
 
 [completion_report]
 architecture_judgment = "PASS"
-base_sha = "0ac2f1c2237f16efab599ef8c76627d65232ac6d"
+base_sha = "8964379be17c295ff02b8d0e7358c3cc8a45173a"
 overall_result = "PASS"
 responsibility_changes = [
     "FoundationHome owns only signed-in surface selection while HomeScreen renders the signed-in Home.",
