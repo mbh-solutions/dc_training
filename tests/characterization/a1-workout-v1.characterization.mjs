@@ -98,9 +98,9 @@ const surfaceContract = workoutTracerExists
       ["226796185n"],
       ["250000000n"],
     ]) &&
-    sourceHasSequences("src/index.css", [
-      [".", "rotation", "-", "tracker", ","],
-      [".", "last", "-", "workout", "{"],
+    sourceHasSequences("src/HomeScreen.tsx", [
+      ["const", "homeStyles", "=", "[", '".rotation-tracker,"'],
+      ["<", "style", ">", "{", "homeStyles", "}", "<", "/", "style", ">"],
     ])
   : initialBase &&
     tokenizerRejectsSpoofs &&

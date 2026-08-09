@@ -27,11 +27,7 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    radial-gradient(
-      circle at 50% -15%,
-      rgba(255, 255, 255, 0.07),
-      transparent 34rem
-    ),
+    radial-gradient(circle at 50% -15%, rgba(255, 255, 255, 0.07), transparent 34rem),
     var(--black);
 }
 
@@ -55,8 +51,7 @@ input:focus-visible {
   min-height: 100svh;
   display: grid;
   place-items: center;
-  padding: max(24px, env(safe-area-inset-top)) 24px
-    max(24px, env(safe-area-inset-bottom));
+  padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
 }
 
 .auth-panel {
@@ -186,8 +181,7 @@ dd {
   width: min(100%, 520px);
   min-height: 100svh;
   margin: 0 auto;
-  padding: max(26px, env(safe-area-inset-top)) 22px
-    max(28px, env(safe-area-inset-bottom));
+  padding: max(26px, env(safe-area-inset-top)) 22px max(28px, env(safe-area-inset-bottom));
 }
 
 .app-header {
@@ -255,11 +249,7 @@ dd {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 30px 26px 24px;
-  background: linear-gradient(
-    145deg,
-    rgba(16, 16, 16, 0.88),
-    rgba(6, 6, 6, 0.96)
-  );
+  background: linear-gradient(145deg, rgba(16, 16, 16, 0.88), rgba(6, 6, 6, 0.96));
 }
 
 .foundation-card h2 {
@@ -311,46 +301,6 @@ dd {
 .quiet-note {
   margin-top: 10px;
   text-align: center;
-}
-
-.rotation-tracker,
-.last-workout {
-  margin-top: 28px;
-}
-
-.rotation-tracker > div {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
-  margin-top: 12px;
-}
-
-.rotation-tracker span {
-  min-height: 56px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  color: #555552;
-  font-family: Impact, sans-serif;
-}
-
-.rotation-tracker .rotation-next {
-  border-color: var(--red);
-  color: var(--red);
-}
-
-.last-workout {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 22px;
-}
-
-.last-workout strong {
-  display: block;
-  margin-top: 12px;
-  font-family: Impact, sans-serif;
-  font-size: 1.8rem;
 }
 
 .center-screen {

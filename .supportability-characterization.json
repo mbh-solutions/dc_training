@@ -37,7 +37,6 @@
       "covers": [
         "src/WorkoutTracer.tsx",
         "src/hooks/use-workout.ts",
-        "src/index.css",
         "src/workout-domain.ts"
       ],
       "id": "a1-workout-v1",

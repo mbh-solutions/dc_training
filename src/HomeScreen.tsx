@@ -38,6 +38,7 @@ function HomeScreen({
 }: HomeScreenProps) {
   return (
     <div className="app-shell">
+      <style>{homeStyles}</style>
       <header className="app-header">
         <div>
           <p className="eyebrow">PRIVATE TRAINING LOG</p>
@@ -93,12 +94,23 @@ function HomeScreen({
         </button>
         {!online && <p className="quiet-note">CONNECT TO SIGN OUT</p>}
         <p className="quiet-note">
-          APP FOUNDATION · AUTHENTICATED · {cloudStatus} · {email?.toUpperCase()}
+          APP FOUNDATION · AUTHENTICATED · {cloudStatus} ·{" "}
+          {email?.toUpperCase()}
         </p>
       </main>
     </div>
   );
 }
+
+const homeStyles = [
+  ".rotation-tracker,",
+  ".last-workout { margin-top: 28px; }",
+  ".rotation-tracker > div { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 12px; }",
+  ".rotation-tracker span { min-height: 56px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 6px; color: #555552; font-family: Impact, sans-serif; }",
+  ".rotation-tracker .rotation-next { border-color: var(--red); color: var(--red); }",
+  ".last-workout { border: 1px solid var(--line); border-radius: 8px; padding: 22px; }",
+  ".last-workout strong { display: block; margin-top: 12px; font-family: Impact, sans-serif; font-size: 1.8rem; }",
+].join("\n");
 
 function WorkoutCard({
   activeSlot,
