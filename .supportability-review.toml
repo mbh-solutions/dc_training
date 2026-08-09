@@ -37,7 +37,7 @@ does_not_own = "Assignment form state or persistence, auth forms or lifecycle, p
 
 [incremental_refactor]
 target = "Correct the exact semantic findings without expanding the product scope."
-completed_step = "Added only the A1 chest assignment tracer, reusing the existing shell, React state, CSS, Supabase client, and owner authorization boundary."
+completed_step = "Added only the A1 chest assignment flow, reusing the existing shell, React state, CSS, Supabase client, and owner authorization boundary."
 
 [review_handoff]
 summary = "Review the unchanged owner-access boundary plus the isolated A1 selection, protocol, range, review, one-upsert, and cloud-restore flow with real React characterization."
@@ -49,7 +49,7 @@ remaining_risks = [
 naming = "Each hook and auth action names one concrete responsibility; AuthScreens, FoundationHome, and auth-callback name their direct boundaries."
 cohesion = "App composes; FoundationHome owns signed-in presentation and the only current product workflow; existing auth, profile, access, and session modules remain focused. Extract the workflow when S02 introduces a second implemented product surface."
 intended_behavior = "Qualified owner foundation remains; authenticated owner gains exactly one A1 chest assignment path with explicit choices and durable restoration."
-reviewability = "The change is limited to one feature component, one constant module, existing shell/CSS entry points, one migration, and focused characterization; no dependency or generalized workout model was added."
+reviewability = "The change is limited to the existing signed-in component, one migration, and focused characterization; no dependency or generalized workout model was added."
 
 [[module_boundaries]]
 path = "src/App.tsx"
@@ -67,7 +67,7 @@ justification = "Owns authentication and recovery form presentation, local form 
 path = "src/FoundationHome.tsx"
 owner_path = "src/FoundationHome.tsx"
 basis = "responsibility"
-justification = "Owns approved Home-shell and network-status presentation only."
+justification = "Owns signed-in Home presentation and the bounded A1 assignment flow."
 
 [[module_boundaries]]
 path = "src/hooks/use-auth-session.ts"
