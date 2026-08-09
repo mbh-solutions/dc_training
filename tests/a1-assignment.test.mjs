@@ -11,6 +11,9 @@ test("A1 assignment uses only the approved chest pool and explicit ranges", () =
   assert.match(source, /"11-15"/);
   assert.match(source, /"15-20"/);
   assert.match(source, /"custom"/);
+  assert.match(source, /Number\.isInteger\(target\[1\]\)/);
+  assert.match(source, /Classic DC uses one rest-pause work set\./);
+  assert.match(source, /disabled=\{loadState !== "ready"\}/);
 
   const migration = readFileSync(
     new URL(

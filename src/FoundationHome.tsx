@@ -203,6 +203,11 @@ const rotationStyles = `
   cursor: pointer;
 }
 
+.assignment-card:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
 .assignment-card span {
   color: var(--red);
   font-size: 0.9rem;
@@ -292,6 +297,25 @@ const rotationStyles = `
   padding: 4px 7px;
   color: var(--white);
   font-size: 0.72rem;
+}
+
+.info-action {
+  min-width: 44px;
+  min-height: 44px;
+  margin: -8px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--white);
+  background: transparent;
+  cursor: pointer;
+}
+
+.protocol-info {
+  margin: 0 0 14px;
+  border-left: 2px solid var(--red);
+  padding: 10px 14px;
+  color: #bdbdba;
+  line-height: 1.4;
 }
 
 .exercise-heading,
@@ -391,8 +415,10 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
   const [customMin, setCustomMin] = useState("");
   const [customMax, setCustomMax] = useState("");
   const [saved, setSaved] = useState<Assignment | null>(null);
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "failed">("loading");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showProtocolInfo, setShowProtocolInfo] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -404,8 +430,13 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
       .maybeSingle()
       .then(({ data, error }) => {
         if (!active) return;
-        if (error) setMessage("ASSIGNMENT COULD NOT BE LOADED");
-        else if (data) setSaved(data as Assignment);
+        if (error) {
+          setMessage("ASSIGNMENT COULD NOT BE LOADED");
+          setLoadState("failed");
+        } else {
+          if (data) setSaved(data as Assignment);
+          setLoadState("ready");
+        }
       });
     return () => {
       active = false;
@@ -419,7 +450,10 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
         ? [15, 20]
         : [Number(customMin), Number(customMax)];
   const customRangeValid =
-    Number.isInteger(target[0]) && target[0] > 0 && target[1] >= target[0];
+    Number.isInteger(target[0]) &&
+    Number.isInteger(target[1]) &&
+    target[0] > 0 &&
+    target[1] >= target[0];
   const rangeValid =
     rangeChoice === "11-15" ||
     rangeChoice === "15-20" ||
@@ -432,6 +466,24 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
       setCustomMax("");
     }
     setProtocol(next);
+  };
+
+  const editAssignment = () => {
+    if (saved) {
+      setExercise(saved.exercise);
+      setProtocol(saved.protocol);
+      if (saved.protocol === "rest_pause") {
+        const preset = `${saved.target_min}-${saved.target_max}`;
+        if (preset === "11-15" || preset === "15-20") {
+          setRangeChoice(preset);
+        } else {
+          setRangeChoice("custom");
+          setCustomMin(String(saved.target_min));
+          setCustomMax(String(saved.target_max));
+        }
+      }
+    }
+    setScreen("exercise");
   };
 
   const save = async () => {
@@ -464,9 +516,9 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
     return (
       <Shell title="ROTATION SETUP" onBack={onBack}>
         <p className="section-label rotation-label">A1 WORKOUT</p>
-        <button className="assignment-card" type="button" onClick={() => setScreen("exercise")}>
+        <button className="assignment-card" type="button" onClick={editAssignment} disabled={loadState !== "ready"}>
           <span>CHEST</span>
-          <strong>{saved?.exercise ?? "CHOOSE EXERCISE"}</strong>
+          <strong>{loadState === "loading" ? "LOADING ASSIGNMENT" : saved?.exercise ?? "CHOOSE EXERCISE"}</strong>
           <b aria-hidden="true">›</b>
         </button>
         {saved && (
@@ -499,6 +551,13 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
       <Shell title="SET PROTOCOL" subtitle="A1 · CHEST" onBack={() => setScreen("exercise")}>
         <h2 className="exercise-heading">{exercise}</h2>
         <p className="section-label rotation-label">PROTOCOL</p>
+        <button
+          className="info-action"
+          type="button"
+          aria-label="Chest protocol information"
+          onClick={() => setShowProtocolInfo((shown) => !shown)}
+        >ⓘ</button>
+        {showProtocolInfo && <p className="protocol-info">Classic DC uses one rest-pause work set.</p>}
         <ChoiceList
           name="protocol"
           options={[

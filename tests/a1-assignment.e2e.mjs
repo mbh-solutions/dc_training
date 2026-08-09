@@ -504,6 +504,12 @@ const protocolInitiallyEmpty =
   document.querySelectorAll('input[name="protocol"]:checked').length === 0 &&
   [...document.querySelectorAll("button")]
     .find((button) => button.textContent.includes("CONTINUE")).disabled;
+await act(async () =>
+  document.querySelector('button[aria-label="Chest protocol information"]').click(),
+);
+const protocolGuidance = text().includes(
+  "Classic DC uses one rest-pause work set.",
+);
 await act(async () => document.querySelector('input[value="rest_pause"]').click());
 await act(async () => {
   [...document.querySelectorAll("button")]
@@ -569,6 +575,7 @@ const behavior = {
     approvedChestPool &&
     exerciseContinueDisabled &&
     protocolInitiallyEmpty &&
+    protocolGuidance &&
     rangeInitiallyEmpty &&
     reviewComplete &&
     backPreserved &&
