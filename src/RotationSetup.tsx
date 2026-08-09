@@ -1,9 +1,5 @@
 import RotationSetupFlow from "./RotationSetupFlow.jsx";
-import {
-  EXERCISES,
-  categoryFor,
-  protocolChoices,
-} from "./rotation-config.js";
+import { EXERCISES, categoryFor, protocolChoices } from "./rotation-config.js";
 import {
   assignmentKey,
   useRotationAssignments,

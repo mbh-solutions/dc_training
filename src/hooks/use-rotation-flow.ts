@@ -9,8 +9,7 @@ export function useRotationFlow(hasStructures: boolean) {
     onExerciseBack: () => setScreen("setup"),
     onExerciseContinue: () => setScreen("protocol"),
     onProtocolBack: () => setScreen("exercise"),
-    onProtocolContinue: () =>
-      setScreen(hasStructures ? "structure" : "review"),
+    onProtocolContinue: () => setScreen(hasStructures ? "structure" : "review"),
     onReviewBack: () => setScreen(hasStructures ? "structure" : "protocol"),
     onStructureBack: () => setScreen("protocol"),
     onStructureContinue: () => setScreen("review"),

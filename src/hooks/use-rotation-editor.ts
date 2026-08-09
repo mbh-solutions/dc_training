@@ -13,13 +13,33 @@ import { assignmentKey, type Assignment } from "./use-rotation-assignment.js";
 
 const emptyTargets = (): DraftTarget[] => [{ min: "", max: "" }];
 
+function savedDraft(current: Assignment | undefined) {
+  if (!current)
+    return {
+      customTargets: emptyTargets(),
+      exercise: "",
+      protocol: "" as const,
+      structure: "",
+    };
+  return {
+    customTargets:
+      current.structure === "custom"
+        ? draftTargets(current.target_sets)
+        : emptyTargets(),
+    exercise: current.exercise,
+    protocol: current.protocol,
+    structure: current.structure === "none" ? "" : current.structure,
+  };
+}
+
 export function useRotationEditor(saved: Record<string, Assignment>) {
   const [slot, setSlot] = useState<WorkoutSlot>("A1");
   const [position, setPosition] = useState<AssignmentPosition>("chest");
   const [exercise, setExercise] = useState("");
   const [protocol, setProtocol] = useState<Protocol | "">("");
   const [structure, setStructure] = useState("");
-  const [customTargets, setCustomTargets] = useState<DraftTarget[]>(emptyTargets);
+  const [customTargets, setCustomTargets] =
+    useState<DraftTarget[]>(emptyTargets);
   const [showProtocolInfo, setShowProtocolInfo] = useState(false);
 
   const resetDownstream = () => {
@@ -35,15 +55,11 @@ export function useRotationEditor(saved: Record<string, Assignment>) {
   ) => {
     setSlot(nextSlot);
     setPosition(nextPosition);
-    const current = saved[assignmentKey(nextSlot, nextPosition)];
-    setExercise(current?.exercise ?? "");
-    setProtocol(current?.protocol ?? "");
-    setStructure(current?.structure === "none" ? "" : (current?.structure ?? ""));
-    setCustomTargets(
-      current?.structure === "custom"
-        ? draftTargets(current.target_sets)
-        : emptyTargets(),
-    );
+    const draft = savedDraft(saved[assignmentKey(nextSlot, nextPosition)]);
+    setExercise(draft.exercise);
+    setProtocol(draft.protocol);
+    setStructure(draft.structure);
+    setCustomTargets(draft.customTargets);
     setShowProtocolInfo(false);
   };
 
