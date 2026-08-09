@@ -1,10 +1,5 @@
-import type { WorkoutSlot } from "./rotation-config.js";
-
-export type WeightEntry = {
-  amount: string;
-  micrograms?: string;
-  unit: "kg" | "lb";
-};
+import { WORKOUT_SLOTS, type WorkoutSlot } from "./rotation-config.js";
+import type { WeightEntry } from "./weight-conversion.js";
 
 export type Workout = {
   completed_at: string | null;
@@ -28,46 +23,29 @@ export type WorkoutStep = {
   workout_id: string;
 };
 
-export function setCount(step: WorkoutStep) {
-  if (step.protocol === "rest_pause") return 1;
-  return Math.max(step.target_sets.length, 1);
+const exerciseBodyParts = new Set([
+  "chest",
+  "shoulders",
+  "triceps",
+  "back_width",
+  "back_thickness",
+]);
+const stretchBodyParts = new Set(["chest", "shoulders", "triceps", "back"]);
+
+export function isWorkoutSlot(value: unknown): value is WorkoutSlot {
+  return WORKOUT_SLOTS.includes(value as WorkoutSlot);
 }
 
-export function repCount(step: WorkoutStep) {
-  return step.protocol === "rest_pause" ? 3 : setCount(step);
-}
-
-export function displayBodyPart(bodyPart: string) {
-  return bodyPart.replaceAll("_", " ").toUpperCase();
-}
-
-export function conversionPreview(entry: WeightEntry) {
-  const micrograms = weightMicrograms(entry);
-  if (micrograms === null) return "";
-  const targetUnit = entry.unit === "lb" ? "kg" : "lb";
-  const stepMicrograms = targetUnit === "kg" ? 250000000n : 226796185n;
-  const steps = (micrograms + stepMicrograms / 2n) / stepMicrograms;
-  const divisor = targetUnit === "kg" ? 4n : 2n;
-  const whole = steps / divisor;
-  const remainder = steps % divisor;
-  const fraction =
-    targetUnit === "kg"
-      ? ["", ".25", ".5", ".75"][Number(remainder)]
-      : remainder === 0n
-        ? ""
-        : ".5";
-  return `≈ ${whole}${fraction} ${targetUnit}`;
-}
-
-export function weightMicrograms(entry: WeightEntry) {
-  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(entry.amount);
-  if (!match) return null;
-  const cents =
-    BigInt(match[1]) * 100n + BigInt((match[2] ?? "").padEnd(2, "0") || "0");
-  const centsPerStep = entry.unit === "lb" ? 50n : 25n;
-  if (cents === 0n || cents % centsPerStep !== 0n) return null;
-  const microgramsPerStep = entry.unit === "lb" ? 226796185n : 250000000n;
-  return (cents / centsPerStep) * microgramsPerStep;
+export function validRotationState(value: unknown): value is {
+  last_completed_slot: WorkoutSlot | null;
+  next_slot: WorkoutSlot;
+} {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Record<string, unknown>;
+  return (
+    isWorkoutSlot(row.next_slot) &&
+    (row.last_completed_slot === null || isWorkoutSlot(row.last_completed_slot))
+  );
 }
 
 export function validWorkout(value: unknown): value is Workout {
@@ -75,8 +53,11 @@ export function validWorkout(value: unknown): value is Workout {
   const row = value as Record<string, unknown>;
   return (
     typeof row.workout_id === "string" &&
-    typeof row.slot === "string" &&
-    (row.status === "in_progress" || row.status === "completed")
+    isWorkoutSlot(row.slot) &&
+    (row.status === "in_progress" || row.status === "completed") &&
+    (row.status === "in_progress"
+      ? row.completed_at === null
+      : typeof row.completed_at === "string")
   );
 }
 
@@ -92,7 +73,8 @@ function validStepIdentity(row: Record<string, unknown>) {
   return (
     typeof row.step_id === "string" &&
     typeof row.workout_id === "string" &&
-    Number.isInteger(row.ordinal)
+    Number.isInteger(row.ordinal) &&
+    Number(row.ordinal) > 0
   );
 }
 
@@ -101,9 +83,97 @@ function validStepState(row: Record<string, unknown>) {
   const statusValid = ["pending", "completed", "skipped"].includes(
     row.status as string,
   );
-  return kindValid && statusValid;
+  if (!kindValid || !statusValid) return false;
+  return row.kind === "exercise"
+    ? validExerciseState(row)
+    : validStretchState(row);
 }
 
 function validStepCollections(row: Record<string, unknown>) {
+  if (!validCollectionShape(row)) return false;
+  return row.kind === "stretch"
+    ? validEmptyCollections(row)
+    : validExerciseCollections(row);
+}
+
+function validExerciseState(row: Record<string, unknown>) {
+  return (
+    exerciseBodyParts.has(row.body_part as string) &&
+    typeof row.exercise === "string" &&
+    (row.protocol === "rest_pause" || row.protocol === "straight_set") &&
+    typeof row.structure === "string"
+  );
+}
+
+function validStretchState(row: Record<string, unknown>) {
+  return (
+    stretchBodyParts.has(row.body_part as string) &&
+    row.exercise === null &&
+    row.protocol === null &&
+    row.structure === null
+  );
+}
+
+function validCollectionShape(row: Record<string, unknown>): row is Record<
+  string,
+  unknown
+> & {
+  reps: unknown[];
+  target_sets: unknown[];
+  weight_entries: unknown[];
+} {
   return [row.target_sets, row.weight_entries, row.reps].every(Array.isArray);
+}
+
+function validEmptyCollections(row: {
+  reps: unknown[];
+  target_sets: unknown[];
+  weight_entries: unknown[];
+}) {
+  return [row.target_sets, row.weight_entries, row.reps].every(
+    (items) => items.length === 0,
+  );
+}
+
+function validExerciseCollections(
+  row: Record<string, unknown> & {
+    reps: unknown[];
+    target_sets: unknown[];
+    weight_entries: unknown[];
+  },
+) {
+  if (row.target_sets.length === 0 || !row.target_sets.every(validTargetSet))
+    return false;
+  if (row.status !== "completed")
+    return row.weight_entries.length === 0 && row.reps.length === 0;
+  const expected = row.protocol === "rest_pause" ? 3 : row.target_sets.length;
+  return (
+    row.weight_entries.length ===
+      (row.protocol === "rest_pause" ? 1 : expected) &&
+    row.weight_entries.every(validWeightEntry) &&
+    row.reps.length === expected &&
+    row.reps.every((rep) => Number.isInteger(rep) && Number(rep) > 0)
+  );
+}
+
+function validTargetSet(value: unknown) {
+  if (!value || typeof value !== "object") return false;
+  const target = value as Record<string, unknown>;
+  return (
+    Number.isInteger(target.min) &&
+    Number.isInteger(target.max) &&
+    Number(target.min) > 0 &&
+    Number(target.max) >= Number(target.min)
+  );
+}
+
+function validWeightEntry(value: unknown): value is WeightEntry {
+  if (!value || typeof value !== "object") return false;
+  const weight = value as Record<string, unknown>;
+  return (
+    typeof weight.amount === "string" &&
+    (weight.unit === "lb" || weight.unit === "kg") &&
+    typeof weight.micrograms === "string" &&
+    /^\d+$/.test(weight.micrograms)
+  );
 }

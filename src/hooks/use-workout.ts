@@ -1,54 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { WorkoutSlot } from "../rotation-config.js";
+import type { Workout, WorkoutStep } from "../workout-domain.js";
 import {
-  validWorkout,
-  validWorkoutStep,
-  type WeightEntry,
-  type Workout,
-  type WorkoutStep,
-} from "../workout-domain.js";
-import { supabase } from "../lib/supabase.js";
-
-type SaveResult = {
-  completed_now?: boolean;
-  next_slot: WorkoutSlot;
-  step: WorkoutStep;
-  workout: Workout;
-};
-
-async function fetchWorkoutState(userId: string) {
-  return Promise.all([
-    supabase!
-      .from("workout_rotation_state")
-      .select("next_slot,last_completed_slot")
-      .eq("user_id", userId)
-      .maybeSingle(),
-    supabase!
-      .from("workouts")
-      .select("workout_id,slot,status,completed_at")
-      .eq("status", "in_progress")
-      .maybeSingle(),
-  ]);
-}
-
-async function fetchWorkoutSteps(userId: string, workoutId: string) {
-  return supabase!
-    .from("workout_steps")
-    .select(
-      "step_id,workout_id,ordinal,kind,body_part,exercise,protocol,structure,target_sets,status,weight_entries,reps",
-    )
-    .eq("user_id", userId)
-    .eq("workout_id", workoutId)
-    .order("ordinal");
-}
-
-function validStepRows(result: { data: unknown; error: unknown }) {
-  return (
-    !result.error &&
-    Array.isArray(result.data) &&
-    result.data.every(validWorkoutStep)
-  );
-}
+  loadWorkoutState,
+  saveA1WorkoutStep,
+  startA1Workout,
+  undoA1WorkoutStep,
+} from "../workout-api.js";
+import type { WeightEntry } from "../weight-conversion.js";
+import type { WorkoutSlot } from "../rotation-config.js";
 
 export function useWorkout(userId: string, online: boolean) {
   const [activeWorkout, setActiveWorkout] = useState<Workout | null>(null);
@@ -70,33 +29,17 @@ export function useWorkout(userId: string, online: boolean) {
       return;
     }
     setLoading(true);
-    const [rotationResult, workoutResult] = await fetchWorkoutState(userId);
-    if ([rotationResult, workoutResult].some((result) => result.error)) {
-      setMessage("WORKOUT STATE COULD NOT BE LOADED");
+    const result = await loadWorkoutState(userId);
+    if (!result.data) {
+      setMessage(result.error);
       setLoading(false);
       return;
     }
-    const rotation = rotationResult.data as Record<string, unknown> | null;
-    setNextSlot((rotation?.next_slot as WorkoutSlot) ?? "A1");
-    setLastCompletedSlot(
-      (rotation?.last_completed_slot as WorkoutSlot | null) ?? null,
-    );
-    const workout = validWorkout(workoutResult.data)
-      ? workoutResult.data
-      : null;
-    setActiveWorkout(workout);
-    if (!workout) {
-      setSteps([]);
-      setLoading(false);
-      return;
-    }
-    const stepResult = await fetchWorkoutSteps(userId, workout.workout_id);
-    if (!validStepRows(stepResult)) {
-      setMessage("WORKOUT STEPS COULD NOT BE LOADED");
-    } else {
-      setSteps(stepResult.data as WorkoutStep[]);
-      setMessage("");
-    }
+    setNextSlot(result.data.nextSlot);
+    setLastCompletedSlot(result.data.lastCompletedSlot);
+    setActiveWorkout(result.data.workout);
+    setSteps(result.data.steps);
+    setMessage("");
     setLoading(false);
   }, [online, userId]);
 
@@ -107,12 +50,10 @@ export function useWorkout(userId: string, online: boolean) {
   const start = async () => {
     setMessage("");
     const operationId = crypto.randomUUID();
-    const { data, error } = await supabase!.rpc("start_a1_workout", {
-      p_operation_id: operationId,
-    });
-    if (error || !validWorkout(data)) {
+    const result = await startA1Workout(operationId);
+    if (!result.data) {
       setMessage(
-        error?.message.includes("five saved assignments")
+        result.error.includes("five saved assignments")
           ? "FINISH ALL FIVE A1 ASSIGNMENTS IN ROTATION SETUP"
           : "A1 WORKOUT COULD NOT BE STARTED",
       );
@@ -124,7 +65,6 @@ export function useWorkout(userId: string, online: boolean) {
 
   const saveStep = async (
     step: WorkoutStep,
-    status: "completed" | "skipped",
     weights: WeightEntry[] = [],
     reps: number[] = [],
   ) => {
@@ -132,23 +72,12 @@ export function useWorkout(userId: string, online: boolean) {
       pendingOperationIds.current,
       step.step_id,
     );
-    const { data, error } = await supabase!.rpc("save_a1_workout_step", {
-      p_operation_id: operationId,
-      p_reps: reps,
-      p_status: status,
-      p_step_id: step.step_id,
-      p_weights: weights,
-    });
-    const result = data as SaveResult | null;
-    if (
-      error ||
-      !result ||
-      !validWorkout(result.workout) ||
-      !validWorkoutStep(result.step)
-    ) {
-      setMessage(error?.message ?? "STEP COULD NOT BE SAVED");
+    const response = await saveA1WorkoutStep(operationId, step, weights, reps);
+    if (!response.data) {
+      setMessage(response.error);
       return false;
     }
+    const result = response.data;
     pendingOperationIds.current.delete(step.step_id);
     setMessage("");
     setNextSlot(result.next_slot);
@@ -170,16 +99,15 @@ export function useWorkout(userId: string, online: boolean) {
 
   const undo = async () => {
     if (!lastOperationId) return;
-    const { data, error } = await supabase!.rpc("undo_a1_workout_step", {
-      p_operation_id: lastOperationId,
-      p_undo_operation_id: crypto.randomUUID(),
-    });
-    if (error || !validWorkoutStep(data)) {
-      setMessage("UNDO COULD NOT BE SAVED");
+    const result = await undoA1WorkoutStep(lastOperationId);
+    if (!result.data) {
+      setMessage(result.error);
       return;
     }
     setSteps((current) =>
-      current.map((item) => (item.step_id === data.step_id ? data : item)),
+      current.map((item) =>
+        item.step_id === result.data!.step_id ? result.data! : item,
+      ),
     );
     setLastOperationId(null);
     setMessage("");

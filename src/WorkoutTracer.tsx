@@ -1,13 +1,6 @@
 import { useState } from "react";
-import {
-  conversionPreview,
-  displayBodyPart,
-  repCount,
-  setCount,
-  type WeightEntry,
-  type Workout,
-  type WorkoutStep,
-} from "./workout-domain.js";
+import { type Workout, type WorkoutStep } from "./workout-domain.js";
+import { conversionPreview, type WeightEntry } from "./weight-conversion.js";
 
 const backIllustration = new URL(
   "../docs/design/back-stretch-illustration-approved.png",
@@ -86,7 +79,6 @@ type Props = {
   onExit: () => void;
   onSave: (
     step: WorkoutStep,
-    status: "completed" | "skipped",
     weights?: WeightEntry[],
     reps?: number[],
   ) => Promise<boolean>;
@@ -150,7 +142,7 @@ function ExerciseEntry({
   const save = async () => {
     if (!valid) return;
     setSaving(true);
-    const saved = await onSave(step, "completed", weights, reps.map(Number));
+    const saved = await onSave(step, weights, reps.map(Number));
     if (!saved) setSaving(false);
   };
 
@@ -246,14 +238,6 @@ function ExerciseEntry({
       >
         {saving ? "SAVING" : "SAVE & NEXT"}
       </button>
-      <button
-        className="text-action skip-action"
-        disabled={saving}
-        type="button"
-        onClick={() => void onSave(step, "skipped")}
-      >
-        SKIP
-      </button>
     </main>
   );
 }
@@ -294,16 +278,9 @@ function StretchEntry({
       <button
         className="primary-action"
         type="button"
-        onClick={() => void onSave(step, "completed")}
+        onClick={() => void onSave(step)}
       >
         STRETCH COMPLETE
-      </button>
-      <button
-        className="text-action skip-action"
-        type="button"
-        onClick={() => void onSave(step, "skipped")}
-      >
-        SKIP
       </button>
       {infoOpen && (
         <div className="stretch-dialog-backdrop">
@@ -375,6 +352,20 @@ function exerciseNumber(step: WorkoutStep) {
   if (step.body_part === "triceps") return 3;
   if (step.body_part === "back_width") return 4;
   return 5;
+}
+
+function setCount(step: WorkoutStep) {
+  return step.protocol === "rest_pause"
+    ? 1
+    : Math.max(step.target_sets.length, 1);
+}
+
+function repCount(step: WorkoutStep) {
+  return step.protocol === "rest_pause" ? 3 : setCount(step);
+}
+
+function displayBodyPart(bodyPart: string) {
+  return bodyPart.replaceAll("_", " ").toUpperCase();
 }
 
 const workoutStyles = `

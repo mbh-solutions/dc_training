@@ -1,7 +1,7 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Let the authenticated owner start or resume the automatically selected A1 workout, durably log or skip every configured exercise and required stretch, undo the latest save, complete once, and return Home with B1 next."
+intended_behavior = "Let the authenticated owner start or resume the automatically selected A1 workout, durably log every configured exercise and required stretch, undo the latest save, complete once, and return Home with B1 next."
 proof = "tests/a1-assignment.e2e.mjs mounts src/main.tsx with real React, drives Home through A1 completion, leaves/resumes, preserves a step operation ID across a lost response, undoes/re-saves, checks exact stretch copy, retries the final operation, and returns to Home with B1. tests/workout-domain.test.mjs proves exact canonical conversion."
 
 [characterization]
@@ -10,26 +10,28 @@ proof = "The existing foundation-shell-v2 and rotation-setup-v1 scenarios remain
 
 [separation_of_concerns]
 before = "FoundationHome selected Home or Rotation Setup; no workout state, persistence, or execution UI existed."
-after = "FoundationHome selects Home, Rotation Setup, active workout, or completion; useWorkout owns validated Supabase calls; workout-domain owns exact conversion and data guards; WorkoutTracer owns controlled presentation."
+after = "FoundationHome selects Home, Rotation Setup, active workout, or completion; useWorkout owns React state transitions; workout-api owns validated Supabase calls; workout-domain owns row guards; weight-conversion owns exact conversion; WorkoutTracer owns controlled presentation."
 
 [architecture]
-dependency_direction = "App composes FoundationHome; FoundationHome composes HomeScreen, RotationSetup, WorkoutTracer, and useWorkout; useWorkout alone reaches the Supabase client; WorkoutTracer and the hook depend on workout-domain."
+dependency_direction = "App composes FoundationHome; FoundationHome composes HomeScreen, RotationSetup, WorkoutTracer, and useWorkout; useWorkout delegates cloud I/O to workout-api; workout-api alone reaches the Supabase client; row validation and weight conversion remain inward dependencies."
 reviewed_paths = [
     "src/FoundationHome.tsx",
     "src/HomeScreen.tsx",
     "src/WorkoutTracer.tsx",
     "src/hooks/use-workout.ts",
+    "src/weight-conversion.ts",
+    "src/workout-api.ts",
     "src/workout-domain.ts",
 ]
 
 [responsibility_boundary]
 path = "src/hooks/use-workout.ts"
-owns = "Loading owner workout state and invoking start, durable step-save, undo, and completion-return RPC contracts."
-does_not_own = "Workout visuals, assignment configuration, authentication, SQL invariants, or future B-workout execution."
+owns = "React state transitions for validated workout loads, saves, undo, and completion results."
+does_not_own = "Workout visuals, Supabase calls, response validation, SQL invariants, or future B-workout execution."
 
 [incremental_refactor]
 target = "Add only the S03 A1 tracer to the qualified S02 application."
-completed_step = "Reused fixed assignment contracts and added one A1-only state boundary, one presentation module, one domain module, and one additive migration."
+completed_step = "Reused fixed assignment contracts and added focused A1 presentation, state, API, row-validation, and weight-conversion boundaries plus one additive migration."
 
 [review_handoff]
 summary = "Review A1-only client orchestration, exact weight conversion, approved stretch presentation, additive RLS schema, and atomic idempotent final-step transition."
@@ -39,10 +41,10 @@ remaining_risks = [
 ]
 
 [human_review]
-naming = "WorkoutTracer, useWorkout, and workout-domain name their presentation, cloud-orchestration, and pure-domain responsibilities directly."
-cohesion = "One hook owns remote state, one domain file owns shared validation/conversion, and one view file owns the bounded A1 screens."
+naming = "WorkoutTracer, useWorkout, workout-api, workout-domain, and weight-conversion name their presentation, state, I/O, row-validation, and conversion responsibilities directly."
+cohesion = "The hook owns React state, workout-api owns cloud I/O, workout-domain owns row guards, weight-conversion owns exact conversion, and WorkoutTracer owns A1 presentation."
 intended_behavior = "The owner gains one durable A1 completion path with no B-day, history, logbook-failure, cruise, or offline-queue expansion."
-reviewability = "The diff adds three focused source modules, one migration, one targeted unit check, and one real-React behavior extension."
+reviewability = "The diff adds five focused source modules, one migration, one targeted unit check, and one real-React behavior extension."
 
 [[module_boundaries]]
 path = "src/WorkoutTracer.tsx"
@@ -54,10 +56,22 @@ justification = "Owns A1 exercise, stretch, and completion presentation only."
 path = "src/hooks/use-workout.ts"
 owner_path = "src/hooks/use-workout.ts"
 basis = "responsibility"
-justification = "Owns validated owner workout loading and Supabase RPC orchestration only."
+justification = "Owns React workout state transitions and retry-operation identity only."
 
 [[module_boundaries]]
 path = "src/workout-domain.ts"
 owner_path = "src/workout-domain.ts"
 basis = "responsibility"
-justification = "Owns workout row guards, set counts, labels, and exact unit conversion only."
+justification = "Owns complete fail-closed guards for workout, rotation, and step rows only."
+
+[[module_boundaries]]
+path = "src/workout-api.ts"
+owner_path = "src/workout-api.ts"
+basis = "responsibility"
+justification = "Owns owner-filtered Supabase workout I/O and validated API results only."
+
+[[module_boundaries]]
+path = "src/weight-conversion.ts"
+owner_path = "src/weight-conversion.ts"
+basis = "responsibility"
+justification = "Owns exact weight parsing, integer-microgram conversion, and display conversion only."
