@@ -18,7 +18,6 @@ simplified_functions = [
     "FoundationHome",
     "FoundationHome.anonymous@20:17",
     "FoundationHome.anonymous@29:23",
-    "FoundationHome.anonymous@59:20",
     "HomeScreen",
     "HomeScreen.anonymous@66:20",
     "NetworkStatus",
