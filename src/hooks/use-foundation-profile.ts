@@ -59,6 +59,6 @@ export function useFoundationProfile(session: Session | null, online: boolean) {
           window.localStorage.getItem(profileAuthorizationKey) ===
             session?.user.id
         ? "authorized"
-      : "pending";
+        : "pending";
   return { cloudStatus, profileAccess, syncState };
 }
