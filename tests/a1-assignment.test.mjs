@@ -30,4 +30,8 @@ test("A1 assignment uses only the approved chest pool and explicit ranges", () =
   assert.match(migration, /enable row level security/);
   assert.match(migration, /auth\.uid\(\)\) = user_id/g);
   assert.match(migration, /revoke all .* from anon, authenticated/);
+  assert.match(
+    migration,
+    /protocol = 'rest_pause' and target_min is not null and target_max is not null/,
+  );
 });

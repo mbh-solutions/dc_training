@@ -476,6 +476,16 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
     setProtocol(next);
   };
 
+  const selectExercise = (next: string) => {
+    if (next !== exercise) {
+      setProtocol("");
+      setRangeChoice("");
+      setCustomMin("");
+      setCustomMax("");
+    }
+    setExercise(next);
+  };
+
   const editAssignment = () => {
     if (saved) {
       setExercise(saved.exercise);
@@ -613,7 +623,7 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
           name="exercise"
           options={CHEST_EXERCISES.map((label) => ({ label, value: label }))}
           selected={exercise}
-          onSelect={setExercise}
+          onSelect={selectExercise}
         />
         <FooterButton
           disabled={!exercise}

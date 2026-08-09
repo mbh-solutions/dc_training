@@ -21,7 +21,7 @@ create table public.rotation_assignments (
   check (
     (protocol = 'straight_set' and target_min is null and target_max is null)
     or
-    (protocol = 'rest_pause' and target_min > 0 and target_max >= target_min)
+    (protocol = 'rest_pause' and target_min is not null and target_max is not null and target_min > 0 and target_max >= target_min)
   )
 );
 

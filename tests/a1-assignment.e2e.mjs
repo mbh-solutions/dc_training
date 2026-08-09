@@ -576,6 +576,25 @@ const restoredAfterRemount =
   text().includes("Incline barbell press") &&
   text().includes("11–15");
 
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("Incline barbell press"))
+    .click();
+});
+await act(async () =>
+  document.querySelectorAll('input[name="exercise"]')[1].click(),
+);
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE"))
+    .click();
+});
+const replacementClearsDownstream =
+  document.querySelectorAll('input[name="protocol"]:checked').length === 0 &&
+  [...document.querySelectorAll("button")].find((button) =>
+    button.textContent.includes("CONTINUE"),
+  ).disabled;
+
 const behavior = {
   a1_assignment_round_trip:
     emptyA1 &&
@@ -587,7 +606,8 @@ const behavior = {
     reviewComplete &&
     backPreserved &&
     savedExactlyOnce &&
-    restoredAfterRemount,
+    restoredAfterRemount &&
+    replacementClearsDownstream,
   browser_safe_client:
     hasCall(
       "createClient",
