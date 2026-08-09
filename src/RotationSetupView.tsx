@@ -370,11 +370,7 @@ function RotationSetupView({
   );
 
   const renderProtocol = () => (
-    <Shell
-      title="SET PROTOCOL"
-      subtitle="A1 · CHEST"
-      onBack={onProtocolBack}
-    >
+    <Shell title="SET PROTOCOL" subtitle="A1 · CHEST" onBack={onProtocolBack}>
       <h2 className="exercise-heading">{exercise}</h2>
       <p className="section-label rotation-label">PROTOCOL</p>
       <button
@@ -399,10 +395,7 @@ function RotationSetupView({
         selected={protocol}
         onSelect={(value) => selectProtocol(value as Protocol)}
       />
-      <FooterButton
-        disabled={!protocol}
-        onClick={onProtocolContinue}
-      >
+      <FooterButton disabled={!protocol} onClick={onProtocolContinue}>
         CONTINUE
       </FooterButton>
     </Shell>
@@ -425,10 +418,7 @@ function RotationSetupView({
           selected={exercise}
           onSelect={(value) => selectExercise(value as ChestExercise)}
         />
-        <FooterButton
-          disabled={!exercise}
-          onClick={onExerciseContinue}
-        >
+        <FooterButton disabled={!exercise} onClick={onExerciseContinue}>
           CONTINUE
         </FooterButton>
       </Shell>
@@ -486,10 +476,7 @@ function RotationSetupView({
             </label>
           </div>
         )}
-        <FooterButton
-          disabled={!rangeValid}
-          onClick={onRangeContinue}
-        >
+        <FooterButton disabled={!rangeValid} onClick={onRangeContinue}>
           CONTINUE
         </FooterButton>
       </Shell>
