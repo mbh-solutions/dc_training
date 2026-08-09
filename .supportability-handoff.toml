@@ -2,12 +2,12 @@ schema_version = "1.0"
 
 [completion_report]
 architecture_judgment = "PASS"
-base_sha = "8964379be17c295ff02b8d0e7358c3cc8a45173a"
+base_sha = "7d64356fc530dd3dcc65ca13fe858f928ddd13ee"
 overall_result = "PASS"
 responsibility_changes = [
-    "FoundationHome owns only signed-in surface selection while HomeScreen renders the signed-in Home.",
-    "useRotationAssignment validates external rows and owns A1 loading and persistence; RotationSetup owns editor state and navigation; RotationSetupView renders the flow.",
-    "The database migration owns the fixed A1/chest data contract and owner-only row policies.",
+    "rotation-config owns the fixed A/B and abs setup contract while existing setup modules own state and presentation.",
+    "useRotationAssignment validates rows and owns owner-scoped versioned loading and persistence through one security-invoker RPC.",
+    "The additive migrations own replacement lineage, active-version uniqueness, RLS, validation, and the lineage index.",
 ]
 simplified_functions = [
     "App",
@@ -61,10 +61,11 @@ simplified_functions = [
 ]
 boundary_rationale = [
     "App remains top-level authenticated composition; focused modules separately own signed-in surface selection and Home rendering.",
-    "The assignment hook is the validated Supabase boundary; RotationSetup owns editor state and navigation; RotationSetupView owns detailed flow rendering.",
+    "The assignment hook is the validated Supabase boundary; RotationSetup owns rotation editor state and navigation; RotationSetupView owns detailed setup rendering.",
 ]
 remaining_risks = [
-    "Live production deployment and browser round-trip evidence remain external to deterministic source characterization until the protected merge deploys.",
+    "Live production deployment evidence remains external to deterministic source characterization until the protected merge deploys.",
+    "The retained legacy assignment table is rollback compatibility and should be removed only after the new contract is proven in production.",
     "Supabase leaked-password protection remains disabled and is tracked as deployment debt outside this bounded assignment slice.",
 ]
 validation_results = [
@@ -84,11 +85,11 @@ gate_coverage = [
 ]
 
 [[completion_report.claims]]
-id = "claim-a1-owner-boundary"
-text = "The authenticated user identifier supplied by App is passed to RotationSetup, which filters reads by that owner and writes the same owner identifier in the single A1 upsert."
-citations = ["src/App.tsx:50-58", "src/FoundationHome.tsx:17-23", "src/hooks/use-rotation-assignment.ts:58-121"]
+id = "claim-owner-version-boundary"
+text = "The authenticated owner identifier scopes assignment reads, while saves call one database RPC that creates immutable replacement versions under owner-only RLS."
+citations = ["src/hooks/use-rotation-assignment.ts", "supabase/migrations/20260809063758_expand_rotation_assignments.sql"]
 
 [[completion_report.claims]]
-id = "claim-a1-explicit-contract"
-text = "A1 offers only the nine fixed chest exercises, explicit rest-pause or straight-set protocols, and validated preset or positive-integer custom rest-pause ranges before review."
-citations = ["src/hooks/use-rotation-assignment.ts:4-56", "src/RotationSetup.tsx:19-40", "src/RotationSetupView.tsx:389-482"]
+id = "claim-fixed-rotation-contract"
+text = "The complete locked A/B order, exercise pools, muscle mappings, badges, dagger copy, and six abs slots live in one fixed configuration consumed by the setup flow."
+citations = ["src/rotation-config.ts", "src/RotationSetup.tsx", "src/RotationSetupView.tsx"]
