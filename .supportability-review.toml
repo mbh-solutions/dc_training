@@ -1,23 +1,24 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Preserve the owner workflows while requiring a live current-user profile result online and a cryptographically verified, unexpired, project-signed owner session for temporary offline reopening."
-proof = "The foundation characterization mounts the real application with a signed ES256 test session, delegates getClaims to the installed Supabase client, and exercises both profile failure paths; App hides protected UI until the focused owner-access boundary authorizes the current user."
+intended_behavior = "Preserve the qualified owner foundation and add one authenticated A1 chest assignment path with explicit exercise, protocol, and range selection, one cloud save, and restored state."
+proof = "The characterization mounts the real React application, exercises owner authorization, drives select-review-back-save-remount through the A1 UI, records one Supabase upsert keyed by owner and A1, and verifies restored state."
 
 [characterization]
-captured_behavior = "The foundation provides owner authentication, protected profile authorization, the approved Home shell, temporary offline launch, reconnection, and password recovery."
-proof = "tests/characterization/foundation-shell.characterization.mjs mounts src/main.tsx through React createRoot, drives real effects, forms, signed-session verification through the installed Supabase client, profile-failure paths, and records boundary calls while preserving compatible observable behavior."
+captured_behavior = "The foundation behaviors remain and the owner can configure and restore one A1 chest assignment without preselected choices."
+proof = "tests/characterization/foundation-shell.characterization.mjs mounts src/main.tsx through React createRoot, drives the existing foundation flows plus the full A1 assignment UI, verifies all nine approved chest exercises, preserves review-back state, records exactly one owner-keyed upsert, and remounts the assignment from cloud data."
 
 [separation_of_concerns]
 before = "App owned session lifecycle, network listeners, profile authorization, route selection, and Home presentation; the Supabase module also parsed callback URLs."
-after = "App only selects screens; focused modules separately own auth-screen forms, Supabase auth actions, session state, network state, profile loading, owner-access enforcement, offline signed-session verification, callback parsing, client construction, and Home presentation."
+after = "App selects authenticated screens; RotationSetup owns the one A1 assignment flow and Supabase boundary; focused foundation modules retain their existing responsibilities."
 
 [architecture]
-dependency_direction = "src/main.tsx mounts App; App composes AuthScreens, focused hooks, and FoundationHome; use-owner-access delegates offline proof to offline-owner-session; hooks and auth actions depend on focused library modules or the Supabase client; library modules do not import UI."
+dependency_direction = "src/main.tsx mounts App; App composes authentication, FoundationHome, and RotationSetup; RotationSetup imports only the Supabase client and A1 assignment constants; foundation hooks retain their existing leaf dependencies."
 reviewed_paths = [
     "src/App.tsx",
     "src/AuthScreens.tsx",
     "src/FoundationHome.tsx",
+    "src/RotationSetup.tsx",
     "src/hooks/use-auth-session.ts",
     "src/hooks/use-foundation-profile.ts",
     "src/hooks/use-online.ts",
@@ -28,28 +29,29 @@ reviewed_paths = [
     "src/lib/offline-owner-session.ts",
     "src/lib/supabase.ts",
     "src/main.tsx",
+    "src/rotation-assignment.ts",
 ]
 
 [responsibility_boundary]
 path = "src/App.tsx"
-owns = "Top-level screen selection and composition of focused foundation boundaries."
-does_not_own = "Auth forms or client calls, auth lifecycle, network listeners, profile queries, Home presentation, callback parsing, Supabase construction, database policy, or future workout behavior."
+owns = "Top-level authenticated screen selection and composition."
+does_not_own = "Assignment form state or persistence, auth forms or lifecycle, profile queries, Home presentation, Supabase construction, database policy, or future workout behavior."
 
 [incremental_refactor]
 target = "Correct the exact semantic findings without expanding the product scope."
-completed_step = "Replaced the client-mutable offline marker with pinned-JWKS session verification, separated owner access from profile and cloud state, extracted auth screens and client actions, and retained focused lifecycle, callback, and Home boundaries."
+completed_step = "Added only the A1 chest assignment tracer, reusing the existing shell, React state, CSS, Supabase client, and owner authorization boundary."
 
 [review_handoff]
-summary = "Review pending-by-default owner access, pinned-JWKS offline session verification, separated profile state, thin App composition, delegated auth actions, focused dependency direction, and real React characterization."
+summary = "Review the unchanged owner-access boundary plus the isolated A1 selection, protocol, range, review, one-upsert, and cloud-restore flow with real React characterization."
 remaining_risks = [
-    "Live Supabase RLS, deployed PWA caching, and iPhone installation remain deployment evidence outside source characterization.",
+    "Live Supabase RLS and deployed runtime evidence remain external to deterministic source characterization.",
 ]
 
 [human_review]
 naming = "Each hook and auth action names one concrete responsibility; AuthScreens, FoundationHome, and auth-callback name their direct boundaries."
-cohesion = "App composes; AuthScreens owns form presentation and validation; profile state, owner access, offline token proof, auth actions, and session lifecycle have focused boundaries; FoundationHome presents."
-intended_behavior = "Owner authentication, recovery, cloud status, signed-session offline shell, and Home presentation remain, while unverified or failed authorization hides Home and locally signs out."
-reviewability = "The correction maps directly to the captured untrusted-storage and mixed-responsibility findings and adds no product feature, schema, or dependency."
+cohesion = "App composes; RotationSetup owns the bounded A1 workflow; rotation-assignment owns its fixed pool and display formatting; existing foundation modules remain focused."
+intended_behavior = "Qualified owner foundation remains; authenticated owner gains exactly one A1 chest assignment path with explicit choices and durable restoration."
+reviewability = "The change is limited to one feature component, one constant module, existing shell/CSS entry points, one migration, and focused characterization; no dependency or generalized workout model was added."
 
 [[module_boundaries]]
 path = "src/App.tsx"
@@ -68,6 +70,18 @@ path = "src/FoundationHome.tsx"
 owner_path = "src/FoundationHome.tsx"
 basis = "responsibility"
 justification = "Owns approved Home-shell and network-status presentation only."
+
+[[module_boundaries]]
+path = "src/RotationSetup.tsx"
+owner_path = "src/RotationSetup.tsx"
+basis = "responsibility"
+justification = "Owns the complete and intentionally bounded A1 chest assignment UI state, load, and single-save boundary."
+
+[[module_boundaries]]
+path = "src/rotation-assignment.ts"
+owner_path = "src/rotation-assignment.ts"
+basis = "responsibility"
+justification = "Owns the approved chest exercise pool and target-range display formatting shared by UI and targeted proof."
 
 [[module_boundaries]]
 path = "src/hooks/use-auth-session.ts"

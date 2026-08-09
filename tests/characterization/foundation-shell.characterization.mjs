@@ -87,6 +87,7 @@ const verificationClient = createVerificationClient(
 const sessionResolvers = [];
 let authCallback;
 let profileResult = { data: { status: "ready" }, error: null };
+let assignmentResult = { data: null, error: null };
 let updateResult = { error: null };
 
 const client = {
@@ -126,22 +127,28 @@ const client = {
   },
   from(table) {
     calls.push(["from", table]);
-    return {
+    const query = {
       select(columns) {
         calls.push(["select", columns]);
-        return {
-          eq(column, value) {
-            calls.push(["eq", column, value]);
-            return {
-              async maybeSingle() {
-                calls.push(["maybeSingle"]);
-                return profileResult;
-              },
-            };
-          },
-        };
+        return query;
+      },
+      eq(column, value) {
+        calls.push(["eq", column, value]);
+        return query;
+      },
+      async maybeSingle() {
+        calls.push(["maybeSingle", table]);
+        return table === "foundation_profiles"
+          ? profileResult
+          : assignmentResult;
+      },
+      async upsert(values, options) {
+        calls.push(["upsert", table, values, options]);
+        assignmentResult = { data: values, error: null };
+        return { error: null };
       },
     };
+    return query;
   },
 };
 
@@ -464,8 +471,102 @@ await act(async () => {
 });
 const recoveryExited =
   text().includes("APP FOUNDATION") && !text().includes("OWNER RECOVERY");
+const mountedApplication = root.childElementCount > 0 && text().includes("DC TRAINING");
+
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("ROTATION SETUP"))
+    .click();
+  await flush();
+});
+await act(settleLoading);
+const emptyA1 =
+  text().includes("A1 WORKOUT") && text().includes("CHOOSE EXERCISE");
+
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CHOOSE EXERCISE"))
+    .click();
+});
+const exerciseRadios = [...document.querySelectorAll('input[name="exercise"]')];
+const approvedChestPool =
+  exerciseRadios.length === 9 && !text().includes("†");
+const exerciseContinueDisabled = [...document.querySelectorAll("button")]
+  .find((button) => button.textContent.includes("CONTINUE")).disabled;
+await act(async () => exerciseRadios[0].click());
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE"))
+    .click();
+});
+
+const protocolInitiallyEmpty =
+  document.querySelectorAll('input[name="protocol"]:checked').length === 0 &&
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE")).disabled;
+await act(async () => document.querySelector('input[value="rest_pause"]').click());
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE"))
+    .click();
+});
+
+const rangeInitiallyEmpty =
+  document.querySelectorAll('input[name="range"]:checked').length === 0 &&
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE")).disabled;
+await act(async () => document.querySelector('input[value="11-15"]').click());
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE"))
+    .click();
+});
+const reviewComplete =
+  text().includes("REVIEW ASSIGNMENT") &&
+  text().includes("Incline barbell press") &&
+  text().includes("REST-PAUSE") &&
+  text().includes("11–15");
+
+await act(async () => document.querySelector("button.back-action").click());
+const backPreserved = document.querySelector('input[value="11-15"]').checked;
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE"))
+    .click();
+});
+const upsertsBeforeSave = calls.filter((call) => call[0] === "upsert").length;
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "SAVE")
+    .click();
+  await flush();
+});
+const savedExactlyOnce =
+  calls.filter((call) => call[0] === "upsert").length === upsertsBeforeSave + 1 &&
+  text().includes("Incline barbell press");
+
+await act(async () => authCallback("SIGNED_OUT", null));
+await act(async () => {
+  authCallback("SIGNED_IN", session);
+  await flush();
+});
+await act(settleLoading);
+const restoredAfterRemount =
+  text().includes("A1 WORKOUT") &&
+  text().includes("Incline barbell press") &&
+  text().includes("11–15");
 
 const behavior = {
+  a1_assignment_round_trip:
+    emptyA1 &&
+    approvedChestPool &&
+    exerciseContinueDisabled &&
+    protocolInitiallyEmpty &&
+    rangeInitiallyEmpty &&
+    reviewComplete &&
+    backPreserved &&
+    savedExactlyOnce &&
+    restoredAfterRemount,
   browser_safe_client:
     hasCall(
       "createClient",
@@ -483,7 +584,7 @@ const behavior = {
   expired_recovery_explained: expiredRecoveryExplained,
   generic_sign_in_error: genericSignInError,
   mounted_application:
-    root.childElementCount > 0 && text().includes("DC TRAINING"),
+    mountedApplication,
   missing_profile_signed_out: missingProfileSignedOut,
   offline_sign_out_safe:
     offline.includes("OFFLINE · SAVED ON DEVICE") && signOutDisabled === true,
@@ -492,6 +593,20 @@ const behavior = {
     hasCall("select", (call) => call[1] === "status") &&
     hasCall("eq", (call) => call[1] === "user_id" && call[2] === "owner-1") &&
     signedOutReadBlocked,
+  rotation_assignment_boundary:
+    hasCall("from", (call) => call[1] === "rotation_assignments") &&
+    hasCall(
+      "upsert",
+      (call) =>
+        call[1] === "rotation_assignments" &&
+        call[2]?.user_id === "owner-1" &&
+        call[2]?.slot === "A1" &&
+        call[2]?.body_part === "chest" &&
+        call[2]?.protocol === "rest_pause" &&
+        call[2]?.target_min === 11 &&
+        call[2]?.target_max === 15 &&
+        call[3]?.onConflict === "user_id,slot",
+    ),
   recovery_failure_retained: recoveryFailureRetained,
   recovery_rejects_mismatch: recoveryMismatchRejected,
   recovery_rejects_short_password: recoveryShortPasswordRejected,

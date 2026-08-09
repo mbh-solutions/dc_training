@@ -2,6 +2,7 @@ type FoundationHomeProps = {
   cloudStatus: string;
   email?: string;
   online: boolean;
+  onOpenRotationSetup: () => void;
   onSignOut: () => Promise<void>;
   syncState: "idle" | "syncing" | "synced";
 };
@@ -10,6 +11,7 @@ function FoundationHome({
   cloudStatus,
   email,
   online,
+  onOpenRotationSetup,
   onSignOut,
   syncState,
 }: FoundationHomeProps) {
@@ -53,6 +55,14 @@ function FoundationHome({
         </section>
 
         <p className="account-email">SIGNED IN AS {email?.toUpperCase()}</p>
+        <button
+          className="primary-action"
+          type="button"
+          onClick={onOpenRotationSetup}
+          disabled={!online}
+        >
+          ROTATION SETUP
+        </button>
         <button
           className="secondary-action"
           type="button"

@@ -11,6 +11,8 @@ import { useOnline } from "./hooks/use-online.js";
 import { useOwnerAccess } from "./hooks/use-owner-access.js";
 import { initialAuthErrorCode } from "./lib/auth-callback.js";
 import { isSupabaseConfigured } from "./lib/supabase.js";
+import { useState } from "react";
+import RotationSetup from "./RotationSetup.jsx";
 
 const initialAuthMessage =
   initialAuthErrorCode === "otp_expired"
@@ -18,6 +20,7 @@ const initialAuthMessage =
     : "";
 
 function App() {
+  const [showRotationSetup, setShowRotationSetup] = useState(false);
   const online = useOnline();
   const {
     finishPasswordRecovery,
@@ -47,11 +50,21 @@ function App() {
     );
   }
 
+  if (showRotationSetup) {
+    return (
+      <RotationSetup
+        onBack={() => setShowRotationSetup(false)}
+        userId={session.user.id}
+      />
+    );
+  }
+
   return (
     <FoundationHome
       cloudStatus={cloudStatus}
       email={session.user.email}
       online={online}
+      onOpenRotationSetup={() => setShowRotationSetup(true)}
       onSignOut={signOut}
       syncState={syncState}
     />

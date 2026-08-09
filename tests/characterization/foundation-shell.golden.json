@@ -1,4 +1,5 @@
 {
+  "a1_assignment_round_trip": true,
   "browser_safe_client": true,
   "cold_start_offline": true,
   "expired_recovery_explained": true,
@@ -7,6 +8,7 @@
   "missing_profile_signed_out": true,
   "offline_sign_out_safe": true,
   "protected_owner_record": true,
+  "rotation_assignment_boundary": true,
   "recovery_failure_retained": true,
   "recovery_rejects_mismatch": true,
   "recovery_rejects_short_password": true,
