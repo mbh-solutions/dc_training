@@ -5,9 +5,9 @@ architecture_judgment = "PASS"
 base_sha = "7d64356fc530dd3dcc65ca13fe858f928ddd13ee"
 overall_result = "PASS"
 responsibility_changes = [
-    "rotation-config owns the fixed A/B and abs setup contract while existing setup modules own state and presentation.",
-    "useRotationAssignment validates rows and owns owner-scoped versioned loading and persistence through one security-invoker RPC.",
-    "The additive migrations own replacement lineage, active-version uniqueness, RLS, validation, the lineage index, and per-assignment save serialization.",
+    "rotation-config centralizes the fixed A/B and abs setup contract while existing setup modules keep state and presentation separate.",
+    "useRotationAssignments validates versioned rows and performs loading and persistence through one security-invoker RPC.",
+    "The additive migrations enforce replacement lineage, active-version uniqueness, RLS, validation, the lineage index, and per-assignment save serialization.",
 ]
 simplified_functions = [
     "CustomTargets",
@@ -91,8 +91,8 @@ simplified_functions = [
     "withBadge.anonymous@228:22",
 ]
 boundary_rationale = [
-    "App remains top-level authenticated composition; focused modules separately own signed-in surface selection and Home rendering.",
-    "The assignment hook is the validated Supabase boundary; RotationSetup owns rotation editor state and navigation; RotationSetupView owns detailed setup rendering.",
+    "rotation-config contains fixed domain choices without React state, rendering, or cloud calls.",
+    "The assignment hook performs validated Supabase calls; RotationSetup keeps editor state and navigation; RotationSetupView renders the setup flow.",
 ]
 remaining_risks = [
     "Live production deployment evidence remains external to deterministic source characterization until the protected merge deploys.",
