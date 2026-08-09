@@ -27,8 +27,15 @@ simplified_functions = [
     "SignInScreen.anonymous@71:23",
     "SignInScreen.handlePasswordReset",
     "SignInScreen.handleSubmit",
+    "claimsAuthorizeOwner",
+    "claimsAuthorizeOwner.anonymous@70:15",
     "completeOwnerPasswordRecovery",
+    "hasAuthenticatedAudience",
+    "isPinnedJwk",
+    "isPinnedJwks",
     "requestOwnerPasswordReset",
+    "sha256",
+    "sha256.anonymous@56:28",
     "signInOwner",
     "useAuthSession",
     "useAuthSession.anonymous@13:13",
@@ -52,8 +59,6 @@ simplified_functions = [
     "useOwnerAccess.anonymous@16:13.anonymous@26:12",
     "useOwnerAccess.anonymous@38:13",
     "verifyOfflineOwnerSession",
-    "verifyOfflineOwnerSession.anonymous@32:7",
-    "verifyOfflineOwnerSession.anonymous@68:17",
 ]
 boundary_rationale = [
     "App retains only top-level screen composition; AuthScreens owns forms; focused hooks separately own session, connectivity, profile state, and owner access; FoundationHome owns Home presentation.",
@@ -87,7 +92,7 @@ citations = ["src/App.tsx:36-48", "src/hooks/use-foundation-profile.ts:31-57", "
 [[completion_report.claims]]
 id = "claim-offline-owner-proof"
 text = "Offline access requires an unexpired ES256 session verified by Supabase getClaims against build-pinned project keys, the expected issuer and audience, authenticated non-anonymous role, and the exact owner subject digest; failure denies access and locally signs out."
-citations = ["src/hooks/use-owner-access.ts:16-44", "src/lib/offline-owner-session.ts:24-81"]
+citations = ["src/hooks/use-owner-access.ts:16-44", "src/lib/offline-owner-session.ts:24-109"]
 
 [[completion_report.claims]]
 id = "claim-browser-client-boundary"
