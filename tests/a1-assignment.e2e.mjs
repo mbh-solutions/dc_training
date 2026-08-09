@@ -90,6 +90,11 @@ let authCallback;
 let profileResult = { data: { status: "ready" }, error: null };
 let assignmentResult = { data: [], error: null };
 let updateResult = { error: null };
+let rotationState = { last_completed_slot: null, next_slot: "A1" };
+let workoutResult = { data: null, error: null };
+let workoutSteps = [];
+let rotationAdvancements = 0;
+const workoutOperations = new Map();
 
 const client = {
   auth: {
@@ -128,6 +133,7 @@ const client = {
   },
   from(table) {
     calls.push(["from", table]);
+    const filters = {};
     const query = {
       select(columns) {
         calls.push(["select", columns]);
@@ -135,16 +141,38 @@ const client = {
       },
       eq(column, value) {
         calls.push(["eq", column, value]);
+        filters[column] = value;
         return query;
       },
       async maybeSingle() {
         calls.push(["maybeSingle", table]);
-        return table === "foundation_profiles"
-          ? profileResult
-          : assignmentResult;
+        if (table === "foundation_profiles") return profileResult;
+        if (table === "workout_rotation_state") {
+          return { data: rotationState, error: null };
+        }
+        if (table === "workouts") return workoutResult;
+        return assignmentResult;
+      },
+      order() {
+        calls.push(["order", table]);
+        return Promise.resolve({
+          data:
+            table === "workout_steps"
+              ? workoutSteps.filter(
+                  (step) =>
+                    !filters.workout_id ||
+                    step.workout_id === filters.workout_id,
+                )
+              : assignmentResult.data,
+          error: null,
+        });
       },
       then(resolve, reject) {
-        return Promise.resolve(assignmentResult).then(resolve, reject);
+        const result =
+          table === "workout_steps"
+            ? { data: workoutSteps, error: null }
+            : assignmentResult;
+        return Promise.resolve(result).then(resolve, reject);
       },
       async upsert(values, options) {
         calls.push(["upsert", table, values, options]);
@@ -156,6 +184,123 @@ const client = {
   },
   async rpc(name, values) {
     calls.push(["rpc", name, values]);
+    if (name === "start_a1_workout") {
+      if (workoutResult.data) return workoutResult;
+      const workout = {
+        completed_at: null,
+        slot: "A1",
+        status: "in_progress",
+        workout_id: "workout-1",
+      };
+      const exercises = [
+        ["chest", "Incline barbell press", 1],
+        ["shoulders", "Standing barbell military press", 3],
+        ["triceps", "Close-grip barbell bench press", 5],
+        ["back_width", "Pull-ups", 7],
+        ["back_thickness", "Landmine T-bar row", 8],
+      ];
+      workoutSteps = exercises.map(([body_part, exercise, ordinal]) => ({
+        body_part,
+        exercise,
+        kind: "exercise",
+        ordinal,
+        protocol: "rest_pause",
+        reps: [],
+        status: "pending",
+        step_id: `step-${ordinal}`,
+        structure: "11-15",
+        target_sets: [{ max: 15, min: 11 }],
+        weight_entries: [],
+        workout_id: workout.workout_id,
+      }));
+      for (const [body_part, ordinal] of [
+        ["chest", 2],
+        ["shoulders", 4],
+        ["triceps", 6],
+        ["back", 9],
+      ]) {
+        workoutSteps.push({
+          body_part,
+          exercise: null,
+          kind: "stretch",
+          ordinal,
+          protocol: null,
+          reps: [],
+          status: "pending",
+          step_id: `step-${ordinal}`,
+          structure: null,
+          target_sets: [],
+          weight_entries: [],
+          workout_id: workout.workout_id,
+        });
+      }
+      workoutSteps.sort((left, right) => left.ordinal - right.ordinal);
+      workoutResult = { data: workout, error: null };
+      return workoutResult;
+    }
+    if (name === "save_a1_workout_step") {
+      if (workoutOperations.has(values.p_operation_id)) {
+        const step = workoutSteps.find(
+          (item) =>
+            item.step_id ===
+            workoutOperations.get(values.p_operation_id).stepId,
+        );
+        return {
+          data: {
+            next_slot: rotationState.next_slot,
+            step,
+            workout: workoutResult.data,
+          },
+          error: null,
+        };
+      }
+      const step = workoutSteps.find(
+        (item) => item.step_id === values.p_step_id,
+      );
+      workoutOperations.set(values.p_operation_id, {
+        before: structuredClone(step),
+        stepId: step.step_id,
+      });
+      step.status = values.p_status;
+      step.reps = values.p_reps;
+      step.weight_entries = values.p_weights.map((weight) => ({
+        ...weight,
+        micrograms: String(
+          BigInt(
+            Math.round(Number(weight.amount) * (weight.unit === "lb" ? 2 : 4)),
+          ) * BigInt(weight.unit === "lb" ? 226796185 : 250000000),
+        ),
+      }));
+      const completedNow = workoutSteps.every(
+        (item) => item.status !== "pending",
+      );
+      if (completedNow) {
+        workoutResult.data = {
+          ...workoutResult.data,
+          completed_at: "2026-08-09T13:00:00Z",
+          status: "completed",
+        };
+        rotationState = { last_completed_slot: "A1", next_slot: "B1" };
+        rotationAdvancements += 1;
+      }
+      return {
+        data: {
+          completed_now: completedNow,
+          next_slot: rotationState.next_slot,
+          step,
+          workout: workoutResult.data,
+        },
+        error: null,
+      };
+    }
+    if (name === "undo_a1_workout_step") {
+      const operation = workoutOperations.get(values.p_operation_id);
+      const index = workoutSteps.findIndex(
+        (item) => item.step_id === operation.stepId,
+      );
+      workoutSteps[index] = operation.before;
+      return { data: workoutSteps[index], error: null };
+    }
     const previous = assignmentResult.data.find(
       (row) =>
         row.active &&
@@ -252,6 +397,13 @@ registerHooks({
   load(url, context, nextLoad) {
     if (url.endsWith(".css")) {
       return { format: "module", shortCircuit: true, source: "" };
+    }
+    if (url.endsWith(".png")) {
+      return {
+        format: "module",
+        shortCircuit: true,
+        source: `export default ${JSON.stringify(url)};`,
+      };
     }
     if (url.endsWith(".ts") || url.endsWith(".tsx")) {
       const fileName = fileURLToPath(url);
@@ -514,7 +666,7 @@ await act(async () => {
   await flush();
 });
 const recoveryExited =
-  text().includes("APP FOUNDATION") && !text().includes("OWNER RECOVERY");
+  text().includes("NEXT WORKOUT") && !text().includes("OWNER RECOVERY");
 const mountedApplication =
   root.childElementCount > 0 && text().includes("DC TRAINING");
 
@@ -792,7 +944,128 @@ const replacementClearsDownstream =
     button.textContent.includes("CONTINUE"),
   ).disabled;
 
+for (let index = 0; index < 3; index += 1)
+  await act(async () => document.querySelector("button.back-action").click());
+
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("START A1"))
+    .click();
+  await flush();
+});
+
+const saveExercise = async (weight = "100") => {
+  await setInput("weight-0", weight);
+  await setInput("rep-0", "8");
+  await setInput("rep-1", "4");
+  await setInput("rep-2", "2");
+  await act(async () => {
+    [...document.querySelectorAll("button")]
+      .find((button) => button.textContent.includes("SAVE & NEXT"))
+      .click();
+    await flush();
+  });
+};
+const completeStretch = async () => {
+  await act(async () => {
+    [...document.querySelectorAll("button")]
+      .find((button) => button.textContent.includes("STRETCH COMPLETE"))
+      .click();
+    await flush();
+  });
+};
+
+const startedA1 =
+  text().toUpperCase().includes("INCLINE BARBELL PRESS") &&
+  text().includes("1 OF 5");
+await saveExercise("100.5");
+const undoOffered = text().includes("SAVED") && text().includes("UNDO");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "UNDO")
+    .click();
+  await flush();
+});
+const undoRestored = text().toUpperCase().includes("INCLINE BARBELL PRESS");
+await saveExercise("100.5");
+await act(async () =>
+  document.querySelector('button[aria-label="STRETCH INFORMATION"]').click(),
+);
+const stretchCopyExact =
+  text().includes("Use a bent-arm fly position.") &&
+  text().includes("Hold a safe, controlled stretch for 60–90 seconds.") &&
+  !text().toLowerCase().includes("countdown");
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("GOT IT"))
+    .click(),
+);
+await completeStretch();
+
+await act(async () =>
+  document.querySelector('button[aria-label="LEAVE WORKOUT"]').click(),
+);
+const inProgressPreserved =
+  text().includes("WORKOUT IN PROGRESS") && text().includes("RESUME A1");
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("RESUME A1"))
+    .click(),
+);
+const resumedFirstUnfinished = text()
+  .toUpperCase()
+  .includes("STANDING BARBELL MILITARY PRESS");
+
+await saveExercise();
+await completeStretch();
+await saveExercise();
+await completeStretch();
+await saveExercise();
+await saveExercise();
+await completeStretch();
+
+const completionShown =
+  text().includes("A1 COMPLETE") &&
+  text().includes("NEXT WORKOUT") &&
+  text().includes("B1");
+const finalSave = calls
+  .filter((call) => call[0] === "rpc" && call[1] === "save_a1_workout_step")
+  .at(-1);
+await client.rpc(finalSave[1], finalSave[2]);
+const retryAdvancedOnce =
+  rotationAdvancements === 1 && rotationState.next_slot === "B1";
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "DONE")
+    .click(),
+);
+const homeAdvancedOnce =
+  text().includes("NEXT WORKOUT") &&
+  text().includes("B1") &&
+  [...document.querySelectorAll("button")].some(
+    (button) => button.textContent.includes("START B1") && button.disabled,
+  );
+const a1WorkoutCompletion =
+  startedA1 &&
+  undoOffered &&
+  undoRestored &&
+  stretchCopyExact &&
+  inProgressPreserved &&
+  resumedFirstUnfinished &&
+  completionShown &&
+  retryAdvancedOnce &&
+  homeAdvancedOnce &&
+  hasCall(
+    "rpc",
+    (call) =>
+      call[1] === "save_a1_workout_step" &&
+      call[2]?.p_weights?.[0]?.amount === "100.5" &&
+      call[2]?.p_weights?.[0]?.unit === "lb" &&
+      JSON.stringify(call[2]?.p_reps) === JSON.stringify([8, 4, 2]),
+  );
+
 const behavior = {
+  a1_workout_completion: a1WorkoutCompletion,
   a1_assignment_round_trip:
     emptyA1 &&
     approvedChestPool &&
@@ -874,7 +1147,7 @@ const behavior = {
     ),
   session_restored:
     loading &&
-    coldOffline.includes("AUTHENTICATED") &&
+    coldOffline.includes("NEXT WORKOUT") &&
     firstOnline.includes("PROTECTED"),
   sign_in_submitted: hasCall(
     "signInWithPassword",
@@ -888,6 +1161,8 @@ const behavior = {
 };
 
 const a1Detail = {
+  a1WorkoutCompletion,
+  completionShown,
   approvedChestPool,
   backPreserved,
   emptyA1,
@@ -896,9 +1171,17 @@ const a1Detail = {
   protocolInitiallyEmpty,
   rangeInitiallyEmpty,
   replacementClearsDownstream,
+  resumedFirstUnfinished,
+  retryAdvancedOnce,
   restoredAfterRemount,
   reviewComplete,
   savedExactlyOnce,
+  startedA1,
+  stretchCopyExact,
+  undoOffered,
+  undoRestored,
+  homeAdvancedOnce,
+  inProgressPreserved,
 };
 
 assert.deepEqual(
