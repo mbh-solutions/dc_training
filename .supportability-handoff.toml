@@ -12,8 +12,8 @@ responsibility_changes = [
 simplified_functions = [
     "App",
     "ChoiceList",
-    "ChoiceList.anonymous@551:20",
-    "ChoiceList.anonymous@551:20.anonymous@561:23",
+    "ChoiceList.anonymous@538:20",
+    "ChoiceList.anonymous@538:20.anonymous@548:23",
     "FooterButton",
     "FoundationHome",
     "FoundationHome.anonymous@20:17",
@@ -35,16 +35,16 @@ simplified_functions = [
     "RotationSetup.selectExercise",
     "RotationSetup.selectProtocol",
     "RotationSetupView",
-    "RotationSetupView.anonymous@424:40",
-    "RotationSetupView.anonymous@426:21",
-    "RotationSetupView.anonymous@459:21",
-    "RotationSetupView.anonymous@472:27",
-    "RotationSetupView.anonymous@484:27",
-    "RotationSetupView.anonymous@525:48",
+    "RotationSetupView.anonymous@417:40",
+    "RotationSetupView.anonymous@419:21",
+    "RotationSetupView.anonymous@449:21",
+    "RotationSetupView.anonymous@462:27",
+    "RotationSetupView.anonymous@474:27",
+    "RotationSetupView.anonymous@512:48",
     "RotationSetupView.renderProtocol",
-    "RotationSetupView.renderProtocol.anonymous@384:18",
-    "RotationSetupView.renderProtocol.anonymous@384:18.anonymous@384:44",
-    "RotationSetupView.renderProtocol.anonymous@400:19",
+    "RotationSetupView.renderProtocol.anonymous@380:18",
+    "RotationSetupView.renderProtocol.anonymous@380:18.anonymous@380:44",
+    "RotationSetupView.renderProtocol.anonymous@396:19",
     "RotationSetupView.renderSetup",
     "Shell",
     "formatTargetRange",
@@ -92,4 +92,4 @@ citations = ["src/App.tsx:50-58", "src/FoundationHome.tsx:17-23", "src/hooks/use
 [[completion_report.claims]]
 id = "claim-a1-explicit-contract"
 text = "A1 offers only the nine fixed chest exercises, explicit rest-pause or straight-set protocols, and validated preset or positive-integer custom rest-pause ranges before review."
-citations = ["src/hooks/use-rotation-assignment.ts:4-56", "src/RotationSetup.tsx:19-40", "src/RotationSetupView.tsx:415-495"]
+citations = ["src/hooks/use-rotation-assignment.ts:4-56", "src/RotationSetup.tsx:19-40", "src/RotationSetupView.tsx:389-482"]
