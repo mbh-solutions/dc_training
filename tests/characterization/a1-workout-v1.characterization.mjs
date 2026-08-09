@@ -15,24 +15,62 @@ const initialBase =
       baselineMarker,
     ),
   );
-const sourceContains = (relativePath, tokens) => {
-  const source = readFileSync(path.join(target, relativePath), "utf8");
-  return tokens.every((token) => source.includes(token));
+const tokenize = (source) => {
+  const tokens = [];
+  for (let index = 0; index < source.length;) {
+    const rest = source.slice(index);
+    const comment = /^(?:\/\/[^\n]*|\/\*[\s\S]*?\*\/)/.exec(rest);
+    if (comment) {
+      index += comment[0].length;
+      continue;
+    }
+    const token =
+      /^(?:\s+|[A-Za-z_$][\w$]*|\d+n?|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|.)/.exec(
+        rest,
+      )[0];
+    index += token.length;
+    if (!/^\s+$/.test(token)) tokens.push(token);
+  }
+  return tokens;
 };
+const hasSequence = (tokens, expected) =>
+  tokens.some((_, index) =>
+    expected.every((token, offset) => tokens[index + offset] === token),
+  );
+const sourceHasSequences = (relativePath, sequences) => {
+  const tokens = tokenize(
+    readFileSync(path.join(target, relativePath), "utf8"),
+  );
+  return sequences.every((sequence) => hasSequence(tokens, sequence));
+};
+const tokenizerRejectsComments = !hasSequence(
+  tokenize("/* export function Spoof() {} */"),
+  ["export", "function", "Spoof", "("],
+);
 const surfaceContract = workoutTracerExists
-  ? sourceContains("src/WorkoutTracer.tsx", [
-      "export function WorkoutTracer",
-      "export function WorkoutComplete",
+  ? tokenizerRejectsComments &&
+    sourceHasSequences("src/WorkoutTracer.tsx", [
+      ["export", "function", "WorkoutTracer", "("],
+      ["export", "function", "WorkoutComplete", "("],
     ]) &&
-    sourceContains("src/hooks/use-workout.ts", [
-      "start_a1_workout",
-      "save_a1_workout_step",
-      "undo_a1_workout_step",
+    sourceHasSequences("src/hooks/use-workout.ts", [
+      [".", "rpc", "(", '"start_a1_workout"'],
+      [".", "rpc", "(", '"save_a1_workout_step"'],
+      [".", "rpc", "(", '"undo_a1_workout_step"'],
     ]) &&
-    sourceContains("src/workout-domain.ts", ["226796185n", "250000000n"]) &&
-    sourceContains("src/index.css", [".rotation-tracker", ".last-workout"])
+    sourceHasSequences("src/workout-domain.ts", [
+      ["226796185n"],
+      ["250000000n"],
+    ]) &&
+    sourceHasSequences("src/index.css", [
+      [".", "rotation-tracker", ","],
+      [".", "last-workout", "{"],
+    ])
   : initialBase &&
-    sourceContains("tests/a1-assignment.e2e.mjs", ["a1_assignment_round_trip"]);
+    tokenizerRejectsComments &&
+    sourceHasSequences("tests/a1-assignment.e2e.mjs", [
+      ["a1_assignment_round_trip", ":"],
+    ]);
 
 process.stdout.write(
   JSON.stringify({
