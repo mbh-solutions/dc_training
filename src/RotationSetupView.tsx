@@ -281,6 +281,13 @@ type RotationSetupViewProps = {
   loadState: "loading" | "ready" | "failed";
   message: string;
   onBack: () => void;
+  onExerciseBack: () => void;
+  onExerciseContinue: () => void;
+  onProtocolBack: () => void;
+  onProtocolContinue: () => void;
+  onRangeBack: () => void;
+  onRangeContinue: () => void;
+  onReviewBack: () => void;
   protocol: Protocol | "";
   rangeChoice: RangeChoice | "";
   rangeValid: boolean;
@@ -293,7 +300,6 @@ type RotationSetupViewProps = {
   setCustomMax: (value: string) => void;
   setCustomMin: (value: string) => void;
   setRangeChoice: (value: RangeChoice) => void;
-  setScreen: (value: Screen) => void;
   setShowProtocolInfo: (value: (shown: boolean) => boolean) => void;
   showProtocolInfo: boolean;
   target: number[];
@@ -307,6 +313,13 @@ function RotationSetupView({
   loadState,
   message,
   onBack,
+  onExerciseBack,
+  onExerciseContinue,
+  onProtocolBack,
+  onProtocolContinue,
+  onRangeBack,
+  onRangeContinue,
+  onReviewBack,
   protocol,
   rangeChoice,
   rangeValid,
@@ -319,7 +332,6 @@ function RotationSetupView({
   setCustomMax,
   setCustomMin,
   setRangeChoice,
-  setScreen,
   setShowProtocolInfo,
   showProtocolInfo,
   target,
@@ -361,7 +373,7 @@ function RotationSetupView({
     <Shell
       title="SET PROTOCOL"
       subtitle="A1 · CHEST"
-      onBack={() => setScreen("exercise")}
+      onBack={onProtocolBack}
     >
       <h2 className="exercise-heading">{exercise}</h2>
       <p className="section-label rotation-label">PROTOCOL</p>
@@ -389,9 +401,7 @@ function RotationSetupView({
       />
       <FooterButton
         disabled={!protocol}
-        onClick={() =>
-          setScreen(protocol === "rest_pause" ? "range" : "review")
-        }
+        onClick={onProtocolContinue}
       >
         CONTINUE
       </FooterButton>
@@ -407,7 +417,7 @@ function RotationSetupView({
       <Shell
         title="SELECT EXERCISE"
         subtitle="A1 · CHEST"
-        onBack={() => setScreen("setup")}
+        onBack={onExerciseBack}
       >
         <ChoiceList
           name="exercise"
@@ -417,7 +427,7 @@ function RotationSetupView({
         />
         <FooterButton
           disabled={!exercise}
-          onClick={() => setScreen("protocol")}
+          onClick={onExerciseContinue}
         >
           CONTINUE
         </FooterButton>
@@ -434,7 +444,7 @@ function RotationSetupView({
       <Shell
         title="SET TARGET RANGE"
         subtitle="A1 · CHEST"
-        onBack={() => setScreen("protocol")}
+        onBack={onRangeBack}
       >
         <h2 className="exercise-heading">{exercise}</h2>
         <p className="section-label rotation-label">TARGET TOTAL REPS</p>
@@ -478,7 +488,7 @@ function RotationSetupView({
         )}
         <FooterButton
           disabled={!rangeValid}
-          onClick={() => setScreen("review")}
+          onClick={onRangeContinue}
         >
           CONTINUE
         </FooterButton>
@@ -490,7 +500,7 @@ function RotationSetupView({
     <Shell
       title="REVIEW ASSIGNMENT"
       subtitle="A1 · CHEST"
-      onBack={() => setScreen(protocol === "rest_pause" ? "range" : "protocol")}
+      onBack={onReviewBack}
     >
       <h2 className="review-exercise">{exercise}</h2>
       <dl className="review-list">

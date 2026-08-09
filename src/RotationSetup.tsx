@@ -3,7 +3,6 @@ import RotationSetupView from "./RotationSetupView.jsx";
 import {
   CHEST_EXERCISES,
   useRotationAssignment,
-  type Assignment,
   type Protocol,
 } from "./hooks/use-rotation-assignment.js";
 
@@ -94,15 +93,7 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
   const save = async () => {
     if (!exercise || !protocol || (protocol === "rest_pause" && !rangeValid))
       return;
-    const assignment: Assignment = {
-      body_part: "chest",
-      exercise,
-      protocol,
-      slot: "A1",
-      target_max: protocol === "rest_pause" ? target[1] : null,
-      target_min: protocol === "rest_pause" ? target[0] : null,
-    };
-    if (await saveAssignment(assignment)) setScreen("setup");
+    if (await saveAssignment(exercise, protocol, target)) setScreen("setup");
   };
 
   return (
@@ -114,6 +105,17 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
       loadState={loadState}
       message={message}
       onBack={onBack}
+      onExerciseBack={() => setScreen("setup")}
+      onExerciseContinue={() => setScreen("protocol")}
+      onProtocolBack={() => setScreen("exercise")}
+      onProtocolContinue={() =>
+        setScreen(protocol === "rest_pause" ? "range" : "review")
+      }
+      onRangeBack={() => setScreen("protocol")}
+      onRangeContinue={() => setScreen("review")}
+      onReviewBack={() =>
+        setScreen(protocol === "rest_pause" ? "range" : "protocol")
+      }
       protocol={protocol}
       rangeChoice={rangeChoice}
       rangeValid={rangeValid}
@@ -126,7 +128,6 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
       setCustomMax={setCustomMax}
       setCustomMin={setCustomMin}
       setRangeChoice={setRangeChoice}
-      setScreen={setScreen}
       setShowProtocolInfo={setShowProtocolInfo}
       showProtocolInfo={showProtocolInfo}
       target={target}

@@ -86,7 +86,19 @@ export function useRotationAssignment(userId: string) {
     };
   }, [userId]);
 
-  const saveAssignment = async (assignment: Assignment) => {
+  const saveAssignment = async (
+    exercise: (typeof CHEST_EXERCISES)[number],
+    protocol: Protocol,
+    target: number[],
+  ) => {
+    const assignment: Assignment = {
+      body_part: "chest",
+      exercise,
+      protocol,
+      slot: "A1",
+      target_max: protocol === "rest_pause" ? target[1] : null,
+      target_min: protocol === "rest_pause" ? target[0] : null,
+    };
     setSaving(true);
     setMessage("");
     const { error } = await supabase!.from("rotation_assignments").upsert(
