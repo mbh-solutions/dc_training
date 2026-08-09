@@ -122,5 +122,5 @@ citations = ["src/hooks/use-rotation-assignment.ts:121-124", "src/hooks/use-rota
 
 [[completion_report.claims]]
 id = "claim-fixed-rotation-contract"
-text = "The complete locked A/B order, exercise pools, muscle mappings, badges, dagger copy, and six abs slots live in one fixed configuration."
+text = "The complete locked A/B order, exercise pools, muscle mappings, badges, protocol information, and six abs slots live in one fixed configuration."
 citations = ["src/rotation-config.ts:9-219", "src/rotation-config.ts:227-373"]

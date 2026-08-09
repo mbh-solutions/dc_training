@@ -2,7 +2,7 @@ schema_version = "1.0"
 
 [behavior]
 intended_behavior = "Preserve the qualified owner foundation and let the authenticated owner configure every locked A/B rotation slot plus the six fixed abs slots with explicit exercise, protocol, structure, review, replacement lineage, and restored state without starting a workout."
-proof = "tests/a1-assignment.e2e.mjs mounts the real React application and drives A1 rest-pause, B1 custom straight sets, timed abs, review/back/save/edit/reload, calf information-sheet dismissal, and remount restoration; tests/rotation-config.test.mjs verifies the complete locked order, pools, mappings, badges, and dagger semantics."
+proof = "tests/a1-assignment.e2e.mjs mounts the real React application and drives A1 rest-pause, B1 custom straight sets, timed abs, review/back/save/edit/reload, calf information-sheet dismissal, and remount restoration; tests/rotation-config.test.mjs verifies the complete locked order, pools, mappings, badges, and display labels."
 
 [characterization]
 captured_behavior = "The foundation behaviors remain and the owner can configure and restore all 36 locked rotation and abs assignments without preselected choices."
@@ -46,7 +46,7 @@ reviewability = "The change reuses the existing setup modules, adds one fixed co
 path = "src/RotationSetup.tsx"
 owner_path = "src/RotationSetup.tsx"
 basis = "responsibility"
-justification = "Owns rotation editor state, validation, review, navigation, and edit selection while delegating fixed data, persistence, and rendering."
+justification = "Owns rotation editor state, validation, navigation, edit selection, and save orchestration while delegating fixed data, persistence, and rendering."
 
 [[module_boundaries]]
 path = "src/RotationSetupView.tsx"
@@ -64,4 +64,4 @@ justification = "Owns validation, loading, and versioned persistence of the curr
 path = "src/rotation-config.ts"
 owner_path = "src/rotation-config.ts"
 basis = "responsibility"
-justification = "Owns the fixed S02 order, exercise pools, protocols, structure choices, muscle mappings, badges, and dagger copy."
+justification = "Owns the fixed S02 order, exercise pools, protocols, structure choices, muscle mappings, badges, and protocol information copy."
