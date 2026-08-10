@@ -7,10 +7,7 @@ import type {
   TargetSet,
   WorkoutSlot,
 } from "../rotation-config.js";
-export {
-  assignmentKey,
-  type Assignment,
-} from "../rotation-assignment.js";
+export { assignmentKey, type Assignment } from "../rotation-assignment.js";
 
 export function useRotationAssignments(
   accountState: OfflineAccountState | null,

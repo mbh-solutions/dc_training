@@ -70,6 +70,12 @@ basis = "responsibility"
 justification = "Owns typed offline operations, native IndexedDB persistence, ordered replay, and deterministic optimistic state without UI presentation."
 
 [[module_boundaries]]
+path = "src/rotation-assignment.ts"
+owner_path = "src/rotation-assignment.ts"
+basis = "domain"
+justification = "Owns the shared persisted-assignment shape and validation used by rotation, history, workout, and offline state without persistence or presentation behavior."
+
+[[module_boundaries]]
 path = "src/hooks/use-workout.ts"
 owner_path = "src/hooks/use-workout.ts"
 basis = "responsibility"

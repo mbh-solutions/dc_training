@@ -31,42 +31,62 @@ export function assignmentKey(slot: WorkoutSlot, position: AssignmentPosition) {
 export function isAssignment(value: unknown): value is Assignment {
   if (!value || typeof value !== "object") return false;
   const row = value as Record<string, unknown>;
+  if (!hasAssignmentIdentity(row)) return false;
+  if (!hasValidExercise(row)) return false;
+  if (!hasValidReplacement(row)) return false;
+  return hasValidStructure(row);
+}
+
+function hasAssignmentIdentity(row: Record<string, unknown>) {
   const position = row.body_part as AssignmentPosition;
   const slot = row.slot as WorkoutSlot;
-  if (
-    row.active !== true ||
-    typeof row.assignment_id !== "string" ||
-    !WORKOUT_SLOTS.includes(slot) ||
-    !positionsFor(slot).includes(position) ||
-    typeof row.exercise !== "string" ||
-    !(EXERCISES[categoryFor(position)] as readonly string[]).includes(
-      row.exercise,
-    ) ||
-    !protocolChoices(position, row.exercise).some(
-      (choice) => choice.value === row.protocol,
-    ) ||
-    !(
-      row.replaced_assignment_id === null ||
-      typeof row.replaced_assignment_id === "string"
-    )
-  )
-    return false;
+  return (
+    row.active === true &&
+    typeof row.assignment_id === "string" &&
+    WORKOUT_SLOTS.includes(slot) &&
+    positionsFor(slot).includes(position) &&
+    typeof row.exercise === "string"
+  );
+}
 
+function hasValidExercise(row: Record<string, unknown>) {
+  const position = row.body_part as AssignmentPosition;
+  const exercise = row.exercise as string;
+  return (
+    (EXERCISES[categoryFor(position)] as readonly string[]).includes(
+      exercise,
+    ) &&
+    protocolChoices(position, exercise).some(
+      (choice) => choice.value === row.protocol,
+    )
+  );
+}
+
+function hasValidReplacement(row: Record<string, unknown>) {
+  return (
+    row.replaced_assignment_id === null ||
+    typeof row.replaced_assignment_id === "string"
+  );
+}
+
+function hasValidStructure(row: Record<string, unknown>) {
+  const position = row.body_part as AssignmentPosition;
   const choices = structureChoices(
     position,
-    row.exercise,
+    row.exercise as string,
     row.protocol as Protocol,
   );
+  if (choices.length === 0) {
+    return (
+      row.structure === "none" &&
+      Array.isArray(row.target_sets) &&
+      row.target_sets.length === 0
+    );
+  }
   const selected = choices.find((choice) => choice.value === row.structure);
-  const structureValid =
-    choices.length === 0
-      ? row.structure === "none" &&
-        Array.isArray(row.target_sets) &&
-        row.target_sets.length === 0
-      : Boolean(selected) &&
-        validTargetSets(row.target_sets) &&
-        (row.structure === "custom" ||
-          JSON.stringify(row.target_sets) === JSON.stringify(selected?.targets));
-
-  return structureValid;
+  if (!selected || !validTargetSets(row.target_sets)) return false;
+  return (
+    row.structure === "custom" ||
+    JSON.stringify(row.target_sets) === JSON.stringify(selected.targets)
+  );
 }

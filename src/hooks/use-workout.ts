@@ -28,8 +28,8 @@ export function useWorkout(
     null,
   );
   const pendingOperationIds = useRef(new Map<string, string>());
-  const workout = state?.workout ?? null;
-  const recentOperation = state?.recentOperation ?? null;
+  const workout = workoutView(state);
+  const operation = operationView(state);
 
   const submit = async (operation: OfflineOperationInput, key: string) => {
     setActionSaving(true);
@@ -47,10 +47,7 @@ export function useWorkout(
   const start = async () => {
     const key = "start_workout";
     const operationId = retryOperationId(pendingOperationIds.current, key);
-    return submit(
-      { id: operationId, kind: "start_workout", payload: {} },
-      key,
-    );
+    return submit({ id: operationId, kind: "start_workout", payload: {} }, key);
   };
 
   const transitionLifecycle = async (
@@ -125,7 +122,7 @@ export function useWorkout(
     structure: string,
     targetSets: TargetSet[],
   ) => {
-    if (!state || !workout?.workout) return false;
+    if (!state || !workout.activeWorkout) return false;
     const key = `${step.step_id}:replace`;
     const replaced = await submit(
       {
@@ -136,7 +133,7 @@ export function useWorkout(
           body_part: step.body_part as AssignmentPosition,
           exercise,
           protocol,
-          slot: workout.workout.slot,
+          slot: workout.activeWorkout.slot,
           structure,
           target_sets: targetSets,
         },
@@ -148,13 +145,13 @@ export function useWorkout(
   };
 
   const undo = async () => {
-    if (!recentOperation) return;
-    const key = `undo:${recentOperation.id}`;
+    if (!operation.recent) return;
+    const key = `undo:${operation.recent.id}`;
     await submit(
       {
         id: retryOperationId(pendingOperationIds.current, key),
         kind: "undo_workout_step",
-        payload: { original_operation_id: recentOperation.id },
+        payload: { original_operation_id: operation.recent.id },
       },
       key,
     );
@@ -162,20 +159,19 @@ export function useWorkout(
 
   return {
     actionSaving,
-    activeWorkout: workout?.workout ?? null,
-    blockingStep:
-      workout?.steps.find((step) => step.enforcement_action !== null) ?? null,
+    activeWorkout: workout.activeWorkout,
+    blockingStep: workout.blockingStep,
     beginReplacement: setReplacementStep,
-    completedWorkout: state?.recentlyCompletedWorkout ?? null,
+    completedWorkout: operation.completedWorkout,
     dismissCompleted: async () => clearRecentCompletion(userId),
     dismissCruiseSuggestion: () => transitionLifecycle("dismiss_suggestion"),
-    lastCompletedSlot: workout?.lastCompletedSlot ?? null,
-    lastOperationId: recentOperation?.id ?? null,
-    lastOperationStatus: recentOperation?.status ?? null,
-    lifecycle: workout?.lifecycle ?? null,
-    loading: state === null,
+    lastCompletedSlot: workout.lastCompletedSlot,
+    lastOperationId: operation.lastOperationId,
+    lastOperationStatus: operation.lastOperationStatus,
+    lifecycle: workout.lifecycle,
+    loading: workout.loading,
     message,
-    nextSlot: workout?.nextSlot ?? "A1",
+    nextSlot: workout.nextSlot,
     replaceAssignment,
     replacementStep,
     resolveAction,
@@ -184,8 +180,43 @@ export function useWorkout(
     start,
     startCruise: () => transitionLifecycle("start_cruise"),
     startNewBlast: () => transitionLifecycle("start_new_blast"),
-    steps: workout?.steps ?? [],
+    steps: workout.steps,
     undo,
+  };
+}
+
+function workoutView(state: OfflineAccountState | null) {
+  if (!state?.workout) {
+    return {
+      activeWorkout: null,
+      blockingStep: null,
+      lastCompletedSlot: null,
+      lifecycle: null,
+      loading: state === null,
+      nextSlot: "A1" as const,
+      steps: [] as WorkoutStep[],
+    };
+  }
+  const workout = state.workout;
+  return {
+    activeWorkout: workout.workout,
+    blockingStep:
+      workout.steps.find((step) => step.enforcement_action !== null) ?? null,
+    lastCompletedSlot: workout.lastCompletedSlot,
+    lifecycle: workout.lifecycle,
+    loading: false,
+    nextSlot: workout.nextSlot,
+    steps: workout.steps,
+  };
+}
+
+function operationView(state: OfflineAccountState | null) {
+  const recent = state?.recentOperation ?? null;
+  return {
+    completedWorkout: state?.recentlyCompletedWorkout ?? null,
+    lastOperationId: recent?.id ?? null,
+    lastOperationStatus: recent?.status ?? null,
+    recent,
   };
 }
 

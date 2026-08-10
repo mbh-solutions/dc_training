@@ -118,33 +118,15 @@ function HomeScreen({
           </section>
         )}
 
-        {message && <p className="form-message">{message}</p>}
-
-        <p className="account-email">SIGNED IN AS {email?.toUpperCase()}</p>
-        <button
-          className="primary-action"
-          type="button"
-          onClick={onOpenRotation}
-          disabled={!onOpenRotation}
-        >
-          ROTATION SETUP
-        </button>
-        <button
-          className="secondary-action"
-          type="button"
-          onClick={() => void onSignOut()}
-          disabled={!online || syncState !== "synced"}
-        >
-          SIGN OUT
-        </button>
-        {!online && <p className="quiet-note">CONNECT TO SIGN OUT</p>}
-        {online && syncState !== "synced" && (
-          <p className="quiet-note">SYNC BEFORE SIGNING OUT</p>
-        )}
-        <p className="quiet-note">
-          APP FOUNDATION · AUTHENTICATED · {cloudStatus} ·{" "}
-          {email?.toUpperCase()}
-        </p>
+        <AccountControls
+          cloudStatus={cloudStatus}
+          email={email}
+          message={message}
+          online={online}
+          onOpenRotation={onOpenRotation}
+          onSignOut={onSignOut}
+          syncState={syncState}
+        />
       </main>
       <BottomNavigation
         active="home"
@@ -164,6 +146,55 @@ function HomeScreen({
         setConfirmationOpen={setCruiseConfirmationOpen}
       />
     </div>
+  );
+}
+
+function AccountControls({
+  cloudStatus,
+  email,
+  message,
+  online,
+  onOpenRotation,
+  onSignOut,
+  syncState,
+}: Pick<
+  HomeScreenProps,
+  | "cloudStatus"
+  | "email"
+  | "message"
+  | "online"
+  | "onOpenRotation"
+  | "onSignOut"
+  | "syncState"
+>) {
+  return (
+    <>
+      {message && <p className="form-message">{message}</p>}
+      <p className="account-email">SIGNED IN AS {email?.toUpperCase()}</p>
+      <button
+        className="primary-action"
+        disabled={!onOpenRotation}
+        onClick={onOpenRotation}
+        type="button"
+      >
+        ROTATION SETUP
+      </button>
+      <button
+        className="secondary-action"
+        disabled={!online || syncState !== "synced"}
+        onClick={() => void onSignOut()}
+        type="button"
+      >
+        SIGN OUT
+      </button>
+      {!online && <p className="quiet-note">CONNECT TO SIGN OUT</p>}
+      {online && syncState !== "synced" && (
+        <p className="quiet-note">SYNC BEFORE SIGNING OUT</p>
+      )}
+      <p className="quiet-note">
+        APP FOUNDATION · AUTHENTICATED · {cloudStatus} · {email?.toUpperCase()}
+      </p>
+    </>
   );
 }
 

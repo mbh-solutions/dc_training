@@ -116,6 +116,33 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
   }
 
   return (
+    <FoundationDashboard
+      homeProps={homeProps}
+      offline={offline}
+      onOpenHistory={() => setShowHistory(true)}
+      onOpenRotation={openRotation}
+      onOpenWorkout={() => setShowWorkout(true)}
+      workout={workout}
+    />
+  );
+}
+
+function FoundationDashboard({
+  homeProps,
+  offline,
+  onOpenHistory,
+  onOpenRotation,
+  onOpenWorkout,
+  workout,
+}: {
+  homeProps: Omit<FoundationHomeProps, "userId">;
+  offline: ReturnType<typeof useOfflineSync>;
+  onOpenHistory: () => void;
+  onOpenRotation: () => void;
+  onOpenWorkout: () => void;
+  workout: ReturnType<typeof useWorkout>;
+}) {
+  return (
     <HomeScreen
       {...homeProps}
       activeSlot={workout.activeWorkout?.slot ?? null}
@@ -126,15 +153,15 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
       loadingWorkout={!offline.loaded}
       message={workout.message || offline.loadError}
       nextSlot={workout.nextSlot}
-      onOpenHistory={() => setShowHistory(true)}
-      onOpenRotation={rotationDuringBlast(workout.lifecycle, openRotation)}
-      onResumeWorkout={() => setShowWorkout(true)}
+      onOpenHistory={onOpenHistory}
+      onOpenRotation={rotationDuringBlast(workout.lifecycle, onOpenRotation)}
+      onResumeWorkout={onOpenWorkout}
       onDismissCruiseSuggestion={workout.dismissCruiseSuggestion}
       onRetrySync={offline.retry}
       onStartCruise={workout.startCruise}
       onStartNewBlast={workout.startNewBlast}
       onStartWorkout={async () => {
-        if (await workout.start()) setShowWorkout(true);
+        if (await workout.start()) onOpenWorkout();
       }}
       syncState={offline.syncState}
     />

@@ -11,8 +11,9 @@ import {
 export type OfflineSyncState = "failed" | "synced" | "syncing";
 
 export function useOfflineSync(userId: string, online: boolean) {
-  const [accountState, setAccountState] =
-    useState<OfflineAccountState | null>(null);
+  const [accountState, setAccountState] = useState<OfflineAccountState | null>(
+    null,
+  );
   const [loadError, setLoadError] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [syncState, setSyncState] = useState<OfflineSyncState>("syncing");
