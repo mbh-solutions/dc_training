@@ -90,7 +90,7 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
       <HistoryScreen
         online={homeProps.online}
         onHome={() => setShowHistory(false)}
-        onOpenRotation={rotationOutsideCruise(workout.lifecycle, openRotation)}
+        onOpenRotation={rotationDuringBlast(workout.lifecycle, openRotation)}
         userId={userId}
       />
     );
@@ -107,7 +107,7 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
       message={workout.message}
       nextSlot={workout.nextSlot}
       onOpenHistory={() => setShowHistory(true)}
-      onOpenRotation={openRotation}
+      onOpenRotation={rotationDuringBlast(workout.lifecycle, openRotation)}
       onResumeWorkout={() => setShowWorkout(true)}
       onDismissCruiseSuggestion={workout.dismissCruiseSuggestion}
       onStartCruise={workout.startCruise}
@@ -119,11 +119,11 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
   );
 }
 
-function rotationOutsideCruise(
+function rotationDuringBlast(
   lifecycle: TrainingLifecycle | null,
   onOpenRotation: () => void,
 ) {
-  if (lifecycle?.phase === "cruise") return undefined;
+  if (lifecycle?.phase !== "blast") return undefined;
   return onOpenRotation;
 }
 

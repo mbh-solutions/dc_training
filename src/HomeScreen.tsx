@@ -12,7 +12,7 @@ type HomeScreenProps = Omit<FoundationHomeProps, "userId"> & {
   message: string;
   nextSlot: WorkoutSlot;
   onOpenHistory: () => void;
-  onOpenRotation: () => void;
+  onOpenRotation?: () => void;
   onResumeWorkout: () => void;
   onStartCruise: () => Promise<boolean>;
   onStartNewBlast: () => Promise<boolean>;
@@ -114,7 +114,7 @@ function HomeScreen({
           className="primary-action"
           type="button"
           onClick={onOpenRotation}
-          disabled={!online}
+          disabled={!online || !onOpenRotation}
         >
           ROTATION SETUP
         </button>
@@ -136,7 +136,8 @@ function HomeScreen({
         active="home"
         onHome={() => undefined}
         onHistory={onOpenHistory}
-        onRotation={onOpenRotation}
+        onRotation={onOpenRotation ?? (() => undefined)}
+        rotationDisabled={!onOpenRotation}
       />
       <LifecycleSheets
         confirmationOpen={cruiseConfirmationOpen}

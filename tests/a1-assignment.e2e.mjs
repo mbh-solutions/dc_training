@@ -996,6 +996,9 @@ const coldOffline = text();
 const coldSignOutDisabled = document.querySelector(
   "button.secondary-action",
 )?.disabled;
+const coldRotationDisabled = [...document.querySelectorAll("button")].some(
+  (button) => button.textContent.includes("ROTATION") && button.disabled,
+);
 const coldStartNoCloudRead = countCalls("from") === 0;
 
 Object.defineProperty(window.navigator, "onLine", {
@@ -2867,6 +2870,7 @@ const behavior = {
     loading &&
     coldOffline.includes("TRAINING STATUS") &&
     coldOffline.includes("TRAINING CONTROLS ARE LOCKED") &&
+    coldRotationDisabled &&
     firstOnline.includes("PROTECTED"),
   sign_in_submitted: hasCall(
     "signInWithPassword",

@@ -95,8 +95,9 @@ test("S07 lifecycle states fail closed and preserve the rotation boundary", () =
 
   assert.match(
     foundationSource,
-    /rotationOutsideCruise\(workout\.lifecycle, openRotation\)/,
+    /rotationDuringBlast\(workout\.lifecycle, openRotation\)/,
   );
+  assert.match(foundationSource, /lifecycle\?\.phase !== "blast"/);
   assert.match(historySource, /rotationDisabled=\{!onOpenRotation\}/);
 
   assert.match(migration, /new\.blast_id := lifecycle\.blast_id/);
