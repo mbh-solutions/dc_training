@@ -273,9 +273,25 @@ export function retiredHistoryAssignments(assignments: HistoryAssignment[]) {
 }
 
 export function historyAssignmentKey(
-  assignment: Pick<HistoryAssignment, "body_part" | "exercise">,
+  assignment: Pick<HistoryAssignment, "body_part" | "exercise" | "slot">,
 ) {
-  return `${assignment.body_part}:${assignment.exercise}`;
+  return `${assignment.slot}:${assignment.body_part}:${assignment.exercise}`;
+}
+
+export function activeWorkoutAssignmentIds(data: HistoryData) {
+  const activeWorkoutIds = new Set(
+    data.workouts
+      .filter((workout) => workout.status === "in_progress")
+      .map((workout) => workout.workout_id),
+  );
+  return new Set(
+    data.steps
+      .filter(
+        (step) =>
+          step.assignment_id !== null && activeWorkoutIds.has(step.workout_id),
+      )
+      .map((step) => step.assignment_id!),
+  );
 }
 
 export type WorkoutEntryShape = {

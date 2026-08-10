@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { BottomNavigation } from "./HomeScreen.jsx";
 import { correctHistoryPerformance, loadHistoryState } from "./workout-api.js";
 import {
+  activeWorkoutAssignmentIds,
   currentHistoryGroups,
   historyAssignmentKey,
   retiredHistoryAssignments,
@@ -90,11 +91,27 @@ export default function HistoryScreen({
     reps: number[],
     duration: number | null,
   ) => {
+    setSaving(true);
+    setMessage("");
+    const latest = await loadHistoryState(userId);
+    if (!latest.data) {
+      setSaving(false);
+      setMessage(latest.error);
+      return;
+    }
+    setData(latest.data);
+    if (
+      step.assignment_id !== null &&
+      activeWorkoutAssignmentIds(latest.data).has(step.assignment_id)
+    ) {
+      setSaving(false);
+      setEditingStepId(null);
+      setMessage("FINISH ACTIVE WORKOUT BEFORE CORRECTING THIS EXERCISE");
+      return;
+    }
     const operationId =
       correctionOperations.current.get(step.step_id) ?? crypto.randomUUID();
     correctionOperations.current.set(step.step_id, operationId);
-    setSaving(true);
-    setMessage("");
     const result = await correctHistoryPerformance(
       operationId,
       step.step_id,
@@ -194,12 +211,14 @@ function LoadedHistory({
     (assignment) => assignment.assignment_id === selectedAssignmentId,
   );
   const editingStep = data.steps.find((step) => step.step_id === editingStepId);
+  const activeAssignmentIds = activeWorkoutAssignmentIds(data);
   if (selectedAssignment) {
     const performances = performancesFor(data, selectedAssignment);
     return (
       <HistoryShell onHome={onHome} onOpenRotation={onOpenRotation}>
         <ExercisePerformance
           assignment={selectedAssignment}
+          activeAssignmentIds={activeAssignmentIds}
           message={message}
           online={online}
           onBack={() => {
@@ -233,6 +252,7 @@ function LoadedHistory({
     return (
       <HistoryShell onHome={onHome} onOpenRotation={onOpenRotation}>
         <WorkoutDetail
+          activeAssignmentIds={activeAssignmentIds}
           message={message}
           online={online}
           onBack={() => {
@@ -555,6 +575,7 @@ function WorkoutButton({
 }
 
 function WorkoutDetail({
+  activeAssignmentIds,
   message,
   online,
   onBack,
@@ -562,6 +583,7 @@ function WorkoutDetail({
   steps,
   workout,
 }: {
+  activeAssignmentIds: ReadonlySet<string>;
   message: string;
   online: boolean;
   onBack: () => void;
@@ -585,7 +607,8 @@ function WorkoutDetail({
               disabled={
                 !online ||
                 step.kind !== "exercise" ||
-                step.status !== "completed"
+                step.status !== "completed" ||
+                correctionLocked(activeAssignmentIds, step)
               }
               key={step.step_id}
               onClick={() => onEdit(step)}
@@ -595,7 +618,11 @@ function WorkoutDetail({
               <strong>
                 {step.exercise ?? `${displayBodyPart(step.body_part)} STRETCH`}
               </strong>
-              <em>{stepStatus(step)}</em>
+              <em>
+                {correctionLocked(activeAssignmentIds, step)
+                  ? "FINISH ACTIVE WORKOUT TO CORRECT"
+                  : stepStatus(step)}
+              </em>
               <b>
                 {step.status === "completed" && step.kind === "exercise"
                   ? "›"
@@ -610,6 +637,7 @@ function WorkoutDetail({
 }
 
 function ExercisePerformance({
+  activeAssignmentIds,
   assignment,
   message,
   online,
@@ -617,6 +645,7 @@ function ExercisePerformance({
   onEdit,
   performances,
 }: {
+  activeAssignmentIds: ReadonlySet<string>;
   assignment: HistoryAssignment;
   message: string;
   online: boolean;
@@ -642,7 +671,9 @@ function ExercisePerformance({
       <div className="performance-rows">
         {[...performances].reverse().map((performance) => (
           <button
-            disabled={!online}
+            disabled={
+              !online || correctionLocked(activeAssignmentIds, performance.step)
+            }
             key={performance.step.step_id}
             onClick={() => onEdit(performance.step)}
             type="button"
@@ -650,7 +681,9 @@ function ExercisePerformance({
             <span>{shortDate(performance.workout.started_at)}</span>
             <strong>{performanceSummary(performance.step)}</strong>
             <em className={performance.step.verdict === "win" ? "red" : ""}>
-              {verdictLabel(performance.step)}
+              {correctionLocked(activeAssignmentIds, performance.step)
+                ? "FINISH ACTIVE WORKOUT TO CORRECT"
+                : verdictLabel(performance.step)}
             </em>
             <b>›</b>
           </button>
@@ -696,9 +729,9 @@ function ProtocolCharts({
       </>
     );
   }
-  const setCount = Math.max(
-    assignment.target_sets.length,
-    performances[0]?.step.weight_entries.length ?? 1,
+  const setCount = performances.reduce(
+    (count, item) => Math.max(count, item.step.weight_entries.length),
+    Math.max(assignment.target_sets.length, 1),
   );
   return Array.from({ length: setCount }, (_, index) => (
     <LineChart
@@ -722,11 +755,14 @@ function LineChart({
   setIndex: number;
   target?: { max: number; min: number };
 }) {
-  const values = performances.map((item) =>
-    Number(item.step.weight_entries[setIndex]?.micrograms ?? 0),
+  const lanePerformances = performances.filter(
+    (item) => item.step.weight_entries[setIndex] !== undefined,
+  );
+  const values = lanePerformances.map((item) =>
+    Number(item.step.weight_entries[setIndex].micrograms),
   );
   const points = chartPoints(values);
-  const assignmentIds = performances.map(
+  const assignmentIds = lanePerformances.map(
     (item) => item.assignment.assignment_id,
   );
   return (
@@ -743,23 +779,25 @@ function LineChart({
           <polyline key={index} points={segment.map(pointText).join(" ")} />
         ))}
         {points.map((point, index) => (
-          <g key={performances[index].step.step_id}>
+          <g key={lanePerformances[index].step.step_id}>
             <circle cx={point.x} cy={point.y} r="1.8" />
             <text x={point.x} y={Math.max(point.y - 4, 5)}>
-              {weightLabel(performances[index].step.weight_entries[setIndex])}
+              {weightLabel(
+                lanePerformances[index].step.weight_entries[setIndex],
+              )}
             </text>
-            {performances[index].step.reps[setIndex] && (
+            {lanePerformances[index].step.reps[setIndex] && (
               <text
                 className="chart-secondary"
                 x={point.x}
                 y={Math.max(point.y - 1, 8)}
               >
-                {performances[index].step.reps[setIndex]} REPS
+                {lanePerformances[index].step.reps[setIndex]} REPS
               </text>
             )}
           </g>
         ))}
-        <ChartDates performances={performances} />
+        <ChartDates performances={lanePerformances} />
         <ChartBoundaries assignments={assignmentIds} />
       </svg>
     </div>
@@ -1030,6 +1068,15 @@ function performancesFor(data: HistoryData, selected: HistoryAssignment) {
         Date.parse(left.workout.started_at) -
         Date.parse(right.workout.started_at),
     );
+}
+
+function correctionLocked(
+  activeAssignmentIds: ReadonlySet<string>,
+  step: WorkoutStep,
+) {
+  return (
+    step.assignment_id !== null && activeAssignmentIds.has(step.assignment_id)
+  );
 }
 
 function searchMatches(assignments: HistoryAssignment[], search: string) {

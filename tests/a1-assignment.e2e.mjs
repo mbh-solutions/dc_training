@@ -651,9 +651,26 @@ const client = {
   from(table) {
     calls.push(["from", table]);
     const filters = {};
+    const selectedRows = () => {
+      if (historyMode)
+        return table === "workouts"
+          ? historyWorkouts
+          : table === "rotation_assignment_versions"
+            ? historyAssignments
+            : historySteps.filter(
+                (step) =>
+                  !filters.workout_id || step.workout_id === filters.workout_id,
+              );
+      return table === "workout_steps"
+        ? workoutSteps.filter(
+            (step) =>
+              !filters.workout_id || step.workout_id === filters.workout_id,
+          )
+        : assignmentResult.data;
+    };
     const query = {
-      select(columns) {
-        calls.push(["select", columns]);
+      select(columns, options) {
+        calls.push(["select", columns, options]);
         return query;
       },
       eq(column, value) {
@@ -682,38 +699,21 @@ const client = {
         }
         return assignmentResult;
       },
-      order() {
-        calls.push(["order", table]);
-        if (historyMode) {
-          const rows =
-            table === "workouts"
-              ? historyWorkouts
-              : table === "rotation_assignment_versions"
-                ? historyAssignments
-                : historySteps.filter(
-                    (step) =>
-                      !filters.workout_id ||
-                      step.workout_id === filters.workout_id,
-                  );
-          return Promise.resolve({ data: rows, error: null });
-        }
+      order(column, options) {
+        calls.push(["order", table, column, options]);
+        return query;
+      },
+      range(from, to) {
+        calls.push(["range", table, from, to]);
+        const rows = selectedRows();
         return Promise.resolve({
-          data:
-            table === "workout_steps"
-              ? workoutSteps.filter(
-                  (step) =>
-                    !filters.workout_id ||
-                    step.workout_id === filters.workout_id,
-                )
-              : assignmentResult.data,
+          count: rows.length,
+          data: rows.slice(from, to + 1),
           error: null,
         });
       },
       then(resolve, reject) {
-        const result =
-          table === "workout_steps"
-            ? { data: workoutSteps, error: null }
-            : assignmentResult;
+        const result = { data: selectedRows(), error: null };
         return Promise.resolve(result).then(resolve, reject);
       },
       async upsert(values, options) {
@@ -2052,6 +2052,17 @@ const straightCurrent = historyAssignment({
     { max: 12, min: 10 },
   ],
 });
+const straightOld = historyAssignment({
+  active: false,
+  assignment_id: "history-straight-old",
+  body_part: "back_thickness",
+  created_at: "2026-03-01T12:00:00Z",
+  exercise: "Rack deadlift",
+  protocol: "straight_set",
+  slot: "A2",
+  structure: "straight-6-8",
+  target_sets: [{ max: 8, min: 6 }],
+});
 const shoulderCurrent = historyAssignment({
   active: true,
   assignment_id: "history-shoulder",
@@ -2077,6 +2088,7 @@ const timedRetired = historyAssignment({
 historyAssignments = [
   restOld,
   restCurrent,
+  straightOld,
   straightCurrent,
   shoulderCurrent,
   timedRetired,
@@ -2089,7 +2101,9 @@ historyWorkouts = [
   historyWorkout("history-straight-1", "A2", "2026-04-04T12:00:00Z"),
   historyWorkout("history-apr-16", "A1", "2026-04-16T12:00:00Z"),
   historyWorkout("history-may-14", "A1", "2026-05-14T12:00:00Z"),
+  historyWorkout("history-straight-old", "A2", "2026-03-20T12:00:00Z"),
   historyWorkout("history-straight-2", "A2", "2026-04-18T12:00:00Z"),
+  historyWorkout("history-shoulder-old", "A1", "2026-04-20T12:00:00Z"),
   historyWorkout("history-timed-1", "B1", "2026-03-05T12:00:00Z"),
   historyWorkout("history-timed-2", "B1", "2026-03-19T12:00:00Z"),
 ];
@@ -2125,6 +2139,14 @@ historySteps = [
     workout_id: "history-may-28",
   }),
   historyStep({
+    assignment: straightOld,
+    fresh_baseline: true,
+    reps: [8],
+    verdict: null,
+    weights: [historyWeight("355")],
+    workout_id: "history-straight-old",
+  }),
+  historyStep({
     assignment: straightCurrent,
     fresh_baseline: true,
     reps: [8, 12],
@@ -2138,6 +2160,14 @@ historySteps = [
     verdict: "win",
     weights: [historyWeight("375"), historyWeight("325")],
     workout_id: "history-straight-2",
+  }),
+  historyStep({
+    assignment: shoulderCurrent,
+    fresh_baseline: true,
+    reps: [8, 4, 2],
+    verdict: null,
+    weights: [historyWeight("95")],
+    workout_id: "history-shoulder-old",
   }),
   historyStep({
     assignment: timedRetired,
@@ -2214,6 +2244,29 @@ const straightSetLanes =
     2 &&
   text().includes("SET 1 · 6–8 REPS") &&
   text().includes("SET 2 · 10–12 REPS");
+const straightCharts = document.querySelectorAll(
+  ".exercise-performance .line-chart",
+);
+const absentStraightSetOmitted =
+  straightCharts[0]?.querySelectorAll("circle").length === 3 &&
+  straightCharts[1]?.querySelectorAll("circle").length === 2 &&
+  !straightCharts[1]?.textContent.includes("0 LB");
+await act(async () => {
+  document.querySelector(".history-back").click();
+  await flush();
+});
+await setInput("history-search", "Standing barbell military press");
+await act(async () => {
+  document
+    .getElementById("history-search")
+    .dispatchEvent(
+      new window.KeyboardEvent("keydown", { bubbles: true, key: "Enter" }),
+    );
+  await flush();
+});
+const activeWorkoutCorrectionLocked =
+  document.querySelector(".performance-rows button")?.disabled === true &&
+  text().includes("FINISH ACTIVE WORKOUT TO CORRECT");
 await act(async () => {
   document.querySelector(".history-back").click();
   await flush();
@@ -2300,9 +2353,25 @@ await act(async () => {
 });
 const inProgressDetail =
   text().includes("B1 WORKOUT") && text().includes("IN PROGRESS");
+const historyPagination = [
+  "workouts",
+  "rotation_assignment_versions",
+  "workout_steps",
+].every((table) =>
+  calls.some(
+    (call) =>
+      call[0] === "range" &&
+      call[1] === table &&
+      call[2] === 0 &&
+      call[3] === 99,
+  ),
+);
 
 const historyRuntime =
+  absentStraightSetOmitted &&
+  activeWorkoutCorrectionLocked &&
   exercisesTabCaptured &&
+  historyPagination &&
   oneGroupExpanded &&
   retiredInitiallyCollapsed &&
   straightSetLanes &&
@@ -2499,9 +2568,12 @@ const logbookDetail = {
   returnedHistoryShown,
 };
 const historyDetail = {
+  absentStraightSetOmitted,
+  activeWorkoutCorrectionLocked,
   correctionRecalculated,
   exercisesTabCaptured,
   historyRuntime,
+  historyPagination,
   inProgressDetail,
   oneGroupExpanded,
   retiredInitiallyCollapsed,

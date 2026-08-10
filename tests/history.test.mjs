@@ -57,7 +57,13 @@ test("S06 history ordering and correction boundary stay deterministic", () => {
       active: false,
       assignment_id: "old-current",
       created_at: "2026-07-01T12:00:00Z",
-      slot: "A2",
+      slot: "A1",
+    }),
+    assignment({
+      active: false,
+      assignment_id: "same-exercise-other-slot",
+      created_at: "2026-07-01T12:00:00Z",
+      slot: "B1",
     }),
     assignment({
       active: false,
@@ -86,7 +92,7 @@ test("S06 history ordering and correction boundary stay deterministic", () => {
     domain
       .retiredHistoryAssignments(assignments)
       .map((item) => item.assignment_id),
-    ["retired-latest"],
+    ["retired-latest", "same-exercise-other-slot"],
   );
 
   const workouts = domain.sortHistoryWorkouts([
@@ -115,6 +121,19 @@ test("S06 history ordering and correction boundary stay deterministic", () => {
   assert.deepEqual(
     workouts.map((workout) => workout.workout_id),
     ["active", "newer", "older"],
+  );
+  assert.deepEqual(
+    [
+      ...domain.activeWorkoutAssignmentIds({
+        assignments: [],
+        steps: [
+          { assignment_id: "active-assignment", workout_id: "active" },
+          { assignment_id: "completed-assignment", workout_id: "newer" },
+        ],
+        workouts,
+      }),
+    ],
+    ["active-assignment"],
   );
 
   const migration = readFileSync(
