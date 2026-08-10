@@ -7,7 +7,7 @@ type HomeScreenProps = Omit<FoundationHomeProps, "userId"> & {
   activeSlot: WorkoutSlot | null;
   actionSaving: boolean;
   lastCompletedSlot: WorkoutSlot | null;
-  lifecycle: TrainingLifecycle;
+  lifecycle: TrainingLifecycle | null;
   loadingWorkout: boolean;
   message: string;
   nextSlot: WorkoutSlot;
@@ -52,7 +52,7 @@ function HomeScreen({
 }: HomeScreenProps) {
   const [cruiseConfirmationOpen, setCruiseConfirmationOpen] = useState(false);
 
-  if (lifecycle.phase === "cruise")
+  if (lifecycle?.phase === "cruise")
     return (
       <CruiseHome
         actionSaving={actionSaving}
@@ -65,7 +65,8 @@ function HomeScreen({
       />
     );
 
-  const suggestionOpen = lifecycle.suggestion_due && !cruiseConfirmationOpen;
+  const suggestionOpen =
+    online && lifecycle?.suggestion_due === true && !cruiseConfirmationOpen;
   return (
     <div className="app-shell">
       <style>{homeStyles}</style>
@@ -91,6 +92,7 @@ function HomeScreen({
           onStartCruise={() => setCruiseConfirmationOpen(true)}
           resume={onResumeWorkout}
           start={onStartWorkout}
+          unavailable={lifecycle === null}
         />
 
         <RotationTracker
@@ -140,6 +142,7 @@ function HomeScreen({
         <CruiseSuggestion
           message={message}
           nextSlot={nextSlot}
+          online={online}
           saving={actionSaving}
           onDismiss={onDismissCruiseSuggestion}
           onStart={() => setCruiseConfirmationOpen(true)}
@@ -149,6 +152,7 @@ function HomeScreen({
         <CruiseConfirmation
           message={message}
           nextSlot={nextSlot}
+          online={online}
           saving={actionSaving}
           onCancel={() => setCruiseConfirmationOpen(false)}
           onConfirm={async () => {
@@ -256,12 +260,14 @@ function CruiseHome({
 function CruiseConfirmation({
   message,
   nextSlot,
+  online,
   onCancel,
   onConfirm,
   saving,
 }: {
   message: string;
   nextSlot: WorkoutSlot;
+  online: boolean;
   onCancel: () => void;
   onConfirm: () => Promise<void>;
   saving: boolean;
@@ -285,7 +291,7 @@ function CruiseConfirmation({
         {message && <p className="form-message">{message}</p>}
         <button
           className="primary-action"
-          disabled={saving}
+          disabled={!online || saving}
           onClick={() => void onConfirm()}
           type="button"
         >
@@ -308,12 +314,14 @@ function CruiseConfirmation({
 function CruiseSuggestion({
   message,
   nextSlot,
+  online,
   onDismiss,
   onStart,
   saving,
 }: {
   message: string;
   nextSlot: WorkoutSlot;
+  online: boolean;
   onDismiss: () => Promise<boolean>;
   onStart: () => void;
   saving: boolean;
@@ -335,7 +343,7 @@ function CruiseSuggestion({
         {message && <p className="form-message">{message}</p>}
         <button
           className="primary-action"
-          disabled={saving}
+          disabled={!online || saving}
           onClick={onStart}
           type="button"
         >
@@ -343,7 +351,7 @@ function CruiseSuggestion({
         </button>
         <button
           className="secondary-action sheet-secondary"
-          disabled={saving}
+          disabled={!online || saving}
           onClick={() => void onDismiss()}
           type="button"
         >
@@ -378,6 +386,7 @@ function WorkoutCard({
   onStartCruise,
   resume,
   start,
+  unavailable,
 }: {
   activeSlot: WorkoutSlot | null;
   actionSaving: boolean;
@@ -387,7 +396,21 @@ function WorkoutCard({
   onStartCruise: () => void;
   resume: () => void;
   start: () => Promise<void>;
+  unavailable: boolean;
 }) {
+  if (unavailable)
+    return (
+      <section className="foundation-card" aria-labelledby="foundation-title">
+        <p className="section-label">TRAINING STATUS</p>
+        <h2 id="foundation-title">
+          {loading ? "LOADING" : "UNAVAILABLE"}
+        </h2>
+        <p className="foundation-copy">
+          {loading ? "CHECKING YOUR TRAINING PHASE" : "TRAINING CONTROLS ARE LOCKED"}
+        </p>
+      </section>
+    );
+
   const slot = activeSlot ?? nextSlot;
   return (
     <section className="foundation-card" aria-labelledby="foundation-title">

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  initialTrainingLifecycle,
+  type TrainingLifecycle,
   type Workout,
   type WorkoutStep,
 } from "../workout-domain.js";
@@ -29,7 +29,7 @@ export function useWorkout(userId: string, online: boolean) {
   );
   const [lastCompletedSlot, setLastCompletedSlot] =
     useState<WorkoutSlot | null>(null);
-  const [lifecycle, setLifecycle] = useState(initialTrainingLifecycle);
+  const [lifecycle, setLifecycle] = useState<TrainingLifecycle | null>(null);
   const [lastOperationId, setLastOperationId] = useState<string | null>(null);
   const [lastOperationStatus, setLastOperationStatus] =
     useState<WorkoutOperationStatus>(null);
@@ -49,6 +49,7 @@ export function useWorkout(userId: string, online: boolean) {
       return;
     }
     setLoading(true);
+    setLifecycle(null);
     const result = await loadWorkoutState(userId);
     if (!result.data) {
       setMessage(result.error);
