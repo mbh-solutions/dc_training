@@ -2,7 +2,7 @@ schema_version = "1.0"
 
 [behavior]
 intended_behavior = "Authenticated owners can browse current, retired, in-progress, and completed history; inspect protocol-specific progression; and correct a saved performance while affected verdicts recalculate without changing assignments or advancing rotation."
-proof = "tests/history.test.mjs covers deterministic workout, body-part, slot-aware retired/reactivated ordering, active-workout assignment detection, and poisons the correction function for rotation or assignment mutation. tests/a1-assignment.e2e.mjs mounts src/main.tsx with React and captures both tabs, exact-count pagination, one-open grouping, search, workout detail, every chart variant, absent-lane omission, original units, reassignment separation, active-workout correction locking, retired history, correction, recalculated verdict, and unchanged rotation advancement count. Rollback-only production database proof exercises owner-scoped history reads and the established correction RPC with synthetic users only."
+proof = "tests/history.test.mjs covers deterministic workout, body-part, slot-aware retired/reactivated ordering, active-workout assignment detection, and poisons the correction function for rotation or assignment mutation while proving the transactional active-workout guard follows the owner lock. tests/a1-assignment.e2e.mjs mounts src/main.tsx with React and captures both tabs, exact-count pagination, one-open grouping, search, workout detail, every chart variant, per-assignment protocol configuration, absent-lane omission, original units, reassignment separation, active-workout correction locking, payload-bound correction retries, retired history, recalculated verdict, and unchanged rotation advancement count. Rollback-only production database proof exercises owner-scoped history reads and the correction RPC with synthetic users only."
 
 [characterization]
 captured_behavior = "The qualified auth/offline shell, rotation setup, six-slot workout runtime, and logbook enforcement remain while history-v1 bridges the established correction seam to the actual History screen."
@@ -10,7 +10,7 @@ proof = "The existing foundation-shell-v2, rotation-setup-v1, and a1-workout-v1 
 
 [separation_of_concerns]
 before = "S05 already persisted owner-isolated workout rows and exposed a retry-stable correction RPC with assignment-wide verdict recalculation, but deliberately had no history interface."
-after = "workout-domain owns pure slot-aware history ordering, active-workout detection, and fail-closed row validation; HistoryScreen owns history navigation, protocol-specific rendering, and guarded correction input; workout-api alone owns paginated owner-filtered Supabase reads and correction RPC validation; the established database function remains authoritative for transactional recalculation."
+after = "workout-domain owns pure slot-aware history ordering, active-workout detection, and fail-closed row validation; HistoryScreen owns history navigation, per-assignment protocol rendering, and payload-bound correction input; workout-api alone owns paginated owner-filtered Supabase reads and correction RPC validation; the forward function replacement owns transactional active-workout exclusion and recalculation."
 
 [architecture]
 dependency_direction = "FoundationHome composes HistoryScreen; HistoryScreen delegates cloud I/O to workout-api and pure ordering/validation to workout-domain; workout-api alone reaches Supabase; the existing correction RPC remains the authoritative mutation boundary."
@@ -20,6 +20,7 @@ reviewed_paths = [
     "src/HistoryScreen.tsx",
     "src/workout-api.ts",
     "src/workout-domain.ts",
+    "supabase/migrations/20260810150000_guard_history_correction_during_active_workout.sql",
     "tests/history.test.mjs",
     "tests/a1-assignment.e2e.mjs",
     "tests/characterization/history-v1.characterization.mjs",
@@ -34,10 +35,10 @@ does_not_own = "Workout logging, rotation advancement, assignment changes, autho
 
 [incremental_refactor]
 target = "Add only S06 history and correction presentation to the qualified S05 persistence boundaries."
-completed_step = "Reused the established correction RPC and workout rows, added owner-filtered read calls and pure presentation helpers, and introduced no schema, package, or Supportability Gate change."
+completed_step = "Reused the established correction RPC and workout rows, added owner-filtered read calls and pure presentation helpers, and forward-replaced only the correction function to serialize an active-workout guard after its owner lock; no table shape, package, or Supportability Gate change."
 
 [review_handoff]
-summary = "Review owner-filtered reads, reactivated-versus-retired grouping, date-aligned canonical charts with original units, disconnected reassignment segments, correction operation IDs, fail-closed responses, and actual-React runtime evidence."
+summary = "Review owner-filtered reads, reactivated-versus-retired grouping, assignment-specific chart configurations, original units, disconnected reassignment segments, payload-bound correction operation IDs, the transactional active-workout guard, fail-closed responses, and actual-React runtime evidence."
 remaining_risks = [
     "Offline history mutation queuing remains explicitly outside S06; corrections are disabled without connectivity.",
     "Charts intentionally use native SVG and the approved single-exercise views; analytics and combined progression scores remain outside scope.",
@@ -66,3 +67,9 @@ path = "src/workout-domain.ts"
 owner_path = "src/workout-domain.ts"
 basis = "responsibility"
 justification = "Owns pure ordering, retired/reactivated identity, history row validation, and entry-shape rules without I/O or React state."
+
+[[module_boundaries]]
+path = "supabase/migrations/20260810150000_guard_history_correction_during_active_workout.sql"
+owner_path = "supabase/migrations/20260810150000_guard_history_correction_during_active_workout.sql"
+basis = "responsibility"
+justification = "Forward-replaces only the established correction RPC to reject an assignment captured by an in-progress workout after acquiring the same owner transaction lock used by workout start."

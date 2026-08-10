@@ -99,6 +99,7 @@ let historyWorkouts = [];
 let historySteps = [];
 let rotationAdvancements = 0;
 let loseNextWorkoutSaveResponse = true;
+let loseNextHistoryCorrectionResponse = true;
 const workoutOperations = new Map();
 const logbookOperations = new Map();
 const historyCorrectionOperations = new Map();
@@ -567,6 +568,10 @@ const mockCorrectWorkoutPerformance = (values) => {
     step,
   };
   historyCorrectionOperations.set(values.p_operation_id, data);
+  if (loseNextHistoryCorrectionResponse) {
+    loseNextHistoryCorrectionResponse = false;
+    return { data: null, error: { message: "NETWORK RESPONSE LOST" } };
+  }
   return { data, error: null };
 };
 
@@ -2058,10 +2063,10 @@ const straightOld = historyAssignment({
   body_part: "back_thickness",
   created_at: "2026-03-01T12:00:00Z",
   exercise: "Rack deadlift",
-  protocol: "straight_set",
+  protocol: "rest_pause",
   slot: "A2",
-  structure: "straight-6-8",
-  target_sets: [{ max: 8, min: 6 }],
+  structure: "11-15",
+  target_sets: [{ max: 15, min: 11 }],
 });
 const shoulderCurrent = historyAssignment({
   active: true,
@@ -2141,7 +2146,7 @@ historySteps = [
   historyStep({
     assignment: straightOld,
     fresh_baseline: true,
-    reps: [8],
+    reps: [8, 4, 2],
     verdict: null,
     weights: [historyWeight("355")],
     workout_id: "history-straight-old",
@@ -2238,17 +2243,23 @@ await act(async () => {
     );
   await flush();
 });
+const progressionSegments = [
+  ...document.querySelectorAll(".exercise-performance .progression-segment"),
+];
+const mixedProtocolSegments =
+  progressionSegments.length === 2 &&
+  progressionSegments[0].textContent.includes("REST-PAUSE") &&
+  progressionSegments[0].querySelectorAll(".bar-chart").length === 1 &&
+  progressionSegments[1].textContent.includes("STRAIGHT-SET");
+const straightSegment = progressionSegments[1];
 const straightSetLanes =
-  document.querySelectorAll(".exercise-performance .line-chart").length === 2 &&
-  document.querySelectorAll(".exercise-performance .target-band").length ===
-    2 &&
+  straightSegment.querySelectorAll(".line-chart").length === 2 &&
+  straightSegment.querySelectorAll(".target-band").length === 2 &&
   text().includes("SET 1 · 6–8 REPS") &&
   text().includes("SET 2 · 10–12 REPS");
-const straightCharts = document.querySelectorAll(
-  ".exercise-performance .line-chart",
-);
+const straightCharts = straightSegment.querySelectorAll(".line-chart");
 const absentStraightSetOmitted =
-  straightCharts[0]?.querySelectorAll("circle").length === 3 &&
+  straightCharts[0]?.querySelectorAll("circle").length === 2 &&
   straightCharts[1]?.querySelectorAll("circle").length === 2 &&
   !straightCharts[1]?.textContent.includes("0 LB");
 await act(async () => {
@@ -2291,7 +2302,7 @@ const restPauseChart =
   text().includes("FRESH BASELINE") &&
   document.querySelectorAll(".exercise-performance polyline").length === 2 &&
   document.querySelectorAll(".exercise-performance .target-band").length ===
-    1 &&
+    2 &&
   document.querySelectorAll(".exercise-performance .chart-date").length === 8;
 await act(async () => {
   document.querySelector(".performance-rows button").click();
@@ -2303,11 +2314,25 @@ await act(async () => {
   await flush();
   await flush();
 });
-const correctionCall = calls.find(
+const lostCorrectionResponse =
+  text().includes("NETWORK RESPONSE LOST") &&
+  document.querySelector(".correction-dialog") !== null;
+await setInput("correction-reps-0", "9");
+await act(async () => {
+  document.querySelector(".correction-dialog .primary-action").click();
+  await flush();
+  await flush();
+});
+const correctionCalls = calls.filter(
   (call) => call[0] === "rpc" && call[1] === "correct_workout_performance",
 );
+const correctionCall = correctionCalls.at(-1);
 const correctionRecalculated =
-  correctionCall?.[2]?.p_reps.join(",") === "8,4,2" &&
+  lostCorrectionResponse &&
+  correctionCalls.length === 2 &&
+  correctionCalls[0][2].p_operation_id !==
+    correctionCalls[1][2].p_operation_id &&
+  correctionCall?.[2]?.p_reps.join(",") === "9,4,2" &&
   rotationAdvancements === rotationBeforeCorrection &&
   JSON.stringify(historyAssignments) === assignmentsBeforeCorrection &&
   text().includes("CORRECTION SAVED · VERDICTS RECALCULATED") &&
@@ -2372,6 +2397,7 @@ const historyRuntime =
   activeWorkoutCorrectionLocked &&
   exercisesTabCaptured &&
   historyPagination &&
+  mixedProtocolSegments &&
   oneGroupExpanded &&
   retiredInitiallyCollapsed &&
   straightSetLanes &&
@@ -2574,6 +2600,7 @@ const historyDetail = {
   exercisesTabCaptured,
   historyRuntime,
   historyPagination,
+  mixedProtocolSegments,
   inProgressDetail,
   oneGroupExpanded,
   retiredInitiallyCollapsed,

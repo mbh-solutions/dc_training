@@ -138,7 +138,7 @@ test("S06 history ordering and correction boundary stay deterministic", () => {
 
   const migration = readFileSync(
     new URL(
-      "../supabase/migrations/20260810100806_enforce_logbook_rules.sql",
+      "../supabase/migrations/20260810150000_guard_history_correction_during_active_workout.sql",
       import.meta.url,
     ),
     "utf8",
@@ -147,6 +147,21 @@ test("S06 history ordering and correction boundary stay deterministic", () => {
     /create or replace function public\.correct_workout_performance[\s\S]*?\n\$\$;/,
   )?.[0];
   assert.ok(correction?.includes("recalculate_assignment_logbook"));
+  assert.ok(
+    correction?.indexOf(
+      "pg_advisory_xact_lock(hashtextextended(owner_id::text, 0))",
+    ) < correction?.indexOf("active_workout.status = 'in_progress'"),
+  );
+  assert.ok(
+    correction?.includes(
+      "active_step.assignment_id = current_step.assignment_id",
+    ),
+  );
+  assert.ok(
+    correction?.includes(
+      "Finish active workout before correcting this exercise",
+    ),
+  );
   assert.ok(!correction?.includes("finish_workout_if_ready"));
   assert.ok(!correction?.includes("workout_rotation_state"));
   assert.ok(

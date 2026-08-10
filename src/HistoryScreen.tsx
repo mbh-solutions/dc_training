@@ -34,6 +34,11 @@ type SaveCorrection = (
   duration: number | null,
 ) => Promise<void>;
 
+type CorrectionOperation = {
+  fingerprint: string;
+  operationId: string;
+};
+
 export default function HistoryScreen({
   online,
   onHome,
@@ -54,7 +59,7 @@ export default function HistoryScreen({
     null,
   );
   const [tab, setTab] = useState<"exercises" | "workouts">("exercises");
-  const correctionOperations = useRef(new Map<string, string>());
+  const correctionOperations = useRef(new Map<string, CorrectionOperation>());
 
   const reload = useCallback(async () => {
     const result = await loadHistoryState(userId);
@@ -109,9 +114,16 @@ export default function HistoryScreen({
       setMessage("FINISH ACTIVE WORKOUT BEFORE CORRECTING THIS EXERCISE");
       return;
     }
+    const fingerprint = correctionPayloadFingerprint(weights, reps, duration);
+    const pendingOperation = correctionOperations.current.get(step.step_id);
     const operationId =
-      correctionOperations.current.get(step.step_id) ?? crypto.randomUUID();
-    correctionOperations.current.set(step.step_id, operationId);
+      pendingOperation?.fingerprint === fingerprint
+        ? pendingOperation.operationId
+        : crypto.randomUUID();
+    correctionOperations.current.set(step.step_id, {
+      fingerprint,
+      operationId,
+    });
     const result = await correctHistoryPerformance(
       operationId,
       step.step_id,
@@ -653,19 +665,35 @@ function ExercisePerformance({
   onEdit: (step: WorkoutStep) => void;
   performances: Performance[];
 }) {
+  const segments = performanceSegments(performances);
   return (
     <section className="history-detail exercise-performance">
       <BackButton label="EXERCISES" onBack={onBack} />
       <h1>{assignment.exercise}</h1>
       <p>
-        {displayBodyPart(assignment.body_part)} ·{" "}
-        {protocolLabel(assignment.protocol)}
-        {assignment.target_sets[0] &&
-          ` · TARGET ${assignment.target_sets[0].min}–${assignment.target_sets[0].max}`}
+        {displayBodyPart(assignment.body_part)} · CURRENT ·{" "}
+        {protocolConfigurationLabel(assignment)}
       </p>
       <section className="progression-card">
         <h2>PROGRESSION</h2>
-        <ProtocolCharts assignment={assignment} performances={performances} />
+        {segments.map((segment, index) => (
+          <section
+            className="progression-segment"
+            key={`${segment.assignment.assignment_id}-${index}`}
+          >
+            {index > 0 && (
+              <div className="reassignment-boundary">
+                <strong>REASSIGNED</strong>
+                <span>FRESH BASELINE</span>
+              </div>
+            )}
+            <p>{protocolConfigurationLabel(segment.assignment)}</p>
+            <ProtocolCharts
+              assignment={segment.assignment}
+              performances={segment.performances}
+            />
+          </section>
+        ))}
       </section>
       <h2>RECENT PERFORMANCES</h2>
       <div className="performance-rows">
@@ -762,9 +790,6 @@ function LineChart({
     Number(item.step.weight_entries[setIndex].micrograms),
   );
   const points = chartPoints(values);
-  const assignmentIds = lanePerformances.map(
-    (item) => item.assignment.assignment_id,
-  );
   return (
     <div className="chart-lane line-chart">
       <h3>
@@ -775,9 +800,7 @@ function LineChart({
         {target && (
           <rect className="target-band" height="11" width="86" x="8" y="22" />
         )}
-        {splitChartSegments(points, assignmentIds).map((segment, index) => (
-          <polyline key={index} points={segment.map(pointText).join(" ")} />
-        ))}
+        <polyline points={points.map(pointText).join(" ")} />
         {points.map((point, index) => (
           <g key={lanePerformances[index].step.step_id}>
             <circle cx={point.x} cy={point.y} r="1.8" />
@@ -798,7 +821,6 @@ function LineChart({
           </g>
         ))}
         <ChartDates performances={lanePerformances} />
-        <ChartBoundaries assignments={assignmentIds} />
       </svg>
     </div>
   );
@@ -816,9 +838,6 @@ function BarChart({
   values: number[];
 }) {
   const max = Math.max(...values, 1);
-  const assignmentIds = performances.map(
-    (item) => item.assignment.assignment_id,
-  );
   return (
     <div className="chart-lane bar-chart">
       <h3>{label}</h3>
@@ -850,7 +869,6 @@ function BarChart({
           </text>
         )}
         <ChartDates performances={performances} />
-        <ChartBoundaries assignments={assignmentIds} />
       </svg>
     </div>
   );
@@ -867,27 +885,6 @@ function ChartDates({ performances }: { performances: Performance[] }) {
       {shortDate(performance.workout.started_at)}
     </text>
   ));
-}
-
-function ChartBoundaries({ assignments }: { assignments: string[] }) {
-  return assignments.slice(1).map((assignment, index) =>
-    assignment === assignments[index] ? null : (
-      <g className="reassignment-boundary" key={`${assignment}-${index}`}>
-        <line
-          x1={boundaryX(index, assignments.length)}
-          x2={boundaryX(index, assignments.length)}
-          y1="3"
-          y2="50"
-        />
-        <text x={boundaryX(index, assignments.length) + 1} y="7">
-          REASSIGNED
-        </text>
-        <text x={boundaryX(index, assignments.length) + 1} y="10">
-          FRESH BASELINE
-        </text>
-      </g>
-    ),
-  );
 }
 
 function CorrectionEditor({
@@ -1079,6 +1076,42 @@ function correctionLocked(
   );
 }
 
+function correctionPayloadFingerprint(
+  weights: WeightEntry[],
+  reps: number[],
+  duration: number | null,
+) {
+  return JSON.stringify({
+    duration,
+    reps,
+    weights: weights.map((weight) => ({
+      amount: weight.amount,
+      micrograms: weight.micrograms ?? null,
+      unit: weight.unit,
+    })),
+  });
+}
+
+function performanceSegments(performances: Performance[]) {
+  const segments: {
+    assignment: HistoryAssignment;
+    performances: Performance[];
+  }[] = [];
+  for (const performance of performances) {
+    const segment = segments.at(-1);
+    if (
+      segment?.assignment.assignment_id === performance.assignment.assignment_id
+    )
+      segment.performances.push(performance);
+    else
+      segments.push({
+        assignment: performance.assignment,
+        performances: [performance],
+      });
+  }
+  return segments;
+}
+
 function searchMatches(assignments: HistoryAssignment[], search: string) {
   const query = search.trim().toLocaleLowerCase();
   if (!query) return [];
@@ -1114,25 +1147,8 @@ function chartPoints(values: number[]) {
   }));
 }
 
-function splitChartSegments(
-  points: { x: number; y: number }[],
-  assignments: string[],
-) {
-  const segments: { x: number; y: number }[][] = [];
-  for (const [index, point] of points.entries()) {
-    if (index === 0 || assignments[index] !== assignments[index - 1])
-      segments.push([]);
-    segments.at(-1)!.push(point);
-  }
-  return segments;
-}
-
 function chartX(index: number, count: number) {
   return count < 2 ? 50 : 10 + (index / (count - 1)) * 80;
-}
-
-function boundaryX(index: number, count: number) {
-  return (chartX(index, count) + chartX(index + 1, count)) / 2;
 }
 
 function pointText(point: { x: number; y: number }) {
@@ -1170,6 +1186,13 @@ function verdictLabel(step: WorkoutStep) {
 
 function protocolLabel(protocol: HistoryAssignment["protocol"]) {
   return protocol.replace("_", "-").toUpperCase();
+}
+
+function protocolConfigurationLabel(assignment: HistoryAssignment) {
+  const targets = assignment.target_sets
+    .map((target) => `${target.min}–${target.max}`)
+    .join(" / ");
+  return `${protocolLabel(assignment.protocol)}${targets ? ` · ${targets} REPS` : ""}`;
 }
 
 function displayBodyPart(bodyPart: string) {
@@ -1244,6 +1267,9 @@ const historyStyles = `
 .saved-entry-list button > span, .saved-entry-list button > em, .performance-rows button > span, .performance-rows button > em { color: var(--gray); font-family: Impact, sans-serif; font-style: normal; }
 .saved-entry-list button > em, .performance-rows button > em { max-width: 125px; font-size: .78rem; text-align: right; }
 .progression-card { margin-top: 30px; border: 1px solid var(--line); border-radius: 10px; padding: 2px 16px 16px; background: rgba(8,8,8,.8); }
+.progression-segment > p { margin: 16px 0 0; color: var(--gray); font-family: Impact, sans-serif; font-size: .78rem; letter-spacing: .06em; }
+.progression-segment + .progression-segment { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--line); }
+.reassignment-boundary { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--gray); font-family: Impact, sans-serif; font-size: .72rem; letter-spacing: .06em; }
 .chart-lane { margin-top: 22px; }
 .chart-lane h3 { margin: 0 0 7px; font-size: .96rem; }
 .chart-lane svg { width: 100%; min-height: 185px; overflow: visible; border-bottom: 1px solid #444; }
@@ -1255,8 +1281,6 @@ const historyStyles = `
 .chart-lane .target-band { fill: rgba(255,255,255,.08); }
 .chart-lane .target-label { fill: var(--gray); text-anchor: end; }
 .chart-lane .bar { fill: var(--red); }
-.reassignment-boundary line { stroke: var(--gray); stroke-dasharray: 2 2; stroke-width: .5; }
-.reassignment-boundary text { fill: var(--gray); font-size: 1.8px; text-anchor: start; }
 .history-state { margin: 80px 0; color: var(--gray); font-family: Impact, sans-serif; text-align: center; }
 .correction-backdrop { position: fixed; z-index: 20; inset: 0; display: grid; align-items: end; padding: 18px; background: rgba(0,0,0,.82); }
 .correction-dialog { width: min(100%, 500px); max-height: 92svh; overflow: auto; margin: 0 auto; border: 1px solid var(--line); border-radius: 14px; padding: 24px; background: #0b0b0b; }
