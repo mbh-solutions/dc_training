@@ -1,93 +1,95 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Let the authenticated owner start or resume any automatically selected A1/B1/A2/B2/A3/B3 workout, record every configured work-set shape or timed hold, complete or skip every approved stretch, undo the latest action, finish later, and advance the six-slot rotation exactly once only after every step is satisfied."
-proof = "tests/a1-assignment.e2e.mjs mounts src/main.tsx with real React and drives one A workout plus one B workout with both abs protocols, a previous-performance mirror, calf instructions, separate widowmaker entries, exercise/stretch skip, immediate undo, leave/resume, final retry, and exact next-slot results. tests/workout-domain.test.mjs proves the full entry-shape matrix and fail-closed timed-hold rows."
+intended_behavior = "After each saved exercise performance, apply the locked protocol-aware verdict, block unresolved abs/failure decisions, permit one mulligan, require replacement after the post-mulligan failure, and preserve retired performance history behind a fresh reassignment baseline."
+proof = "tests/logbook-enforcement.test.mjs covers the locked table-driven verdict boundaries and deterministic retries. tests/a1-assignment.e2e.mjs mounts src/main.tsx with React and captures win, exact first-failure choices, mulligan marking, replacement-only enforcement, matching-category replacement, operation retries, and returned-exercise history with a fresh baseline."
 
 [characterization]
-captured_behavior = "The qualified auth/offline shell and full rotation setup remain, while the unchanged a1-workout-v1 definition fail-closed checks the established compatibility RPC names, workout surface declarations, conversion constants, and Home selectors without executing target-controlled code."
-proof = "The existing foundation-shell-v2, rotation-setup-v1, and a1-workout-v1 definitions remain unchanged; the compatibility RPC names now delegate to six-slot generic database functions, while tests/a1-assignment.e2e.mjs mounts the real React application and proves both A- and B-day runtime paths."
+captured_behavior = "The qualified auth/offline shell, full rotation setup, and six-slot workout runtime remain while a1-workout-v1 continues to fail closed on the established compatibility RPC and workout surface contracts."
+proof = "The existing foundation-shell-v2, rotation-setup-v1, and a1-workout-v1 characterization definitions remain unchanged; the directly relevant real-React runtime proof is extended instead of replaced."
 
 [separation_of_concerns]
-before = "The S03 boundaries supported A1-only rest-pause and straight-set tracing with four A-day stretches."
-after = "The same boundaries now support all six slots and every approved entry shape: WorkoutTracer owns controlled presentation, useWorkout owns state transitions, workout-api owns validated Supabase calls, workout-domain owns row guards and entry shapes, and the migration owns atomic persistence and rotation invariants."
+before = "The S04 boundaries persisted complete workouts and previous performance but deliberately deferred logbook verdicts and replacement enforcement."
+after = "logbook-domain owns deterministic client-side truth-table proof; WorkoutTracer owns verdict and blocking presentation; useWorkout owns retry-stable React transitions; workout-api owns validated RPC calls; and the forward-only migration owns authoritative transactional verdict, lifecycle, replacement, correction, and RLS invariants."
 
 [architecture]
-dependency_direction = "App composes FoundationHome; FoundationHome composes HomeScreen, RotationSetup, WorkoutTracer, and useWorkout; useWorkout delegates cloud I/O to workout-api; workout-api alone reaches the Supabase client; row validation and weight conversion remain inward dependencies."
+dependency_direction = "App composes FoundationHome; FoundationHome composes RotationSetup, WorkoutTracer, and useWorkout; useWorkout delegates cloud I/O to workout-api; workout-api alone reaches Supabase; workout-domain validates rows; logbook-domain independently expresses the locked comparison rules for targeted proof; the database remains authoritative."
 reviewed_paths = [
-    "supabase/migrations/20260810084701_complete_full_workout_flow.sql",
-    "supabase/migrations/20260810092500_add_full_workout_compatibility_rpc.sql",
+    "supabase/migrations/20260810100806_enforce_logbook_rules.sql",
     "src/FoundationHome.tsx",
-    "src/HomeScreen.tsx",
+    "src/RotationSetup.tsx",
+    "src/RotationSetupView.tsx",
     "src/WorkoutTracer.tsx",
+    "src/hooks/use-rotation-editor.ts",
+    "src/hooks/use-rotation-flow.ts",
     "src/hooks/use-workout.ts",
-    "src/weight-conversion.ts",
+    "src/logbook-domain.ts",
     "src/workout-api.ts",
     "src/workout-domain.ts",
-    "vite.config.ts",
+    "tests/logbook-enforcement.test.mjs",
+    "tests/a1-assignment.e2e.mjs",
 ]
 
 [responsibility_boundary]
-path = "src/hooks/use-workout.ts"
-owns = "React state transitions for validated workout loads, saves, undo, and completion results."
-does_not_own = "Workout visuals, Supabase calls, response validation, SQL invariants, future logbook verdicts, or offline mutation queuing."
+path = "supabase/migrations/20260810100806_enforce_logbook_rules.sql"
+owns = "Canonical-weight comparisons, per-assignment lifecycle state, blocking decisions, idempotent replacement, historical recalculation, and owner-scoped RLS."
+does_not_own = "Workout visuals, general rotation editing, history screens, cruise timing, or offline mutation queuing."
 
 [incremental_refactor]
-target = "Expand only the qualified S03 tracer into the complete S04 workout flow."
-completed_step = "Reused fixed assignment and S03 workout boundaries, preserved the established compatibility RPC names over six-slot database functions, generalized presentation to all slots, added B-day stretches and abs, and added forward-only migrations for persistence plus timed-hold compatibility."
+target = "Add only S05 logbook enforcement to the qualified S04 workout boundaries."
+completed_step = "Extended existing step rows and RPCs forward-only, reused the rotation editor for category-safe replacement, and retained the compatibility workout RPC names."
 
 [review_handoff]
-summary = "Review six-slot client orchestration, exact entry-shape mapping, approved stretch/calf presentation, additive RLS schema, first-unfinished enforcement, and atomic idempotent cyclic advancement."
+summary = "Review locked verdict truth tables, blocking action cardinality, fresh-baseline history separation, transactional operation IDs, correction recalculation, owner isolation, and the real-React lifecycle capture."
 remaining_risks = [
-    "The owner must save every assignment for the selected slot before the database permits that workout to start.",
-    "Logbook win, failure, mulligan, and replacement enforcement remains deliberately deferred to S05.",
-    "Offline mutation queuing remains deliberately deferred; confirmed cloud work resumes after reconnect or a later session.",
+    "Historical correction recalculation is enforced by the database API; a history/correction screen is intentionally outside S05.",
+    "Offline mutation queuing remains intentionally deferred; confirmed cloud actions resume after reconnect.",
 ]
 
 [human_review]
-naming = "WorkoutTracer, useWorkout, workout-api, workout-domain, and weight-conversion name their presentation, state, I/O, row-validation, and conversion responsibilities directly."
-cohesion = "The hook owns React state, workout-api owns cloud I/O, workout-domain owns row guards and entry shapes, weight-conversion owns exact conversion, and WorkoutTracer owns six-slot presentation."
-intended_behavior = "The owner gains the complete configured workout flow without history views, logbook verdict enforcement, cruise lifecycle, warm-ups, timers, or offline-mutation expansion."
-reviewability = "The diff generalizes the existing focused workout modules, adds two forward-only migrations, extends one targeted unit check, and extends the existing real-React behavior proof without changing established characterization definitions."
+naming = "Logbook verdict, enforcement action, resolution, mulligan, replacement, and fresh-baseline names match the locked product ledger."
+cohesion = "Presentation, React state, cloud I/O, row validation, pure comparison proof, and authoritative persistence remain separate."
+intended_behavior = "The owner receives deterministic verdicts and cannot proceed past an unresolved logbook decision; replacement changes future assignments without deleting the failed performance."
+reviewability = "One forward migration, one focused pure module/test, narrow extensions to established workout/rotation boundaries, and one extended actual-React runtime packet cover S05 only."
+
+[[module_boundaries]]
+path = "src/logbook-domain.ts"
+owner_path = "src/logbook-domain.ts"
+basis = "responsibility"
+justification = "Owns the locked comparison truth tables used by targeted deterministic tests; it performs no I/O or React state."
 
 [[module_boundaries]]
 path = "src/WorkoutTracer.tsx"
 owner_path = "src/WorkoutTracer.tsx"
 basis = "responsibility"
-justification = "Owns six-slot exercise, stretch, calf-information, and completion presentation only."
+justification = "Owns win/baseline visibility, comparison tables, blocking sheets, mulligan badges, and returned-history presentation only."
 
 [[module_boundaries]]
 path = "src/hooks/use-workout.ts"
 owner_path = "src/hooks/use-workout.ts"
 basis = "responsibility"
-justification = "Owns React workout state transitions and retry-operation identity only."
-
-[[module_boundaries]]
-path = "src/workout-domain.ts"
-owner_path = "src/workout-domain.ts"
-basis = "responsibility"
-justification = "Owns complete fail-closed guards for workout, rotation, and step rows only."
+justification = "Owns retry-stable save, resolution, replacement, completion, and React state transitions only."
 
 [[module_boundaries]]
 path = "src/workout-api.ts"
 owner_path = "src/workout-api.ts"
 basis = "responsibility"
-justification = "Owns owner-filtered Supabase workout I/O and validated API results only."
+justification = "Owns validated owner-filtered workout, logbook-decision, and replacement Supabase calls only."
 
 [[module_boundaries]]
-path = "src/weight-conversion.ts"
-owner_path = "src/weight-conversion.ts"
+path = "src/workout-domain.ts"
+owner_path = "src/workout-domain.ts"
 basis = "responsibility"
-justification = "Owns exact weight parsing, integer-microgram conversion, and display conversion only."
+justification = "Owns fail-closed validation for the extended workout-step and reference-history rows only."
 
 [[module_boundaries]]
-path = "supabase/migrations/20260810084701_complete_full_workout_flow.sql"
-owner_path = "supabase/migrations/20260810084701_complete_full_workout_flow.sql"
+path = "src/RotationSetup.tsx"
+owner_path = "src/RotationSetup.tsx"
 basis = "responsibility"
-justification = "Owns authenticated workout persistence, entry-shape validation, undo history, previous snapshots, and six-slot advancement only."
+justification = "Reuses the established assignment editor for a current-exercise-excluded, matching-category replacement path."
 
 [[module_boundaries]]
-path = "supabase/migrations/20260810092500_add_full_workout_compatibility_rpc.sql"
-owner_path = "supabase/migrations/20260810092500_add_full_workout_compatibility_rpc.sql"
+path = "supabase/migrations/20260810100806_enforce_logbook_rules.sql"
+owner_path = "supabase/migrations/20260810100806_enforce_logbook_rules.sql"
 basis = "responsibility"
-justification = "Owns the timed-hold overload for the established authenticated workout-save compatibility RPC only."
+justification = "Owns authoritative transactional comparison, lifecycle, future-only replacement, correction recalculation, idempotency, and RLS persistence."

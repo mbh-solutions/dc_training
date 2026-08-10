@@ -7,13 +7,44 @@ import {
 import { useRotationEditor } from "./hooks/use-rotation-editor.js";
 import { useRotationFlow } from "./hooks/use-rotation-flow.js";
 import { resolveAssignmentDraft } from "./rotation-assignment-draft.js";
+import type { WorkoutStep } from "./workout-domain.js";
+import type {
+  AssignmentPosition,
+  Protocol,
+  TargetSet,
+  WorkoutSlot,
+} from "./rotation-config.js";
+import { useState } from "react";
 
-type RotationSetupProps = { onBack: () => void; userId: string };
+type RotationSetupProps = {
+  onBack: () => void;
+  replacement?: {
+    onSave: (
+      step: WorkoutStep,
+      exercise: string,
+      protocol: Protocol,
+      structure: string,
+      targetSets: TargetSet[],
+    ) => Promise<boolean>;
+    slot: WorkoutSlot;
+    step: WorkoutStep;
+  };
+  userId: string;
+};
 
-function RotationSetup({ onBack, userId }: RotationSetupProps) {
+function RotationSetup({ onBack, replacement, userId }: RotationSetupProps) {
+  const [replacementSaving, setReplacementSaving] = useState(false);
   const { loadState, message, saved, saveAssignment, saving } =
     useRotationAssignments(userId);
-  const editor = useRotationEditor(saved);
+  const editor = useRotationEditor(
+    saved,
+    replacement
+      ? {
+          position: replacement.step.body_part as AssignmentPosition,
+          slot: replacement.slot,
+        }
+      : undefined,
+  );
   const { availableStructures, structureValid, targets } =
     resolveAssignmentDraft(
       editor.position,
@@ -22,7 +53,10 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
       editor.structure,
       editor.customTargets,
     );
-  const flow = useRotationFlow(availableStructures.length > 0);
+  const flow = useRotationFlow(
+    availableStructures.length > 0,
+    replacement ? "exercise" : "setup",
+  );
   const assignment = saved[assignmentKey(editor.slot, editor.position)] ?? null;
 
   const editAssignment: typeof editor.editAssignment = (slot, position) => {
@@ -35,23 +69,41 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
       !editor.exercise ||
       !editor.protocol ||
       !structureValid ||
-      !(await saveAssignment(
-        editor.slot,
-        editor.position,
-        editor.exercise,
-        editor.protocol,
-        availableStructures.length ? editor.structure : "none",
-        targets,
-      ))
+      !(await saveCurrentAssignment())
     )
       return;
     flow.saveCompleted();
   };
 
+  const saveCurrentAssignment = async () => {
+    const structure = availableStructures.length ? editor.structure : "none";
+    if (!replacement)
+      return saveAssignment(
+        editor.slot,
+        editor.position,
+        editor.exercise,
+        editor.protocol as Protocol,
+        structure,
+        targets,
+      );
+    setReplacementSaving(true);
+    const replaced = await replacement.onSave(
+      replacement.step,
+      editor.exercise,
+      editor.protocol as Protocol,
+      structure,
+      targets,
+    );
+    setReplacementSaving(false);
+    return replaced;
+  };
+
   return (
     <RotationSetupFlow
       assignment={assignment}
-      availableExercises={EXERCISES[categoryFor(editor.position)]}
+      availableExercises={EXERCISES[categoryFor(editor.position)].filter(
+        (exercise) => exercise !== replacement?.step.exercise,
+      )}
       availableProtocols={protocolChoices(editor.position, editor.exercise)}
       availableStructures={availableStructures}
       customTargets={editor.customTargets}
@@ -60,7 +112,7 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
       loadState={loadState}
       message={message}
       onBack={onBack}
-      onExerciseBack={flow.onExerciseBack}
+      onExerciseBack={replacement ? onBack : flow.onExerciseBack}
       onExerciseContinue={flow.onExerciseContinue}
       onProtocolBack={flow.onProtocolBack}
       onProtocolContinue={flow.onProtocolContinue}
@@ -69,9 +121,10 @@ function RotationSetup({ onBack, userId }: RotationSetupProps) {
       onStructureContinue={flow.onStructureContinue}
       position={editor.position}
       protocol={editor.protocol}
+      replacement={Boolean(replacement)}
       save={save}
       saved={saved}
-      saving={saving}
+      saving={saving || replacementSaving}
       screen={flow.screen}
       selectExercise={editor.selectExercise}
       selectProtocol={editor.selectProtocol}

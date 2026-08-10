@@ -2,8 +2,11 @@ import { useState } from "react";
 
 export type Screen = "setup" | "exercise" | "protocol" | "structure" | "review";
 
-export function useRotationFlow(hasStructures: boolean) {
-  const [screen, setScreen] = useState<Screen>("setup");
+export function useRotationFlow(
+  hasStructures: boolean,
+  initialScreen: Screen = "setup",
+) {
+  const [screen, setScreen] = useState<Screen>(initialScreen);
   return {
     beginEdit: () => setScreen("exercise"),
     onExerciseBack: () => setScreen("setup"),

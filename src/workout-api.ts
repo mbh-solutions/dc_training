@@ -11,7 +11,7 @@ import { supabase } from "./lib/supabase.js";
 import type { WeightEntry } from "./weight-conversion.js";
 
 type ApiResult<T> = { data: T | null; error: string };
-type SaveResult = {
+export type SaveResult = {
   completed_now?: boolean;
   next_slot: WorkoutSlot;
   step: WorkoutStep;
@@ -59,7 +59,7 @@ export async function loadWorkoutState(
   const stepResult = await supabase!
     .from("workout_steps")
     .select(
-      "step_id,workout_id,ordinal,kind,body_part,assignment_id,exercise,protocol,structure,target_sets,status,weight_entries,reps,duration_seconds,previous_weight_entries,previous_reps,previous_duration_seconds",
+      "step_id,workout_id,ordinal,kind,body_part,assignment_id,exercise,protocol,structure,target_sets,status,weight_entries,reps,duration_seconds,previous_weight_entries,previous_reps,previous_duration_seconds,verdict,set_verdicts,enforcement_action,fresh_baseline,mulligan_used,reference_history,resolution",
     )
     .eq("user_id", userId)
     .eq("workout_id", workout.workout_id)
@@ -115,6 +115,44 @@ export async function undoWorkoutStep(
   });
   return error || !validWorkoutStep(data)
     ? failure("UNDO COULD NOT BE SAVED")
+    : success(data);
+}
+
+export async function resolveLogbookAction(
+  operationId: string,
+  stepId: string,
+  action: "count_failure" | "count_win" | "use_mulligan",
+): Promise<ApiResult<SaveResult>> {
+  const { data, error } = await supabase!.rpc("resolve_logbook_action", {
+    p_action: action,
+    p_operation_id: operationId,
+    p_step_id: stepId,
+  });
+  return error || !validSaveResult(data)
+    ? failure(error?.message ?? "LOGBOOK DECISION COULD NOT BE SAVED")
+    : success(data);
+}
+
+export async function replaceFailedAssignment(
+  operationId: string,
+  stepId: string,
+  replacement: {
+    exercise: string;
+    protocol: "rest_pause" | "straight_set" | "timed_hold";
+    structure: string;
+    targetSets: { max: number; min: number }[];
+  },
+): Promise<ApiResult<SaveResult>> {
+  const { data, error } = await supabase!.rpc("replace_failed_assignment", {
+    p_exercise: replacement.exercise,
+    p_operation_id: operationId,
+    p_protocol: replacement.protocol,
+    p_step_id: stepId,
+    p_structure: replacement.structure,
+    p_target_sets: replacement.targetSets,
+  });
+  return error || !validSaveResult(data)
+    ? failure(error?.message ?? "EXERCISE COULD NOT BE REPLACED")
     : success(data);
 }
 

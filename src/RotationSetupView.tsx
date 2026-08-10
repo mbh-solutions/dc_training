@@ -80,6 +80,7 @@ export type Props = {
   onStructureContinue: () => void;
   position: AssignmentPosition;
   protocol: Protocol | "";
+  replacement: boolean;
   save: () => Promise<void>;
   saved: Record<string, Assignment>;
   saving: boolean;
@@ -240,7 +241,7 @@ export function ReviewScreen(props: Props) {
           value={protocolLabel(props.protocol as Protocol)}
         />
         <Review label="TARGET STRUCTURE" value={formatTargets(props.targets)} />
-        {props.assignment && (
+        {(props.assignment || props.replacement) && (
           <Review
             label="EDIT"
             value="REPLACES CURRENT ASSIGNMENT; HISTORY PRESERVED"

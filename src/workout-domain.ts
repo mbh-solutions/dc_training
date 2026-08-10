@@ -12,20 +12,38 @@ export type WorkoutStep = {
   assignment_id: string | null;
   body_part: string;
   duration_seconds: number | null;
+  enforcement_action:
+    "abs_choice" | "first_failure" | "replacement_required" | null;
   exercise: string | null;
+  fresh_baseline: boolean;
   kind: "exercise" | "stretch";
+  mulligan_used: boolean;
   ordinal: number;
   previous_duration_seconds: number | null;
   previous_reps: number[];
   previous_weight_entries: WeightEntry[];
   protocol: "rest_pause" | "straight_set" | "timed_hold" | null;
+  reference_history: PerformanceHistoryEntry[];
   reps: number[];
+  resolution:
+    "count_failure" | "count_win" | "replaced" | "use_mulligan" | null;
+  set_verdicts: ("failure" | "tie" | "win")[];
   status: "completed" | "pending" | "skipped";
   step_id: string;
   structure: string | null;
   target_sets: { max: number; min: number }[];
   weight_entries: WeightEntry[];
   workout_id: string;
+  verdict: "failure" | "win" | null;
+};
+
+export type PerformanceHistoryEntry = {
+  assignment_id: string;
+  duration_seconds: number | null;
+  performed_at: string;
+  reps: number[];
+  verdict: "failure" | "win" | null;
+  weight_entries: WeightEntry[];
 };
 
 const exerciseBodyParts = new Set([
@@ -102,7 +120,30 @@ export function validWorkoutStep(value: unknown): value is WorkoutStep {
   if (!value || typeof value !== "object") return false;
   const row = value as Record<string, unknown>;
   return (
-    validStepIdentity(row) && validStepState(row) && validStepCollections(row)
+    validStepIdentity(row) &&
+    validStepState(row) &&
+    validLogbookState(row) &&
+    validStepCollections(row)
+  );
+}
+
+function validLogbookState(row: Record<string, unknown>) {
+  return (
+    [null, "abs_choice", "first_failure", "replacement_required"].includes(
+      row.enforcement_action as string | null,
+    ) &&
+    typeof row.fresh_baseline === "boolean" &&
+    typeof row.mulligan_used === "boolean" &&
+    [null, "count_failure", "count_win", "replaced", "use_mulligan"].includes(
+      row.resolution as string | null,
+    ) &&
+    [null, "failure", "win"].includes(row.verdict as string | null) &&
+    Array.isArray(row.set_verdicts) &&
+    row.set_verdicts.every((item) =>
+      ["failure", "tie", "win"].includes(item as string),
+    ) &&
+    Array.isArray(row.reference_history) &&
+    row.reference_history.every(validHistoryEntry)
   );
 }
 
@@ -281,5 +322,22 @@ function validWeightEntry(value: unknown): value is WeightEntry {
     (weight.unit === "lb" || weight.unit === "kg") &&
     typeof weight.micrograms === "string" &&
     /^\d+$/.test(weight.micrograms)
+  );
+}
+
+function validHistoryEntry(value: unknown): value is PerformanceHistoryEntry {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Record<string, unknown>;
+  return (
+    typeof row.assignment_id === "string" &&
+    typeof row.performed_at === "string" &&
+    Array.isArray(row.weight_entries) &&
+    row.weight_entries.every(validWeightEntry) &&
+    Array.isArray(row.reps) &&
+    row.reps.every((rep) => Number.isInteger(rep) && Number(rep) > 0) &&
+    (row.duration_seconds === null ||
+      (Number.isInteger(row.duration_seconds) &&
+        Number(row.duration_seconds) > 0)) &&
+    [null, "failure", "win"].includes(row.verdict as string | null)
   );
 }

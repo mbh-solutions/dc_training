@@ -126,10 +126,17 @@ const stretchDetails: Record<
 };
 
 type Props = {
+  actionSaving: boolean;
+  blockingStep: WorkoutStep | null;
   lastOperationId: string | null;
-  lastOperationStatus: "completed" | "skipped" | null;
+  lastOperationStatus: "baseline" | "completed" | "skipped" | "win" | null;
   message: string;
+  onBeginReplacement: (step: WorkoutStep) => void;
   onExit: () => void;
+  onResolveAction: (
+    step: WorkoutStep,
+    action: "count_failure" | "count_win" | "use_mulligan",
+  ) => Promise<boolean>;
   onSave: (
     step: WorkoutStep,
     weights?: WeightEntry[],
@@ -143,7 +150,8 @@ type Props = {
 };
 
 export function WorkoutTracer(props: Props) {
-  const step = props.steps.find((item) => item.status === "pending");
+  const pendingStep = props.steps.find((item) => item.status === "pending");
+  const step = pendingStep ?? props.blockingStep;
   if (!step) return <WorkoutLoadError {...props} />;
   const progress = workoutProgress(props.steps, step);
   return (
@@ -165,16 +173,32 @@ export function WorkoutTracer(props: Props) {
       </header>
       {props.lastOperationId && (
         <div className="undo-strip">
-          {props.lastOperationStatus === "skipped" ? "SKIPPED" : "SAVED"}
+          {operationLabel(props.lastOperationStatus)}
           <button type="button" onClick={() => void props.onUndo()}>
             UNDO
           </button>
         </div>
       )}
-      {step.kind === "exercise" ? (
+      {!pendingStep ? (
+        <main className="workout-main">
+          <p className="workout-part">{displayBodyPart(step.body_part)}</p>
+          <h1>RESULT SAVED</h1>
+        </main>
+      ) : step.kind === "exercise" ? (
         <ExerciseEntry key={step.step_id} {...props} step={step} />
       ) : (
         <StretchEntry key={step.step_id} {...props} step={step} />
+      )}
+      {props.blockingStep && (
+        <LogbookPrompt
+          message={props.message}
+          saving={props.actionSaving}
+          step={props.blockingStep}
+          onReplace={() => props.onBeginReplacement(props.blockingStep!)}
+          onResolve={(action) =>
+            props.onResolveAction(props.blockingStep!, action)
+          }
+        />
       )}
     </div>
   );
@@ -225,6 +249,7 @@ function ExerciseEntry({
     <main className="workout-main">
       <p className="workout-part">{displayBodyPart(step.body_part)}</p>
       <h1>{step.exercise}</h1>
+      {step.mulligan_used && <p className="mulligan-badge">MULLIGAN USED</p>}
       <PreviousPerformance step={step} />
       <p className="today-label">TODAY</p>
       <div className="entry-list">
@@ -356,6 +381,31 @@ function ExerciseEntry({
 
 function PreviousPerformance({ step }: { step: WorkoutStep }) {
   const hasPrevious = step.previous_weight_entries.length > 0;
+  const retired = step.reference_history.at(-1);
+  if (step.fresh_baseline && retired) {
+    return (
+      <section className="previous-card fresh-baseline-card">
+        <p>REASSIGNED / FRESH BASELINE</p>
+        <strong>PRIOR HISTORY PRESERVED</strong>
+        <div className="previous-list">
+          {retired.weight_entries.map((weight, index) => (
+            <output key={index}>
+              <b>{entryLabel(step, index)}</b>
+              <span>
+                {performanceValue(
+                  step,
+                  weight,
+                  index,
+                  retired.reps,
+                  retired.duration_seconds,
+                )}
+              </span>
+            </output>
+          ))}
+        </div>
+      </section>
+    );
+  }
   return (
     <section className="previous-card">
       <p>PREVIOUS PERFORMANCE</p>
@@ -478,7 +528,7 @@ export function WorkoutComplete({
   onUndo,
   workout,
 }: {
-  lastOperationStatus: "completed" | "skipped" | null;
+  lastOperationStatus: "baseline" | "completed" | "skipped" | "win" | null;
   message: string;
   nextSlot: WorkoutSlot;
   onDone: () => void;
@@ -491,6 +541,11 @@ export function WorkoutComplete({
       <strong>DC TRAINING</strong>
       <div className="complete-check">✓</div>
       <h1>{workout.slot} COMPLETE</h1>
+      {lastOperationStatus && (
+        <p className="completion-verdict">
+          {operationLabel(lastOperationStatus)}
+        </p>
+      )}
       <section>
         <p>NEXT WORKOUT</p>
         <b>{nextSlot}</b>
@@ -533,12 +588,35 @@ function entryLabel(step: WorkoutStep, index: number) {
 }
 
 function previousValue(step: WorkoutStep, weight: WeightEntry, index: number) {
+  return performanceValue(
+    step,
+    weight,
+    index,
+    step.previous_reps,
+    step.previous_duration_seconds,
+  );
+}
+
+function performanceValue(
+  step: WorkoutStep,
+  weight: WeightEntry,
+  index: number,
+  reps: number[],
+  durationSeconds: number | null,
+) {
   const load = `${weight.amount} ${weight.unit.toUpperCase()}`;
   if (step.protocol === "timed_hold")
-    return `${load} · ${step.previous_duration_seconds} SECONDS`;
+    return `${load} · ${durationSeconds} SECONDS`;
   if (step.protocol === "rest_pause")
-    return `${load} · ${step.previous_reps.join(" / ")} REPS`;
-  return `${load} · ${step.previous_reps[index]} REPS`;
+    return `${load} · ${reps.join(" / ")} REPS`;
+  return `${load} · ${reps[index]} REPS`;
+}
+
+function operationLabel(status: Props["lastOperationStatus"]) {
+  if (status === "skipped") return "SKIPPED";
+  if (status === "win") return "WIN";
+  if (status === "baseline") return "FRESH BASELINE";
+  return "SAVED";
 }
 
 function displayBodyPart(bodyPart: string) {
@@ -592,6 +670,144 @@ function InformationDialog({
   );
 }
 
+function LogbookPrompt({
+  message,
+  onReplace,
+  onResolve,
+  saving,
+  step,
+}: {
+  message: string;
+  onReplace: () => void;
+  onResolve: (
+    action: "count_failure" | "count_win" | "use_mulligan",
+  ) => Promise<boolean>;
+  saving: boolean;
+  step: WorkoutStep;
+}) {
+  const absChoice = step.enforcement_action === "abs_choice";
+  const firstFailure = step.enforcement_action === "first_failure";
+  return (
+    <div className="logbook-backdrop">
+      <section
+        aria-label={
+          absChoice
+            ? "COUNT ABS RESULT"
+            : firstFailure
+              ? "LOGBOOK FAILURE"
+              : "REPLACEMENT REQUIRED"
+        }
+        aria-modal="true"
+        className="logbook-sheet"
+        role="dialog"
+      >
+        <p className="workout-part">LOGBOOK</p>
+        <h2>
+          {absChoice
+            ? "COUNT THIS RESULT"
+            : firstFailure
+              ? "LOGBOOK FAILURE"
+              : "REPLACEMENT REQUIRED"}
+        </h2>
+        <p>
+          {absChoice
+            ? "LOAD AND PERFORMANCE MOVED IN OPPOSITE DIRECTIONS. YOU DECIDE."
+            : firstFailure
+              ? "THIS EXERCISE DID NOT BEAT THE LOGBOOK. USE YOUR ONE MULLIGAN OR REPLACE IT."
+              : "THE POST-MULLIGAN ATTEMPT DID NOT BEAT THE LOGBOOK. REPLACE THIS EXERCISE."}
+        </p>
+        <ComparisonTable step={step} />
+        {message && <p className="form-message">{message}</p>}
+        {absChoice ? (
+          <div className="logbook-actions">
+            <button
+              className="primary-action"
+              disabled={saving}
+              type="button"
+              onClick={() => void onResolve("count_win")}
+            >
+              COUNT AS WIN
+            </button>
+            <button
+              className="secondary-action"
+              disabled={saving}
+              type="button"
+              onClick={() => void onResolve("count_failure")}
+            >
+              COUNT AS FAILURE
+            </button>
+          </div>
+        ) : (
+          <div className="logbook-actions">
+            {firstFailure && (
+              <button
+                className="primary-action"
+                disabled={saving}
+                type="button"
+                onClick={() => void onResolve("use_mulligan")}
+              >
+                USE MULLIGAN
+              </button>
+            )}
+            <button
+              className={firstFailure ? "secondary-action" : "primary-action"}
+              disabled={saving}
+              type="button"
+              onClick={onReplace}
+            >
+              REPLACE EXERCISE
+            </button>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function ComparisonTable({ step }: { step: WorkoutStep }) {
+  return (
+    <div
+      className="comparison-table"
+      role="table"
+      aria-label="LOGBOOK COMPARISON"
+    >
+      <div className="comparison-heading" role="row">
+        <b>SET</b>
+        <b>PREVIOUS</b>
+        <b>TODAY</b>
+        <b>RESULT</b>
+      </div>
+      {step.weight_entries.map((_, index) => (
+        <div role="row" key={index}>
+          <b>{entryLabel(step, index)}</b>
+          <span>{comparisonValue(step, true, index)}</span>
+          <span>{comparisonValue(step, false, index)}</span>
+          <strong>{comparisonVerdict(step, index)}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function comparisonValue(step: WorkoutStep, previous: boolean, index: number) {
+  const weights = previous ? step.previous_weight_entries : step.weight_entries;
+  const reps = previous ? step.previous_reps : step.reps;
+  const duration = previous
+    ? step.previous_duration_seconds
+    : step.duration_seconds;
+  const weight = weights[index] ?? weights[0];
+  const load = `${weight.amount} ${weight.unit.toUpperCase()}`;
+  if (step.protocol === "timed_hold") return `${load} · ${duration} SEC`;
+  if (step.protocol === "rest_pause")
+    return `${load} · ${reps.reduce((total, rep) => total + rep, 0)} REPS`;
+  return `${load} · ${reps[index]} REPS`;
+}
+
+function comparisonVerdict(step: WorkoutStep, index: number) {
+  if (step.enforcement_action === "abs_choice") return "YOU DECIDE";
+  return (step.set_verdicts[index] ?? step.verdict ?? "failure").toUpperCase();
+}
+
 const workoutStyles = `
 .workout-shell { padding-top: max(18px, env(safe-area-inset-top)); }
 .workout-header { min-height: 92px; display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; border-bottom: 1px solid var(--line); text-align: center; }
@@ -604,9 +820,12 @@ const workoutStyles = `
 .workout-main { padding: 32px 3px 24px; }
 .workout-part, .today-label { margin: 0 0 10px; font-family: Impact, sans-serif; font-size: 1.25rem; letter-spacing: .08em; }
 .workout-main > h1 { margin: 0 0 28px; font-size: clamp(2.4rem, 11vw, 4rem); text-transform: uppercase; }
+.mulligan-badge { display: inline-block; margin: -12px 0 24px; border: 1px solid var(--red); border-radius: 5px; padding: 6px 9px; color: var(--red); font-family: Impact, sans-serif; letter-spacing: .08em; }
 .previous-card, .entry-card, .stretch-card, .workout-complete section { border: 1px solid var(--line); border-radius: 12px; padding: 20px; background: linear-gradient(145deg, rgba(22,22,22,.88), rgba(8,8,8,.96)); }
 .previous-card p, .entry-card > p, .workout-complete section p { margin: 0 0 13px; color: var(--gray); font-family: Impact, sans-serif; letter-spacing: .06em; }
 .previous-card strong { color: var(--gray); }
+.fresh-baseline-card { border-color: var(--red); }
+.fresh-baseline-card > strong { display: block; margin-bottom: 14px; }
 .previous-list { display: grid; gap: 10px; }
 .previous-list output { display: flex; justify-content: space-between; gap: 12px; color: var(--gray); }
 .previous-list b { color: var(--white); }
@@ -635,10 +854,23 @@ const workoutStyles = `
 .dialog-close { float: right; min-width: 44px; min-height: 44px; border: 0; color: var(--gray); background: transparent; font-size: 2rem; cursor: pointer; }
 .stretch-dialog h2 { clear: both; color: var(--red); }
 .stretch-dialog p { color: #d4d4d1; font-size: 1.05rem; line-height: 1.4; }
+.logbook-backdrop { position: fixed; inset: 0; z-index: 40; display: flex; align-items: flex-end; background: rgba(0,0,0,.8); }
+.logbook-sheet { width: min(100%, 560px); max-height: 92svh; overflow: auto; margin: 0 auto; border: 1px solid var(--red); border-radius: 18px 18px 0 0; padding: 24px; background: #111; }
+.logbook-sheet h2 { margin: 0 0 12px; font-size: clamp(2rem, 10vw, 3.4rem); }
+.logbook-sheet > p:not(.workout-part):not(.form-message) { color: #d4d4d1; line-height: 1.4; }
+.comparison-table { margin: 22px 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.comparison-table > div { display: grid; grid-template-columns: .7fr 1fr 1fr .8fr; gap: 8px; padding: 11px 9px; border-bottom: 1px solid var(--line); font-size: .72rem; }
+.comparison-table > div:last-child { border-bottom: 0; }
+.comparison-table .comparison-heading { color: var(--gray); background: #191919; }
+.comparison-table span { color: var(--gray); }
+.comparison-table strong { color: var(--red); }
+.logbook-actions { display: grid; gap: 10px; }
+.logbook-actions .primary-action { margin-top: 0; }
 .workout-complete { min-height: 100svh; display: flex; flex-direction: column; align-items: center; padding-top: max(100px, env(safe-area-inset-top)); text-align: center; }
 .workout-complete > strong { font-family: Impact, sans-serif; font-size: 1.45rem; letter-spacing: .08em; }
 .complete-check { display: grid; width: 126px; height: 126px; place-items: center; margin: 72px 0 32px; border: 3px solid var(--red); border-radius: 50%; font-size: 5rem; }
 .workout-complete h1 { margin: 0 0 36px; font-size: clamp(3rem, 15vw, 5rem); }
+.completion-verdict { margin: -20px 0 24px; color: var(--red); font-family: Impact, sans-serif; font-size: 1.4rem; letter-spacing: .08em; }
 .workout-complete section { width: 100%; text-align: left; }
 .workout-complete section b { font-family: Impact, sans-serif; font-size: 4rem; }
 .workout-complete .complete-undo { margin-top: 18px; }
