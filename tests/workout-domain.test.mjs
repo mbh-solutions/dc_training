@@ -147,8 +147,14 @@ test("every S04 entry structure has one exact save shape", () => {
     ["timed hold", "timed_hold", [], 1, 1, "seconds"],
   ];
 
-  for (const [name, protocol, target_sets, weightCount, valueCount, metric] of
-    matrix) {
+  for (const [
+    name,
+    protocol,
+    target_sets,
+    weightCount,
+    valueCount,
+    metric,
+  ] of matrix) {
     assert.deepEqual(
       guards.workoutEntryShape({ protocol, target_sets }),
       { metric, valueCount, weightCount },
@@ -174,9 +180,7 @@ test("every S04 entry structure has one exact save shape", () => {
     step_id: "step-10",
     structure: "none",
     target_sets: [],
-    weight_entries: [
-      { amount: "25", micrograms: "11339809250", unit: "lb" },
-    ],
+    weight_entries: [{ amount: "25", micrograms: "11339809250", unit: "lb" }],
     workout_id: "workout-1",
   };
   assert.equal(guards.validWorkoutStep(timedHold), true);

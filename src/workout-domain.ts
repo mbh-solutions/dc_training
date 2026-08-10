@@ -223,11 +223,7 @@ function validExerciseCollections(
           row.reps,
           row.duration_seconds,
         )
-      : emptyPerformance(
-          row.weight_entries,
-          row.reps,
-          row.duration_seconds,
-        );
+      : emptyPerformance(row.weight_entries, row.reps, row.duration_seconds);
   const previousValid =
     emptyPerformance(
       row.previous_weight_entries,
@@ -257,10 +253,7 @@ function validPerformance(
   reps: unknown[],
   duration: unknown,
 ) {
-  if (
-    weights.length !== shape.weightCount ||
-    !weights.every(validWeightEntry)
-  )
+  if (weights.length !== shape.weightCount || !weights.every(validWeightEntry))
     return false;
   return shape.metric === "seconds"
     ? reps.length === 0 && Number.isInteger(duration) && Number(duration) > 0

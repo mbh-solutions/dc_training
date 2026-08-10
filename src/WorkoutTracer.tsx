@@ -231,9 +231,7 @@ function ExerciseEntry({
         {weights.map((weight, index) => (
           <section className="entry-card" key={index}>
             <p>
-              {step.protocol === "rest_pause"
-                ? "WORK SET"
-                : `SET ${index + 1}`}
+              {step.protocol === "rest_pause" ? "WORK SET" : `SET ${index + 1}`}
               {step.body_part === "calves" &&
                 step.structure === "single-10-12" &&
                 index === 0 && (
@@ -316,9 +314,7 @@ function ExerciseEntry({
                     onChange={(event) =>
                       setValues((current) =>
                         current.map((value, itemIndex) =>
-                          itemIndex === valueIndex
-                            ? event.target.value
-                            : value,
+                          itemIndex === valueIndex ? event.target.value : value,
                         ),
                       )
                     }
@@ -533,11 +529,7 @@ function entryLabel(step: WorkoutStep, index: number) {
   return `SET ${index + 1}`;
 }
 
-function previousValue(
-  step: WorkoutStep,
-  weight: WeightEntry,
-  index: number,
-) {
+function previousValue(step: WorkoutStep, weight: WeightEntry, index: number) {
   const load = `${weight.amount} ${weight.unit.toUpperCase()}`;
   if (step.protocol === "timed_hold")
     return `${load} · ${step.previous_duration_seconds} SECONDS`;

@@ -156,27 +156,55 @@ const stretchStep = (workout_id, body_part, ordinal) => ({
 const workoutTemplate = (slot, workout_id) => {
   if (slot.startsWith("A")) {
     return [
-      exerciseStep({ body_part: "chest", exercise: "Incline barbell press", ordinal: 1, workout_id }),
+      exerciseStep({
+        body_part: "chest",
+        exercise: "Incline barbell press",
+        ordinal: 1,
+        workout_id,
+      }),
       stretchStep(workout_id, "chest", 2),
-      exerciseStep({ body_part: "shoulders", exercise: "Standing barbell military press", ordinal: 3, workout_id }),
+      exerciseStep({
+        body_part: "shoulders",
+        exercise: "Standing barbell military press",
+        ordinal: 3,
+        workout_id,
+      }),
       stretchStep(workout_id, "shoulders", 4),
-      exerciseStep({ body_part: "triceps", exercise: "Close-grip barbell bench press", ordinal: 5, workout_id }),
+      exerciseStep({
+        body_part: "triceps",
+        exercise: "Close-grip barbell bench press",
+        ordinal: 5,
+        workout_id,
+      }),
       stretchStep(workout_id, "triceps", 6),
-      exerciseStep({ body_part: "back_width", exercise: "Pull-ups", ordinal: 7, workout_id }),
+      exerciseStep({
+        body_part: "back_width",
+        exercise: "Pull-ups",
+        ordinal: 7,
+        workout_id,
+      }),
       exerciseStep({
         body_part: "back_thickness",
         exercise: "Conventional deadlift",
         ordinal: 8,
         protocol: "straight_set",
         structure: "deadlift-6-8-10-12",
-        target_sets: [{ max: 8, min: 6 }, { max: 12, min: 10 }],
+        target_sets: [
+          { max: 8, min: 6 },
+          { max: 12, min: 10 },
+        ],
         workout_id,
       }),
       stretchStep(workout_id, "back", 9),
     ];
   }
   return [
-    exerciseStep({ body_part: "biceps", exercise: "Straight-bar curl", ordinal: 1, workout_id }),
+    exerciseStep({
+      body_part: "biceps",
+      exercise: "Straight-bar curl",
+      ordinal: 1,
+      workout_id,
+    }),
     stretchStep(workout_id, "biceps", 2),
     exerciseStep({
       body_part: "forearms",
@@ -184,7 +212,10 @@ const workoutTemplate = (slot, workout_id) => {
       ordinal: 3,
       protocol: "straight_set",
       structure: "custom",
-      target_sets: [{ max: 12, min: 10 }, { max: 20, min: 20 }],
+      target_sets: [
+        { max: 12, min: 10 },
+        { max: 20, min: 20 },
+      ],
       workout_id,
     }),
     exerciseStep({
@@ -212,7 +243,10 @@ const workoutTemplate = (slot, workout_id) => {
       ordinal: 7,
       protocol: "straight_set",
       structure: "widowmaker-4-6-20",
-      target_sets: [{ max: 6, min: 4 }, { max: 20, min: 20 }],
+      target_sets: [
+        { max: 6, min: 4 },
+        { max: 20, min: 20 },
+      ],
       workout_id,
     }),
     stretchStep(workout_id, "quadriceps", 8),
@@ -1259,7 +1293,8 @@ await act(async () => {
   await flush();
 });
 const startedB1 =
-  text().toUpperCase().includes("STRAIGHT-BAR CURL") && text().includes("1 OF 7");
+  text().toUpperCase().includes("STRAIGHT-BAR CURL") &&
+  text().includes("1 OF 7");
 
 await act(async () => {
   [...document.querySelectorAll("button")]
@@ -1316,7 +1351,10 @@ const calfRuntimePanel =
   text().includes("Lower slowly over 5 seconds.") &&
   text().includes("Hold the bottom position for 15 seconds.") &&
   text().includes("Explode upward onto your toes.") &&
-  !document.querySelector('[role="dialog"]').textContent.toLowerCase().includes("timer");
+  !document
+    .querySelector('[role="dialog"]')
+    .textContent.toLowerCase()
+    .includes("timer");
 await act(async () =>
   document
     .querySelector('button[aria-label="CLOSE CALF 10–12 INFORMATION"]')
@@ -1434,9 +1472,8 @@ const entryStructureMatrix = {
   timed_hold: savedShape("workout-B1-step-10", 1, 0, 60),
   widowmaker: savedShape("workout-B1-step-7", 2, 2),
 };
-const entryStructureMatrixPassed = Object.values(entryStructureMatrix).every(
-  Boolean,
-);
+const entryStructureMatrixPassed =
+  Object.values(entryStructureMatrix).every(Boolean);
 const fullWorkoutRuntime =
   startedB1 &&
   exerciseSkipRecorded &&
