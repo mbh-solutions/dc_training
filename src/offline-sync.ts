@@ -540,7 +540,9 @@ export function stepTarget(
 ): StepTarget {
   if (!step.step_id.startsWith("local:")) return { step_id: step.step_id };
   const workoutOperationId =
-    localStartOperation(step.workout_id) ?? state.activeWorkoutStartOperationId;
+    localStartOperation(step.workout_id) ??
+    startOperationForWorkout(state, step.workout_id) ??
+    state.activeWorkoutStartOperationId;
   if (!workoutOperationId)
     throw new Error("LOCAL WORKOUT OPERATION IS MISSING");
   return {
@@ -1495,9 +1497,9 @@ function undoLocalStep(
     state.history,
     step.workout_id,
   );
-  state.activeWorkoutStartOperationId = localStartOperation(
-    historyWorkout.workout_id,
-  );
+  state.activeWorkoutStartOperationId =
+    localStartOperation(historyWorkout.workout_id) ??
+    historyWorkout.start_operation_id;
   state.recentOperation = null;
   state.recentlyCompletedWorkout = null;
   return state;
@@ -1529,8 +1531,9 @@ function stepMatchesWorkoutOperation(
   const localOperationId = localStartOperation(workoutId);
   if (localOperationId) return localOperationId === operationId;
   return (
-    state.activeWorkoutStartOperationId === operationId &&
-    state.workout?.workout?.workout_id === workoutId
+    startOperationForWorkout(state, workoutId) === operationId ||
+    (state.activeWorkoutStartOperationId === operationId &&
+      state.workout?.workout?.workout_id === workoutId)
   );
 }
 

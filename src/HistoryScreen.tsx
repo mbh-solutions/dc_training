@@ -40,6 +40,19 @@ type CorrectionOperation = {
   operationId: string;
 };
 
+type HistoryStepIdentity = {
+  ordinal: number;
+  startOperationId: string;
+};
+
+type HistoryAssignmentIdentity = {
+  key: string;
+};
+
+type HistoryWorkoutIdentity = {
+  startOperationId: string;
+};
+
 export default function HistoryScreen({
   accountState,
   commitOperation,
@@ -47,17 +60,17 @@ export default function HistoryScreen({
   onOpenRotation,
 }: Props) {
   const data = accountState?.history ?? null;
-  const [editingStepId, setEditingStepId] = useState<string | null>(null);
+  const [editingStep, setEditingStep] = useState<HistoryStepIdentity | null>(
+    null,
+  );
   const [expanded, setExpanded] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
-  const [selectedAssignmentId, setSelectedAssignmentId] = useState<
-    string | null
-  >(null);
-  const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(
-    null,
-  );
+  const [selectedAssignment, setSelectedAssignment] =
+    useState<HistoryAssignmentIdentity | null>(null);
+  const [selectedWorkout, setSelectedWorkout] =
+    useState<HistoryWorkoutIdentity | null>(null);
   const [tab, setTab] = useState<"exercises" | "workouts">("exercises");
   const correctionOperations = useRef(new Map<string, CorrectionOperation>());
 
@@ -79,17 +92,18 @@ export default function HistoryScreen({
       activeWorkoutAssignmentIds(data).has(step.assignment_id)
     ) {
       setSaving(false);
-      setEditingStepId(null);
+      setEditingStep(null);
       setMessage("FINISH ACTIVE WORKOUT BEFORE CORRECTING THIS EXERCISE");
       return;
     }
     const fingerprint = correctionPayloadFingerprint(weights, reps, duration);
-    const pendingOperation = correctionOperations.current.get(step.step_id);
+    const correctionKey = historyStepKey(data, step);
+    const pendingOperation = correctionOperations.current.get(correctionKey);
     const operationId =
       pendingOperation?.fingerprint === fingerprint
         ? pendingOperation.operationId
         : crypto.randomUUID();
-    correctionOperations.current.set(step.step_id, {
+    correctionOperations.current.set(correctionKey, {
       fingerprint,
       operationId,
     });
@@ -108,28 +122,28 @@ export default function HistoryScreen({
       setMessage(result.error);
       return;
     }
-    correctionOperations.current.delete(step.step_id);
-    setEditingStepId(null);
+    correctionOperations.current.delete(correctionKey);
+    setEditingStep(null);
     setMessage("CORRECTION SAVED ON DEVICE");
   }
 
   return data ? (
     <LoadedHistory
       data={data}
-      editingStepId={editingStepId}
+      editingStep={editingStep}
       error=""
       expanded={expanded}
       message={message}
-      onEditStep={setEditingStepId}
+      onEditStep={setEditingStep}
       onHome={onHome}
       onOpenRotation={onOpenRotation}
       onSaveCorrection={correctHistoryPerformance}
-      onSelectAssignment={setSelectedAssignmentId}
-      onSelectWorkout={setSelectedWorkoutId}
+      onSelectAssignment={setSelectedAssignment}
+      onSelectWorkout={setSelectedWorkout}
       saving={saving}
       search={search}
-      selectedAssignmentId={selectedAssignmentId}
-      selectedWorkoutId={selectedWorkoutId}
+      selectedAssignment={selectedAssignment}
+      selectedWorkout={selectedWorkout}
       setExpanded={setExpanded}
       setMessage={setMessage}
       setSearch={setSearch}
@@ -145,7 +159,7 @@ export default function HistoryScreen({
 
 function LoadedHistory({
   data,
-  editingStepId,
+  editingStep: editingStepIdentity,
   error,
   expanded,
   message,
@@ -157,8 +171,8 @@ function LoadedHistory({
   onSelectWorkout,
   saving,
   search,
-  selectedAssignmentId,
-  selectedWorkoutId,
+  selectedAssignment: selectedAssignmentIdentity,
+  selectedWorkout: selectedWorkoutIdentity,
   setExpanded,
   setMessage,
   setSearch,
@@ -166,30 +180,31 @@ function LoadedHistory({
   tab,
 }: {
   data: HistoryData;
-  editingStepId: string | null;
+  editingStep: HistoryStepIdentity | null;
   error: string;
   expanded: string | null;
   message: string;
-  onEditStep: (stepId: string | null) => void;
+  onEditStep: (step: HistoryStepIdentity | null) => void;
   onHome: () => void;
   onOpenRotation?: () => void;
   onSaveCorrection: SaveCorrection;
-  onSelectAssignment: (assignmentId: string | null) => void;
-  onSelectWorkout: (workoutId: string | null) => void;
+  onSelectAssignment: (assignment: HistoryAssignmentIdentity | null) => void;
+  onSelectWorkout: (workout: HistoryWorkoutIdentity | null) => void;
   saving: boolean;
   search: string;
-  selectedAssignmentId: string | null;
-  selectedWorkoutId: string | null;
+  selectedAssignment: HistoryAssignmentIdentity | null;
+  selectedWorkout: HistoryWorkoutIdentity | null;
   setExpanded: (bodyPart: string | null) => void;
   setMessage: (message: string) => void;
   setSearch: (search: string) => void;
   setTab: (tab: "exercises" | "workouts") => void;
   tab: "exercises" | "workouts";
 }) {
-  const selectedAssignment = data.assignments.find(
-    (assignment) => assignment.assignment_id === selectedAssignmentId,
+  const selectedAssignment = historyAssignmentByIdentity(
+    data,
+    selectedAssignmentIdentity,
   );
-  const editingStep = data.steps.find((step) => step.step_id === editingStepId);
+  const editingStep = historyStepByIdentity(data, editingStepIdentity);
   const activeAssignmentIds = activeWorkoutAssignmentIds(data);
   if (selectedAssignment) {
     const performances = performancesFor(data, selectedAssignment);
@@ -204,7 +219,7 @@ function LoadedHistory({
             setMessage("");
             onSelectAssignment(null);
           }}
-          onEdit={(step) => onEditStep(step.step_id)}
+          onEdit={(step) => onEditStep(historyStepIdentity(data, step))}
           performances={performances}
         />
         {editingStep && (
@@ -221,7 +236,8 @@ function LoadedHistory({
   }
 
   const selectedWorkout = data.workouts.find(
-    (workout) => workout.workout_id === selectedWorkoutId,
+    (workout) =>
+      workout.start_operation_id === selectedWorkoutIdentity?.startOperationId,
   );
   if (selectedWorkout) {
     return (
@@ -234,7 +250,7 @@ function LoadedHistory({
             setMessage("");
             onSelectWorkout(null);
           }}
-          onEdit={(step) => onEditStep(step.step_id)}
+          onEdit={(step) => onEditStep(historyStepIdentity(data, step))}
           steps={data.steps.filter(
             (step) => step.workout_id === selectedWorkout.workout_id,
           )}
@@ -281,20 +297,73 @@ function LoadedHistory({
           data={data}
           expanded={expanded}
           onExpand={setExpanded}
-          onOpen={(assignment) => onSelectAssignment(assignment.assignment_id)}
+          onOpen={(assignment) =>
+            onSelectAssignment({ key: historyAssignmentKey(assignment) })
+          }
           search={search}
           setSearch={setSearch}
         />
       ) : (
         <WorkoutsView
           data={data}
-          onOpen={(workout) => onSelectWorkout(workout.workout_id)}
+          onOpen={(workout) =>
+            onSelectWorkout({ startOperationId: workout.start_operation_id })
+          }
         />
       )}
       {error && <p className="form-message">{error}</p>}
       {message && <p className="form-message">{message}</p>}
     </HistoryShell>
   );
+}
+
+function historyStepIdentity(
+  data: HistoryData,
+  step: WorkoutStep,
+): HistoryStepIdentity {
+  const workout = data.workouts.find(
+    (item) => item.workout_id === step.workout_id,
+  );
+  if (!workout)
+    throw new Error("HISTORY WORKOUT IS NOT AVAILABLE ON THIS DEVICE");
+  return {
+    ordinal: step.ordinal,
+    startOperationId: workout.start_operation_id,
+  };
+}
+
+function historyAssignmentByIdentity(
+  data: HistoryData,
+  identity: HistoryAssignmentIdentity | null,
+) {
+  if (!identity) return undefined;
+  const matches = (assignment: HistoryAssignment) =>
+    historyAssignmentKey(assignment) === identity.key;
+  return (
+    data.assignments.find(
+      (assignment) => assignment.active && matches(assignment),
+    ) ?? retiredHistoryAssignments(data.assignments).find(matches)
+  );
+}
+
+function historyStepByIdentity(
+  data: HistoryData,
+  identity: HistoryStepIdentity | null,
+) {
+  if (!identity) return undefined;
+  const workout = data.workouts.find(
+    (item) => item.start_operation_id === identity.startOperationId,
+  );
+  return data.steps.find(
+    (step) =>
+      step.workout_id === workout?.workout_id &&
+      step.ordinal === identity.ordinal,
+  );
+}
+
+function historyStepKey(data: HistoryData, step: WorkoutStep) {
+  const identity = historyStepIdentity(data, step);
+  return `${identity.startOperationId}:${identity.ordinal}`;
 }
 
 function HistoryShell({

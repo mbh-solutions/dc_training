@@ -6,6 +6,7 @@ const target =
 const offlineModule = "src/offline-sync.ts";
 const assignmentModule = "src/rotation-assignment.ts";
 const syncHook = "src/hooks/use-offline-sync.ts";
+const historyScreen = "src/HistoryScreen.tsx";
 const migration =
   "supabase/migrations/20260810192528_offline_operation_queue.sql";
 const eventTimeMigration =
@@ -35,6 +36,7 @@ const offlineContract =
   existsSync(path.join(target, offlineModule)) &&
   existsSync(path.join(target, assignmentModule)) &&
   existsSync(path.join(target, syncHook)) &&
+  existsSync(path.join(target, historyScreen)) &&
   existsSync(path.join(target, migration)) &&
   existsSync(path.join(target, eventTimeMigration)) &&
   existsSync(path.join(target, convergenceMigration)) &&
@@ -54,6 +56,8 @@ const offlineContract =
     "lifecycleTransitionPayload",
     "startWorkoutPayload",
     "workouts.get(step.workout_id)?.blast_id === currentBlastId",
+    "startOperationForWorkout(state, step.workout_id)",
+    "historyWorkout.start_operation_id",
     'operations.index("userId")',
   ]) &&
   hasAll(read(assignmentModule), ["isAssignment", "sameTargets"]) &&
@@ -63,6 +67,13 @@ const offlineContract =
     "void synchronize();",
     'document.addEventListener("visibilitychange"',
     "retry: synchronize",
+  ]) &&
+  hasAll(read(historyScreen), [
+    "HistoryStepIdentity",
+    "HistoryAssignmentIdentity",
+    "historyAssignmentByIdentity",
+    "historyStepByIdentity",
+    "workout.start_operation_id",
   ]) &&
   hasAll(read("src/HomeScreen.tsx"), [
     "OFFLINE · SAVED ON DEVICE",
