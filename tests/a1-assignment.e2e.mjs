@@ -100,6 +100,8 @@ let historySteps = [];
 let rotationAdvancements = 0;
 let loseNextWorkoutSaveResponse = true;
 let loseNextHistoryCorrectionResponse = true;
+let failReloadAfterNextHistoryCorrection = false;
+let failNextHistoryReload = false;
 const workoutOperations = new Map();
 const logbookOperations = new Map();
 const historyCorrectionOperations = new Map();
@@ -572,6 +574,10 @@ const mockCorrectWorkoutPerformance = (values) => {
     loseNextHistoryCorrectionResponse = false;
     return { data: null, error: { message: "NETWORK RESPONSE LOST" } };
   }
+  if (failReloadAfterNextHistoryCorrection) {
+    failReloadAfterNextHistoryCorrection = false;
+    failNextHistoryReload = true;
+  }
   return { data, error: null };
 };
 
@@ -710,6 +716,14 @@ const client = {
       },
       range(from, to) {
         calls.push(["range", table, from, to]);
+        if (historyMode && failNextHistoryReload) {
+          failNextHistoryReload = false;
+          return Promise.resolve({
+            count: null,
+            data: null,
+            error: { message: "HISTORY RELOAD FAILED" },
+          });
+        }
         const rows = selectedRows();
         return Promise.resolve({
           count: rows.length,
@@ -2254,7 +2268,7 @@ const mixedProtocolSegments =
 const straightSegment = progressionSegments[1];
 const straightSetLanes =
   straightSegment.querySelectorAll(".line-chart").length === 2 &&
-  straightSegment.querySelectorAll(".target-band").length === 2 &&
+  straightSegment.querySelectorAll(".target-band").length === 0 &&
   text().includes("SET 1 · 6–8 REPS") &&
   text().includes("SET 2 · 10–12 REPS");
 const straightCharts = straightSegment.querySelectorAll(".line-chart");
@@ -2348,6 +2362,22 @@ const correctionRecalculated =
   [...document.querySelectorAll(".performance-rows em")].some(
     (label) => label.textContent === "WIN",
   );
+failReloadAfterNextHistoryCorrection = true;
+await act(async () => {
+  document.querySelector(".performance-rows button").click();
+  await flush();
+});
+await setInput("correction-reps-0", "10");
+await act(async () => {
+  document.querySelector(".correction-dialog .primary-action").click();
+  await flush();
+  await flush();
+});
+const committedCorrectionReloadFailureShown =
+  text().includes("CORRECTION SAVED · HISTORY REFRESH FAILED") &&
+  document.querySelector(".correction-dialog") === null &&
+  historySteps.find((step) => step.step_id === correctionCall[2].p_step_id)
+    ?.reps[0] === 10;
 await act(async () => {
   document.querySelector(".history-back").click();
   await flush();
@@ -2408,6 +2438,7 @@ const historyPagination = [
 const historyRuntime =
   absentStraightSetOmitted &&
   activeWorkoutCorrectionLocked &&
+  committedCorrectionReloadFailureShown &&
   exercisesTabCaptured &&
   historyPagination &&
   mixedProtocolSegments &&
@@ -2611,6 +2642,7 @@ const logbookDetail = {
 const historyDetail = {
   absentStraightSetOmitted,
   activeWorkoutCorrectionLocked,
+  committedCorrectionReloadFailureShown,
   correctionRecalculated,
   exercisesTabCaptured,
   historyRuntime,

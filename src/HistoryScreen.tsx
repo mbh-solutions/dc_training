@@ -137,10 +137,9 @@ export default function HistoryScreen({
       return;
     }
     correctionOperations.current.delete(step.step_id);
-    if (await reload()) {
-      setEditingStepId(null);
-      setMessage("CORRECTION SAVED · VERDICTS RECALCULATED");
-    }
+    setEditingStepId(null);
+    if (await reload()) setMessage("CORRECTION SAVED · VERDICTS RECALCULATED");
+    else setMessage("CORRECTION SAVED · HISTORY REFRESH FAILED");
   };
 
   return data ? (
@@ -798,9 +797,6 @@ function LineChart({
         {target && ` · ${target.min}–${target.max} REPS`}
       </h3>
       <svg aria-label={`${label} progression`} role="img" viewBox="0 0 100 54">
-        {target && (
-          <rect className="target-band" height="11" width="86" x="8" y="22" />
-        )}
         <polyline points={points.map(pointText).join(" ")} />
         {points.map((point, index) => (
           <g key={lanePerformances[index].step.step_id}>
