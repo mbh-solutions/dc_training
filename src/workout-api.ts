@@ -1,13 +1,16 @@
 import type { WorkoutSlot } from "./rotation-config.js";
 import {
+  initialTrainingLifecycle,
   isWorkoutSlot,
   sortHistoryWorkouts,
   validHistoryAssignment,
   validHistoryWorkout,
   validRotationState,
+  validTrainingLifecycle,
   validWorkout,
   validWorkoutStep,
   type HistoryData,
+  type TrainingLifecycle,
   type Workout,
   type WorkoutStep,
 } from "./workout-domain.js";
@@ -29,6 +32,7 @@ export type SaveResult = {
 };
 export type LoadedWorkout = {
   lastCompletedSlot: WorkoutSlot | null;
+  lifecycle: TrainingLifecycle;
   nextSlot: WorkoutSlot;
   steps: WorkoutStep[];
   workout: Workout | null;
@@ -37,7 +41,7 @@ export type LoadedWorkout = {
 export async function loadWorkoutState(
   userId: string,
 ): Promise<ApiResult<LoadedWorkout>> {
-  const [rotationResult, workoutResult] = await Promise.all([
+  const [rotationResult, workoutResult, lifecycleResult] = await Promise.all([
     supabase!
       .from("workout_rotation_state")
       .select("next_slot,last_completed_slot")
@@ -49,8 +53,19 @@ export async function loadWorkoutState(
       .eq("user_id", userId)
       .eq("status", "in_progress")
       .maybeSingle(),
+    supabase!
+      .from("training_lifecycle_state")
+      .select(
+        "phase,blast_id,blast_started_at,blast_ended_at,cruise_started_at,suggestion_due,suggestion_dismissed",
+      )
+      .eq("user_id", userId)
+      .maybeSingle(),
   ]);
-  const initialError = workoutStateError(rotationResult, workoutResult);
+  const initialError = workoutStateError(
+    rotationResult,
+    workoutResult,
+    lifecycleResult,
+  );
   if (initialError) return failure(initialError);
 
   const rotation = rotationResult.data ?? {
@@ -58,9 +73,11 @@ export async function loadWorkoutState(
     next_slot: "A1" as const,
   };
   const workout = workoutResult.data;
+  const lifecycle = lifecycleResult.data ?? initialTrainingLifecycle;
   if (!workout)
     return success({
       lastCompletedSlot: rotation.last_completed_slot,
+      lifecycle,
       nextSlot: rotation.next_slot,
       steps: [],
       workout: null,
@@ -76,10 +93,27 @@ export async function loadWorkoutState(
     return failure("WORKOUT STEPS COULD NOT BE LOADED");
   return success({
     lastCompletedSlot: rotation.last_completed_slot,
+    lifecycle,
     nextSlot: rotation.next_slot,
     steps: stepResult.data,
     workout,
   });
+}
+
+export type TrainingLifecycleAction =
+  "dismiss_suggestion" | "start_cruise" | "start_new_blast";
+
+export async function transitionTrainingLifecycle(
+  operationId: string,
+  action: TrainingLifecycleAction,
+): Promise<ApiResult<TrainingLifecycle>> {
+  const { data, error } = await supabase!.rpc("transition_training_lifecycle", {
+    p_action: action,
+    p_operation_id: operationId,
+  });
+  return error || !validTrainingLifecycle(data)
+    ? failure(error?.message ?? "TRAINING PHASE COULD NOT BE UPDATED")
+    : success(data);
 }
 
 export async function loadHistoryState(
@@ -283,13 +317,16 @@ function validSaveResult(value: unknown): value is SaveResult {
 function workoutStateError(
   rotation: { data: unknown; error: unknown },
   workout: { data: unknown; error: unknown },
+  lifecycle: { data: unknown; error: unknown },
 ) {
-  if (rotation.error || workout.error)
+  if (rotation.error || workout.error || lifecycle.error)
     return "WORKOUT STATE COULD NOT BE LOADED";
   if (rotation.data !== null && !validRotationState(rotation.data))
     return "WORKOUT ROTATION COULD NOT BE LOADED";
   if (workout.data !== null && !validWorkout(workout.data))
     return "WORKOUT STATE COULD NOT BE LOADED";
+  if (lifecycle.data !== null && !validTrainingLifecycle(lifecycle.data))
+    return "TRAINING PHASE COULD NOT BE LOADED";
   return "";
 }
 

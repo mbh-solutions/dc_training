@@ -4,6 +4,7 @@ import HomeScreen from "./HomeScreen.jsx";
 import RotationSetup from "./RotationSetup.jsx";
 import { WorkoutComplete, WorkoutTracer } from "./WorkoutTracer.jsx";
 import { useWorkout } from "./hooks/use-workout.js";
+import type { TrainingLifecycle } from "./workout-domain.js";
 
 export type FoundationHomeProps = {
   cloudStatus: string;
@@ -19,6 +20,10 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
   const [showRotationSetup, setShowRotationSetup] = useState(false);
   const [showWorkout, setShowWorkout] = useState(false);
   const workout = useWorkout(userId, homeProps.online);
+  const openRotation = () => {
+    setShowHistory(false);
+    setShowRotationSetup(true);
+  };
 
   if (workout.completedWorkout) {
     return (
@@ -28,8 +33,8 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
         nextSlot={workout.nextSlot}
         onUndo={workout.undo}
         workout={workout.completedWorkout}
-        onDone={() => {
-          workout.dismissCompleted();
+        onDone={async () => {
+          await workout.dismissCompleted();
           setShowWorkout(false);
         }}
       />
@@ -85,10 +90,7 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
       <HistoryScreen
         online={homeProps.online}
         onHome={() => setShowHistory(false)}
-        onOpenRotation={() => {
-          setShowHistory(false);
-          setShowRotationSetup(true);
-        }}
+        onOpenRotation={rotationDuringBlast(workout.lifecycle, openRotation)}
         userId={userId}
       />
     );
@@ -98,18 +100,31 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
     <HomeScreen
       {...homeProps}
       activeSlot={workout.activeWorkout?.slot ?? null}
+      actionSaving={workout.actionSaving}
       lastCompletedSlot={workout.lastCompletedSlot}
+      lifecycle={workout.lifecycle}
       loadingWorkout={workout.loading}
       message={workout.message}
       nextSlot={workout.nextSlot}
       onOpenHistory={() => setShowHistory(true)}
-      onOpenRotation={() => setShowRotationSetup(true)}
+      onOpenRotation={rotationDuringBlast(workout.lifecycle, openRotation)}
       onResumeWorkout={() => setShowWorkout(true)}
+      onDismissCruiseSuggestion={workout.dismissCruiseSuggestion}
+      onStartCruise={workout.startCruise}
+      onStartNewBlast={workout.startNewBlast}
       onStartWorkout={async () => {
         if (await workout.start()) setShowWorkout(true);
       }}
     />
   );
+}
+
+function rotationDuringBlast(
+  lifecycle: TrainingLifecycle | null,
+  onOpenRotation: () => void,
+) {
+  if (lifecycle?.phase !== "blast") return undefined;
+  return onOpenRotation;
 }
 
 export default FoundationHome;
