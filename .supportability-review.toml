@@ -49,7 +49,7 @@ remaining_risks = [
 naming = "Logbook verdict, enforcement action, resolution, mulligan, replacement, and fresh-baseline names match the locked product ledger."
 cohesion = "Presentation, React state, cloud I/O, row validation, pure comparison proof, and authoritative persistence remain separate."
 intended_behavior = "The owner receives deterministic verdicts and cannot proceed past an unresolved logbook decision; replacement changes future assignments without deleting the failed performance."
-reviewability = "One forward migration, one focused pure module/test, narrow extensions to established workout/rotation boundaries, and one extended actual-React runtime packet cover S05 only."
+reviewability = "One forward migration, focused pure domain logic/test, narrow extensions to established workout/rotation boundaries, and one extended actual-React runtime packet cover S05 only."
 
 [[module_boundaries]]
 path = "src/WorkoutTracer.tsx"

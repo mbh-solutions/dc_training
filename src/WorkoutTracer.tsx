@@ -685,81 +685,110 @@ function LogbookPrompt({
   saving: boolean;
   step: WorkoutStep;
 }) {
-  const absChoice = step.enforcement_action === "abs_choice";
-  const firstFailure = step.enforcement_action === "first_failure";
+  const copy = logbookPromptCopy(step.enforcement_action);
   return (
     <div className="logbook-backdrop">
       <section
-        aria-label={
-          absChoice
-            ? "COUNT ABS RESULT"
-            : firstFailure
-              ? "LOGBOOK FAILURE"
-              : "REPLACEMENT REQUIRED"
-        }
+        aria-label={copy.label}
         aria-modal="true"
         className="logbook-sheet"
         role="dialog"
       >
         <p className="workout-part">LOGBOOK</p>
-        <h2>
-          {absChoice
-            ? "COUNT THIS RESULT"
-            : firstFailure
-              ? "LOGBOOK FAILURE"
-              : "REPLACEMENT REQUIRED"}
-        </h2>
-        <p>
-          {absChoice
-            ? "LOAD AND PERFORMANCE MOVED IN OPPOSITE DIRECTIONS. YOU DECIDE."
-            : firstFailure
-              ? "THIS EXERCISE DID NOT BEAT THE LOGBOOK. USE YOUR ONE MULLIGAN OR REPLACE IT."
-              : "THE POST-MULLIGAN ATTEMPT DID NOT BEAT THE LOGBOOK. REPLACE THIS EXERCISE."}
-        </p>
+        <h2>{copy.title}</h2>
+        <p>{copy.description}</p>
         <ComparisonTable step={step} />
         {message && <p className="form-message">{message}</p>}
-        {absChoice ? (
-          <div className="logbook-actions">
-            <button
-              className="primary-action"
-              disabled={saving}
-              type="button"
-              onClick={() => void onResolve("count_win")}
-            >
-              COUNT AS WIN
-            </button>
-            <button
-              className="secondary-action"
-              disabled={saving}
-              type="button"
-              onClick={() => void onResolve("count_failure")}
-            >
-              COUNT AS FAILURE
-            </button>
-          </div>
-        ) : (
-          <div className="logbook-actions">
-            {firstFailure && (
-              <button
-                className="primary-action"
-                disabled={saving}
-                type="button"
-                onClick={() => void onResolve("use_mulligan")}
-              >
-                USE MULLIGAN
-              </button>
-            )}
-            <button
-              className={firstFailure ? "secondary-action" : "primary-action"}
-              disabled={saving}
-              type="button"
-              onClick={onReplace}
-            >
-              REPLACE EXERCISE
-            </button>
-          </div>
-        )}
+        <LogbookActions
+          action={step.enforcement_action}
+          onReplace={onReplace}
+          onResolve={onResolve}
+          saving={saving}
+        />
       </section>
+    </div>
+  );
+}
+
+function logbookPromptCopy(action: WorkoutStep["enforcement_action"]) {
+  if (action === "abs_choice")
+    return {
+      description:
+        "LOAD AND PERFORMANCE MOVED IN OPPOSITE DIRECTIONS. YOU DECIDE.",
+      label: "COUNT ABS RESULT",
+      title: "COUNT THIS RESULT",
+    };
+  if (action === "first_failure")
+    return {
+      description:
+        "THIS EXERCISE DID NOT BEAT THE LOGBOOK. USE YOUR ONE MULLIGAN OR REPLACE IT.",
+      label: "LOGBOOK FAILURE",
+      title: "LOGBOOK FAILURE",
+    };
+  return {
+    description:
+      "THE POST-MULLIGAN ATTEMPT DID NOT BEAT THE LOGBOOK. REPLACE THIS EXERCISE.",
+    label: "REPLACEMENT REQUIRED",
+    title: "REPLACEMENT REQUIRED",
+  };
+}
+
+function LogbookActions({
+  action,
+  onReplace,
+  onResolve,
+  saving,
+}: {
+  action: WorkoutStep["enforcement_action"];
+  onReplace: () => void;
+  onResolve: (
+    action: "count_failure" | "count_win" | "use_mulligan",
+  ) => Promise<boolean>;
+  saving: boolean;
+}) {
+  if (action === "abs_choice")
+    return (
+      <div className="logbook-actions">
+        <button
+          className="primary-action"
+          disabled={saving}
+          type="button"
+          onClick={() => void onResolve("count_win")}
+        >
+          COUNT AS WIN
+        </button>
+        <button
+          className="secondary-action"
+          disabled={saving}
+          type="button"
+          onClick={() => void onResolve("count_failure")}
+        >
+          COUNT AS FAILURE
+        </button>
+      </div>
+    );
+
+  const firstFailure = action === "first_failure";
+  return (
+    <div className="logbook-actions">
+      {firstFailure && (
+        <button
+          className="primary-action"
+          disabled={saving}
+          type="button"
+          onClick={() => void onResolve("use_mulligan")}
+        >
+          USE MULLIGAN
+        </button>
+      )}
+      <button
+        className={firstFailure ? "secondary-action" : "primary-action"}
+        disabled={saving}
+        type="button"
+        onClick={onReplace}
+      >
+        REPLACE EXERCISE
+      </button>
     </div>
   );
 }

@@ -88,16 +88,25 @@ function compareAbs(
   protocol: "rest_pause" | "straight_set" | "timed_hold",
 ): LogbookComparison {
   const weight = compareWeight(current.weights[0], previous.weights[0]);
-  const currentMetric =
-    protocol === "timed_hold" ? current.durationSeconds! : current.reps[0];
-  const previousMetric =
-    protocol === "timed_hold" ? previous.durationSeconds! : previous.reps[0];
+  const currentMetric = absMetric(current, protocol);
+  const previousMetric = absMetric(previous, protocol);
   const metric = Math.sign(currentMetric - previousMetric);
-  if ((weight === 0 && metric > 0) || (weight > 0 && metric >= 0))
-    return { setVerdicts: [], verdict: "win" };
-  if ((weight === 0 && metric <= 0) || (weight < 0 && metric <= 0))
-    return { setVerdicts: [], verdict: "failure" };
-  return { setVerdicts: [], verdict: "ambiguous" };
+  return { setVerdicts: [], verdict: absVerdict(weight, metric) };
+}
+
+function absMetric(
+  performance: LogbookPerformance,
+  protocol: "rest_pause" | "straight_set" | "timed_hold",
+) {
+  return protocol === "timed_hold"
+    ? performance.durationSeconds!
+    : performance.reps[0];
+}
+
+function absVerdict(weight: number, metric: number): LogbookVerdict {
+  if (weight > 0) return metric >= 0 ? "win" : "ambiguous";
+  if (weight < 0) return metric <= 0 ? "failure" : "ambiguous";
+  return metric > 0 ? "win" : "failure";
 }
 
 function compareRestPause(
@@ -432,13 +441,29 @@ function validHistoryEntry(value: unknown): value is PerformanceHistoryEntry {
   return (
     typeof row.assignment_id === "string" &&
     typeof row.performed_at === "string" &&
-    Array.isArray(row.weight_entries) &&
-    row.weight_entries.every(validWeightEntry) &&
-    Array.isArray(row.reps) &&
-    row.reps.every((rep) => Number.isInteger(rep) && Number(rep) > 0) &&
-    (row.duration_seconds === null ||
-      (Number.isInteger(row.duration_seconds) &&
-        Number(row.duration_seconds) > 0)) &&
-    [null, "failure", "win"].includes(row.verdict as string | null)
+    validHistoryWeights(row.weight_entries) &&
+    validHistoryReps(row.reps) &&
+    validHistoryDuration(row.duration_seconds) &&
+    validHistoryVerdict(row.verdict)
   );
+}
+
+function validHistoryWeights(value: unknown) {
+  return Array.isArray(value) && value.every(validWeightEntry);
+}
+
+function validHistoryReps(value: unknown) {
+  return Array.isArray(value) && value.every(validPositiveInteger);
+}
+
+function validPositiveInteger(value: unknown) {
+  return Number.isInteger(value) && Number(value) > 0;
+}
+
+function validHistoryDuration(value: unknown) {
+  return value === null || validPositiveInteger(value);
+}
+
+function validHistoryVerdict(value: unknown) {
+  return value === null || value === "failure" || value === "win";
 }
