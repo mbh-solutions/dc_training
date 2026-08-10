@@ -6,6 +6,7 @@ const target =
 const offlineModule = "src/offline-sync.ts";
 const assignmentModule = "src/rotation-assignment.ts";
 const syncHook = "src/hooks/use-offline-sync.ts";
+const workoutHook = "src/hooks/use-workout.ts";
 const historyScreen = "src/HistoryScreen.tsx";
 const migration =
   "supabase/migrations/20260810192528_offline_operation_queue.sql";
@@ -36,6 +37,7 @@ const offlineContract =
   existsSync(path.join(target, offlineModule)) &&
   existsSync(path.join(target, assignmentModule)) &&
   existsSync(path.join(target, syncHook)) &&
+  existsSync(path.join(target, workoutHook)) &&
   existsSync(path.join(target, historyScreen)) &&
   existsSync(path.join(target, migration)) &&
   existsSync(path.join(target, eventTimeMigration)) &&
@@ -67,6 +69,10 @@ const offlineContract =
     "void synchronize();",
     'document.addEventListener("visibilitychange"',
     "retry: synchronize",
+  ]) &&
+  hasAll(read(workoutHook), [
+    "const payload = startWorkoutPayload(state)",
+    'error instanceof Error ? error.message : "WORKOUT COULD NOT START"',
   ]) &&
   hasAll(read(historyScreen), [
     "HistoryStepIdentity",

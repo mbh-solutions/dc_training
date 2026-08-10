@@ -49,15 +49,22 @@ export function useWorkout(
   const start = async () => {
     if (!state) return false;
     const key = "start_workout";
-    const operationId = retryOperationId(pendingOperationIds.current, key);
-    return submit(
-      {
-        id: operationId,
-        kind: "start_workout",
-        payload: startWorkoutPayload(state),
-      },
-      key,
-    );
+    try {
+      const payload = startWorkoutPayload(state);
+      return submit(
+        {
+          id: retryOperationId(pendingOperationIds.current, key),
+          kind: "start_workout",
+          payload,
+        },
+        key,
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "WORKOUT COULD NOT START",
+      );
+      return false;
+    }
   };
 
   const transitionLifecycle = async (
