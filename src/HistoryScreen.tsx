@@ -61,12 +61,12 @@ export default function HistoryScreen({
   const [tab, setTab] = useState<"exercises" | "workouts">("exercises");
   const correctionOperations = useRef(new Map<string, CorrectionOperation>());
 
-  const saveCorrection = async (
+  async function correctHistoryPerformance(
     step: WorkoutStep,
     weights: WeightEntry[],
     reps: number[],
     duration: number | null,
-  ) => {
+  ) {
     setSaving(true);
     setMessage("");
     if (!data || !accountState) {
@@ -111,7 +111,7 @@ export default function HistoryScreen({
     correctionOperations.current.delete(step.step_id);
     setEditingStepId(null);
     setMessage("CORRECTION SAVED ON DEVICE");
-  };
+  }
 
   return data ? (
     <LoadedHistory
@@ -123,7 +123,7 @@ export default function HistoryScreen({
       onEditStep={setEditingStepId}
       onHome={onHome}
       onOpenRotation={onOpenRotation}
-      onSaveCorrection={saveCorrection}
+      onSaveCorrection={correctHistoryPerformance}
       onSelectAssignment={setSelectedAssignmentId}
       onSelectWorkout={setSelectedWorkoutId}
       saving={saving}
@@ -655,9 +655,7 @@ function ExercisePerformance({
       <div className="performance-rows">
         {[...performances].reverse().map((performance) => (
           <button
-            disabled={
-              correctionLocked(activeAssignmentIds, performance.step)
-            }
+            disabled={correctionLocked(activeAssignmentIds, performance.step)}
             key={performance.step.step_id}
             onClick={() => onEdit(performance.step)}
             type="button"

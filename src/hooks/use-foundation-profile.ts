@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase.js";
 
-export type FoundationProfileState = "pending" | "ready" | "unavailable";
+export type FoundationProfileState =
+  "missing" | "pending" | "ready" | "unavailable";
 type ProfileResult = {
   state: Exclude<FoundationProfileState, "pending">;
   userId: string;
@@ -31,8 +32,12 @@ export function useFoundationProfile(session: Session | null, online: boolean) {
       .maybeSingle()
       .then(async ({ data, error }) => {
         if (!active) return;
-        if (error || !data) {
+        if (error) {
           setProfileResult({ state: "unavailable", userId: session.user.id });
+          return;
+        }
+        if (!data) {
+          setProfileResult({ state: "missing", userId: session.user.id });
           return;
         }
 

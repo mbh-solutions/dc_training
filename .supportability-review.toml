@@ -6,7 +6,7 @@ proof = "A targeted native-IndexedDB Chromium run proves online hydration, offli
 
 [characterization]
 captured_behavior = "The qualified auth shell, rotation setup, six-slot workout runtime, logbook enforcement, history correction, and blast/cruise lifecycle remain; S08 replaces routine cloud-only mutations with one durable offline working-copy and synchronization seam while retaining online-only sign-in, sign-out, recovery, deletion, and active-device transfer boundaries."
-proof = "Existing foundation-shell-v2, rotation-setup-v1, a1-workout-v1, history-v1, and blast-cruise-v1 mappings remain. The S08 offline modules are added to the foundation mapping because that actual React shell owns owner access, PWA connectivity, local persistence, and synchronization status."
+proof = "Existing foundation-shell-v2, rotation-setup-v1, a1-workout-v1, history-v1, and blast-cruise-v1 definitions remain immutable and reproduce their golden behavior. Additive offline-sync-v1 returns the same compatible surface result on the S07 base and S08 head while covering every S08 production path; the focused React helpers seed the qualified prior online load and exercise the queued client seam."
 
 [separation_of_concerns]
 before = "S07 React hooks called individual Supabase mutation RPCs and disabled routine changes whenever navigator.onLine was false."
@@ -28,6 +28,10 @@ reviewed_paths = [
     "src/offline-sync.ts",
     "src/rotation-assignment.ts",
     "supabase/migrations/20260810192528_offline_operation_queue.sql",
+    "tests/a1-assignment.e2e.mjs",
+    "tests/characterization/foundation-shell.characterization.mjs",
+    "tests/characterization/offline-sync-v1.characterization.mjs",
+    "tests/characterization/offline-sync-v1.golden.json",
     ".supportability-characterization.json",
 ]
 
@@ -51,7 +55,7 @@ remaining_risks = [
 naming = "OFFLINE, SYNCING, SYNCED, SYNC FAILED, Try Again, and Saved on device match the locked S08 product ledger."
 cohesion = "Presentation, scheduling, durable local state, cloud transport, and authoritative database mutation remain separate."
 intended_behavior = "The signed-in owner can train, correct history, edit assignments, complete workouts, and change blast/cruise state during temporary connectivity loss without duplicate cloud effects."
-reviewability = "One client persistence module, one scheduling hook, narrow existing-hook rewiring, and one forward-only migration implement S08; no new package or test file was added."
+reviewability = "One client persistence module, one scheduling hook, narrow existing-hook rewiring, one forward-only migration, and one additive compatibility characterization implement and prove S08; no package was added."
 
 [[module_boundaries]]
 path = "src/hooks/use-offline-sync.ts"

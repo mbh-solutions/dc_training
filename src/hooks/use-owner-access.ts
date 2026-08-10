@@ -43,6 +43,7 @@ export function useOwnerAccess(
   if (online) {
     if (profileState === "ready") profileAccess = "authorized";
     else if (profileState === "pending") profileAccess = "pending";
+    else if (profileState === "missing") profileAccess = "denied";
   }
 
   useEffect(() => {

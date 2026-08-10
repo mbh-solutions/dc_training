@@ -10,7 +10,6 @@
         "src/RotationSetupView.tsx",
         "src/hooks/use-auth-session.ts",
         "src/hooks/use-foundation-profile.ts",
-        "src/hooks/use-offline-sync.ts",
         "src/hooks/use-online.ts",
         "src/hooks/use-owner-access.ts",
         "src/hooks/use-rotation-assignment.ts",
@@ -18,8 +17,7 @@
         "src/lib/auth-callback.ts",
         "src/lib/offline-owner-session.ts",
         "src/lib/supabase.ts",
-        "src/main.tsx",
-        "src/offline-sync.ts"
+        "src/main.tsx"
       ],
       "id": "foundation-shell-v2",
       "kind": "regression"
@@ -30,7 +28,6 @@
         "src/hooks/use-rotation-editor.ts",
         "src/hooks/use-rotation-flow.ts",
         "src/rotation-assignment-draft.ts",
-        "src/rotation-assignment.ts",
         "src/rotation-config.ts"
       ],
       "id": "rotation-setup-v1",
@@ -60,6 +57,25 @@
         "supabase/migrations/20260810182600_guard_rotation_assignment_during_cruise.sql"
       ],
       "id": "blast-cruise-v1",
+      "kind": "regression"
+    },
+    {
+      "covers": [
+        "src/App.tsx",
+        "src/FoundationHome.tsx",
+        "src/HistoryScreen.tsx",
+        "src/HomeScreen.tsx",
+        "src/RotationSetup.tsx",
+        "src/hooks/use-foundation-profile.ts",
+        "src/hooks/use-offline-sync.ts",
+        "src/hooks/use-owner-access.ts",
+        "src/hooks/use-rotation-assignment.ts",
+        "src/hooks/use-workout.ts",
+        "src/offline-sync.ts",
+        "src/rotation-assignment.ts",
+        "supabase/migrations/20260810192528_offline_operation_queue.sql"
+      ],
+      "id": "offline-sync-v1",
       "kind": "regression"
     }
   ],
