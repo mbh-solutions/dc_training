@@ -1028,6 +1028,7 @@ security definer
 set search_path = ''
 as $$
 declare
+  assignment_active boolean;
   current_step public.workout_steps;
   evaluation jsonb;
   evaluation_status text;
@@ -1038,10 +1039,11 @@ declare
   previous_weights jsonb;
   state_value text;
 begin
-  if not exists (
-    select 1 from public.rotation_assignment_versions
-    where assignment_id = p_assignment_id and user_id = owner_id
-  ) then raise exception 'Assignment not found'; end if;
+  select active into assignment_active
+  from public.rotation_assignment_versions
+  where assignment_id = p_assignment_id and user_id = owner_id
+  for update;
+  if not found then raise exception 'Assignment not found'; end if;
 
   perform 1
   from public.workout_steps step
@@ -1129,6 +1131,11 @@ begin
       end if;
     end if;
 
+    if not assignment_active then
+      state_value := null;
+      current_step.enforcement_action := null;
+    end if;
+
     update public.workout_steps set
       previous_weight_entries = current_step.previous_weight_entries,
       previous_reps = current_step.previous_reps,
@@ -1147,7 +1154,7 @@ begin
     first_performance := false;
   end loop;
 
-  if state_value is not null then
+  if assignment_active and state_value is not null then
     insert into public.assignment_logbook_states (assignment_id, user_id, state, updated_at)
     values (p_assignment_id, owner_id, state_value, now());
   end if;
