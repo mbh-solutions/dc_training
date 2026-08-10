@@ -2304,6 +2304,15 @@ const restPauseChart =
   document.querySelectorAll(".exercise-performance .target-band").length ===
     2 &&
   document.querySelectorAll(".exercise-performance .chart-date").length === 8;
+const targetBands = [
+  ...document.querySelectorAll(".exercise-performance .target-band"),
+];
+const scaledTargetBands =
+  targetBands.length === 2 &&
+  targetBands.every(
+    (band) =>
+      band.getAttribute("y") === "15" && band.getAttribute("height") === "8",
+  );
 await act(async () => {
   document.querySelector(".performance-rows button").click();
   await flush();
@@ -2358,6 +2367,10 @@ const timedHoldChart =
   text().includes("HOLD (SECONDS)") &&
   text().includes("25 KG × 60 SEC") &&
   document.querySelectorAll(".exercise-performance .target-band").length === 0;
+const retiredDetailLabeled =
+  document
+    .querySelector(".exercise-performance > p")
+    ?.textContent.includes("ABS 2 · RETIRED · TIMED-HOLD") === true;
 await act(async () => {
   document.querySelector(".history-back").click();
   await flush();
@@ -2400,6 +2413,8 @@ const historyRuntime =
   mixedProtocolSegments &&
   oneGroupExpanded &&
   retiredInitiallyCollapsed &&
+  retiredDetailLabeled &&
+  scaledTargetBands &&
   straightSetLanes &&
   restPauseChart &&
   correctionRecalculated &&
@@ -2604,7 +2619,9 @@ const historyDetail = {
   inProgressDetail,
   oneGroupExpanded,
   retiredInitiallyCollapsed,
+  retiredDetailLabeled,
   restPauseChart,
+  scaledTargetBands,
   straightSetLanes,
   timedHoldChart,
   workoutsTabCaptured,

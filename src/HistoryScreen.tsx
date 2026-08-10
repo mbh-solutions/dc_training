@@ -671,7 +671,8 @@ function ExercisePerformance({
       <BackButton label="EXERCISES" onBack={onBack} />
       <h1>{assignment.exercise}</h1>
       <p>
-        {displayBodyPart(assignment.body_part)} · CURRENT ·{" "}
+        {displayBodyPart(assignment.body_part)} ·{" "}
+        {assignment.active ? "CURRENT" : "RETIRED"} ·{" "}
         {protocolConfigurationLabel(assignment)}
       </p>
       <section className="progression-card">
@@ -837,34 +838,46 @@ function BarChart({
   target?: { max: number; min: number };
   values: number[];
 }) {
-  const max = Math.max(...values, 1);
+  const max = Math.max(...values, target?.max ?? 1, 1);
+  const targetTop = target ? chartY(target.max, max) : 0;
+  const targetBottom = target ? chartY(target.min, max) : 0;
   return (
     <div className="chart-lane bar-chart">
       <h3>{label}</h3>
       <svg aria-label={`${label} progression`} role="img" viewBox="0 0 100 54">
         {target && (
-          <rect className="target-band" height="13" width="86" x="8" y="18" />
+          <rect
+            className="target-band"
+            height={targetBottom - targetTop}
+            width="86"
+            x="8"
+            y={targetTop}
+          />
         )}
         {values.map((value, index) => {
-          const height = (value / max) * 30;
+          const y = chartY(value, max);
           const x = chartX(index, values.length);
           return (
             <g key={performances[index].step.step_id}>
               <rect
                 className="bar"
-                height={height}
+                height={45 - y}
                 width="6"
                 x={x - 3}
-                y={45 - height}
+                y={y}
               />
-              <text x={x} y={Math.max(42 - height, 6)}>
+              <text x={x} y={Math.max(y - 3, 6)}>
                 {value}
               </text>
             </g>
           );
         })}
         {target && (
-          <text className="target-label" x="92" y="27">
+          <text
+            className="target-label"
+            x="92"
+            y={(targetTop + targetBottom) / 2 + 1}
+          >
             {target.min}–{target.max}
           </text>
         )}
@@ -872,6 +885,10 @@ function BarChart({
       </svg>
     </div>
   );
+}
+
+function chartY(value: number, max: number) {
+  return 45 - (value / max) * 30;
 }
 
 function ChartDates({ performances }: { performances: Performance[] }) {
