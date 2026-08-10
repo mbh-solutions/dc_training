@@ -1109,16 +1109,14 @@ begin
         if current_step.resolution = 'count_win' then
           current_step.resolution := null;
         end if;
-        if state_value in ('mulligan_used', 'first_failure_pending', 'replacement_required') then
+        if current_step.resolution = 'replaced' then
+          state_value := null;
+          current_step.enforcement_action := null;
+        elsif state_value in ('mulligan_used', 'first_failure_pending', 'replacement_required') then
           state_value := 'replacement_required';
-          current_step.enforcement_action := case
-            when current_step.resolution = 'replaced' then null
-            else 'replacement_required'
-          end;
+          current_step.enforcement_action := 'replacement_required';
         elsif current_step.resolution = 'use_mulligan' then
           state_value := 'mulligan_used';
-        elsif current_step.resolution = 'replaced' then
-          state_value := 'replacement_required';
         else
           state_value := 'first_failure_pending';
           current_step.enforcement_action := 'first_failure';
@@ -1209,7 +1207,7 @@ begin
     weight_entries = normalized -> 'weight_entries',
     reps = array(select jsonb_array_elements_text(normalized -> 'reps')::integer),
     duration_seconds = (normalized ->> 'duration_seconds')::integer,
-    resolution = null,
+    resolution = case when current_step.resolution = 'replaced' then 'replaced' else null end,
     last_operation_id = null,
     updated_at = now()
   where step_id = current_step.step_id;
