@@ -34,13 +34,32 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
     );
   }
 
+  if (workout.replacementStep && workout.activeWorkout) {
+    return (
+      <RotationSetup
+        onBack={() => workout.beginReplacement(null)}
+        replacement={{
+          message: workout.message,
+          onSave: workout.replaceAssignment,
+          slot: workout.activeWorkout.slot,
+          step: workout.replacementStep,
+        }}
+        userId={userId}
+      />
+    );
+  }
+
   if (showWorkout && workout.activeWorkout) {
     return (
       <WorkoutTracer
         lastOperationId={workout.lastOperationId}
         lastOperationStatus={workout.lastOperationStatus}
         message={workout.message}
+        actionSaving={workout.actionSaving}
+        blockingStep={workout.blockingStep}
+        onBeginReplacement={workout.beginReplacement}
         onExit={() => setShowWorkout(false)}
+        onResolveAction={workout.resolveAction}
         onSave={workout.saveStep}
         onSkip={workout.skipStep}
         onUndo={workout.undo}

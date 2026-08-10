@@ -12,21 +12,153 @@ export type WorkoutStep = {
   assignment_id: string | null;
   body_part: string;
   duration_seconds: number | null;
+  enforcement_action:
+    "abs_choice" | "first_failure" | "replacement_required" | null;
   exercise: string | null;
+  fresh_baseline: boolean;
   kind: "exercise" | "stretch";
+  last_operation_id: string | null;
+  mulligan_used: boolean;
   ordinal: number;
   previous_duration_seconds: number | null;
   previous_reps: number[];
   previous_weight_entries: WeightEntry[];
   protocol: "rest_pause" | "straight_set" | "timed_hold" | null;
+  reference_history: PerformanceHistoryEntry[];
   reps: number[];
+  resolution:
+    "count_failure" | "count_win" | "replaced" | "use_mulligan" | null;
+  set_verdicts: ("failure" | "tie" | "win")[];
   status: "completed" | "pending" | "skipped";
   step_id: string;
   structure: string | null;
   target_sets: { max: number; min: number }[];
   weight_entries: WeightEntry[];
   workout_id: string;
+  verdict: "failure" | "win" | null;
 };
+
+export type PerformanceHistoryEntry = {
+  assignment_id: string;
+  duration_seconds: number | null;
+  performed_at: string;
+  protocol: "rest_pause" | "straight_set" | "timed_hold";
+  reps: number[];
+  structure: string;
+  target_sets: { max: number; min: number }[];
+  verdict: "failure" | "win" | null;
+  weight_entries: WeightEntry[];
+};
+
+export type LogbookVerdict = "ambiguous" | "baseline" | "failure" | "win";
+export type SetVerdict = "failure" | "tie" | "win";
+
+export type LogbookPerformance = {
+  durationSeconds: number | null;
+  reps: number[];
+  weights: WeightEntry[];
+};
+
+export type LogbookComparison = {
+  setVerdicts: SetVerdict[];
+  verdict: LogbookVerdict;
+};
+
+export function compareLogbookPerformance({
+  bodyPart,
+  current,
+  previous,
+  protocol,
+  targetSets,
+}: {
+  bodyPart: string;
+  current: LogbookPerformance;
+  previous: LogbookPerformance | null;
+  protocol: "rest_pause" | "straight_set" | "timed_hold";
+  targetSets: { max: number; min: number }[];
+}): LogbookComparison {
+  if (!previous || previous.weights.length === 0)
+    return { setVerdicts: [], verdict: "baseline" };
+  if (bodyPart === "abs_1" || bodyPart === "abs_2")
+    return compareAbs(current, previous, protocol);
+  if (protocol === "rest_pause")
+    return compareRestPause(current, previous, targetSets[0]);
+  return compareStraightSets(current, previous, targetSets);
+}
+
+function compareAbs(
+  current: LogbookPerformance,
+  previous: LogbookPerformance,
+  protocol: "rest_pause" | "straight_set" | "timed_hold",
+): LogbookComparison {
+  const weight = compareWeight(current.weights[0], previous.weights[0]);
+  const currentMetric = absMetric(current, protocol);
+  const previousMetric = absMetric(previous, protocol);
+  const metric = Math.sign(currentMetric - previousMetric);
+  return { setVerdicts: [], verdict: absVerdict(weight, metric) };
+}
+
+function absMetric(
+  performance: LogbookPerformance,
+  protocol: "rest_pause" | "straight_set" | "timed_hold",
+) {
+  return protocol === "timed_hold"
+    ? performance.durationSeconds!
+    : performance.reps[0];
+}
+
+function absVerdict(weight: number, metric: number): LogbookVerdict {
+  if (weight > 0) return metric >= 0 ? "win" : "ambiguous";
+  if (weight < 0) return metric <= 0 ? "failure" : "ambiguous";
+  return metric > 0 ? "win" : "failure";
+}
+
+function compareRestPause(
+  current: LogbookPerformance,
+  previous: LogbookPerformance,
+  target: { max: number; min: number },
+): LogbookComparison {
+  const weight = compareWeight(current.weights[0], previous.weights[0]);
+  const total = sum(current.reps);
+  const previousTotal = sum(previous.reps);
+  const win =
+    (weight > 0 && total >= target.min && total <= target.max) ||
+    (weight === 0 && total > previousTotal);
+  return { setVerdicts: [], verdict: win ? "win" : "failure" };
+}
+
+function compareStraightSets(
+  current: LogbookPerformance,
+  previous: LogbookPerformance,
+  targets: { max: number; min: number }[],
+): LogbookComparison {
+  const setVerdicts = current.weights.map((weight, index) => {
+    const weightResult = compareWeight(weight, previous.weights[index]);
+    const reps = current.reps[index];
+    const previousReps = previous.reps[index];
+    const target = targets[index] ?? { min: 1, max: 2_147_483_647 };
+    if (
+      (weightResult > 0 && reps >= target.min && reps <= target.max) ||
+      (weightResult === 0 && reps > previousReps)
+    )
+      return "win";
+    if (weightResult === 0 && reps === previousReps) return "tie";
+    return "failure";
+  });
+  return {
+    setVerdicts,
+    verdict: setVerdicts.includes("win") ? "win" : "failure",
+  };
+}
+
+function compareWeight(current: WeightEntry, previous: WeightEntry) {
+  const difference = BigInt(current.micrograms!) - BigInt(previous.micrograms!);
+  return difference === 0n ? 0 : difference > 0n ? 1 : -1;
+}
+
+function sum(values: number[]) {
+  return values.reduce((total, value) => total + value, 0);
+}
 
 const exerciseBodyParts = new Set([
   "chest",
@@ -102,8 +234,36 @@ export function validWorkoutStep(value: unknown): value is WorkoutStep {
   if (!value || typeof value !== "object") return false;
   const row = value as Record<string, unknown>;
   return (
-    validStepIdentity(row) && validStepState(row) && validStepCollections(row)
+    validStepIdentity(row) &&
+    validStepState(row) &&
+    validLogbookState(row) &&
+    validStepCollections(row)
   );
+}
+
+function validLogbookState(row: Record<string, unknown>) {
+  return (
+    [null, "abs_choice", "first_failure", "replacement_required"].includes(
+      row.enforcement_action as string | null,
+    ) &&
+    typeof row.fresh_baseline === "boolean" &&
+    validNullableString(row.last_operation_id) &&
+    typeof row.mulligan_used === "boolean" &&
+    [null, "count_failure", "count_win", "replaced", "use_mulligan"].includes(
+      row.resolution as string | null,
+    ) &&
+    [null, "failure", "win"].includes(row.verdict as string | null) &&
+    Array.isArray(row.set_verdicts) &&
+    row.set_verdicts.every((item) =>
+      ["failure", "tie", "win"].includes(item as string),
+    ) &&
+    Array.isArray(row.reference_history) &&
+    row.reference_history.every(validHistoryEntry)
+  );
+}
+
+function validNullableString(value: unknown) {
+  return value === null || typeof value === "string";
 }
 
 function validStepIdentity(row: Record<string, unknown>) {
@@ -282,4 +442,54 @@ function validWeightEntry(value: unknown): value is WeightEntry {
     typeof weight.micrograms === "string" &&
     /^\d+$/.test(weight.micrograms)
   );
+}
+
+function validHistoryEntry(value: unknown): value is PerformanceHistoryEntry {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Record<string, unknown>;
+  return (
+    typeof row.assignment_id === "string" &&
+    typeof row.performed_at === "string" &&
+    validHistoryConfiguration(row) &&
+    validHistoryWeights(row.weight_entries) &&
+    validHistoryReps(row.reps) &&
+    validHistoryDuration(row.duration_seconds) &&
+    validHistoryVerdict(row.verdict)
+  );
+}
+
+function validHistoryConfiguration(row: Record<string, unknown>) {
+  const protocolValid = ["rest_pause", "straight_set", "timed_hold"].includes(
+    row.protocol as string,
+  );
+  if (
+    !protocolValid ||
+    typeof row.structure !== "string" ||
+    !Array.isArray(row.target_sets) ||
+    !row.target_sets.every(validTargetSet)
+  )
+    return false;
+  if (row.protocol === "rest_pause") return row.target_sets.length === 1;
+  if (row.protocol === "timed_hold") return row.target_sets.length === 0;
+  return true;
+}
+
+function validHistoryWeights(value: unknown) {
+  return Array.isArray(value) && value.every(validWeightEntry);
+}
+
+function validHistoryReps(value: unknown) {
+  return Array.isArray(value) && value.every(validPositiveInteger);
+}
+
+function validPositiveInteger(value: unknown) {
+  return Number.isInteger(value) && Number(value) > 0;
+}
+
+function validHistoryDuration(value: unknown) {
+  return value === null || validPositiveInteger(value);
+}
+
+function validHistoryVerdict(value: unknown) {
+  return value === null || value === "failure" || value === "win";
 }

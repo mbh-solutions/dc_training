@@ -32,9 +32,14 @@ function savedDraft(current: Assignment | undefined) {
   };
 }
 
-export function useRotationEditor(saved: Record<string, Assignment>) {
-  const [slot, setSlot] = useState<WorkoutSlot>("A1");
-  const [position, setPosition] = useState<AssignmentPosition>("chest");
+export function useRotationEditor(
+  saved: Record<string, Assignment>,
+  initial?: { position: AssignmentPosition; slot: WorkoutSlot },
+) {
+  const [slot, setSlot] = useState<WorkoutSlot>(initial?.slot ?? "A1");
+  const [position, setPosition] = useState<AssignmentPosition>(
+    initial?.position ?? "chest",
+  );
   const [exercise, setExercise] = useState("");
   const [protocol, setProtocol] = useState<Protocol | "">("");
   const [structure, setStructure] = useState("");

@@ -96,6 +96,10 @@ let workoutSteps = [];
 let rotationAdvancements = 0;
 let loseNextWorkoutSaveResponse = true;
 const workoutOperations = new Map();
+const logbookOperations = new Map();
+let logbookScenario = null;
+let logbookWorkoutCount = 0;
+let failNextReplacement = true;
 const rotationOrder = {
   A1: "B1",
   B1: "A2",
@@ -117,40 +121,56 @@ const exerciseStep = ({
   assignment_id: `assignment-${workout_id}-${body_part}`,
   body_part,
   duration_seconds: null,
+  enforcement_action: null,
   exercise,
+  fresh_baseline: true,
   kind: "exercise",
+  last_operation_id: null,
+  mulligan_used: false,
   ordinal,
   previous_duration_seconds: null,
   previous_reps: [],
   previous_weight_entries: [],
   protocol,
+  reference_history: [],
   reps: [],
+  resolution: null,
+  set_verdicts: [],
   status: "pending",
   step_id: `${workout_id}-step-${ordinal}`,
   structure,
   target_sets,
   weight_entries: [],
   workout_id,
+  verdict: null,
 });
 
 const stretchStep = (workout_id, body_part, ordinal) => ({
   assignment_id: null,
   body_part,
   duration_seconds: null,
+  enforcement_action: null,
   exercise: null,
+  fresh_baseline: false,
   kind: "stretch",
+  last_operation_id: null,
+  mulligan_used: false,
   ordinal,
   previous_duration_seconds: null,
   previous_reps: [],
   previous_weight_entries: [],
   protocol: null,
+  reference_history: [],
   reps: [],
+  resolution: null,
+  set_verdicts: [],
   status: "pending",
   step_id: `${workout_id}-step-${ordinal}`,
   structure: null,
   target_sets: [],
   weight_entries: [],
   workout_id,
+  verdict: null,
 });
 
 const workoutTemplate = (slot, workout_id) => {
@@ -271,6 +291,295 @@ const workoutTemplate = (slot, workout_id) => {
   ];
 };
 
+const logbookWorkoutTemplate = (scenario, workout_id) => {
+  const step = exerciseStep({
+    body_part: "chest",
+    exercise: "Incline barbell press",
+    ordinal: 1,
+    workout_id,
+  });
+  step.assignment_id =
+    scenario === "returned_baseline"
+      ? "assignment-returned-chest"
+      : "assignment-logbook-chest";
+  step.fresh_baseline = scenario === "returned_baseline";
+  step.mulligan_used = scenario === "second_failure";
+  if (scenario === "returned_baseline") {
+    step.protocol = "straight_set";
+    step.structure = "none";
+    step.target_sets = [];
+    step.reference_history = [
+      {
+        assignment_id: "assignment-retired-chest",
+        duration_seconds: null,
+        performed_at: "2026-06-01T10:00:00Z",
+        protocol: "rest_pause",
+        reps: [7, 3, 2],
+        structure: "11-15",
+        target_sets: [{ min: 11, max: 15 }],
+        verdict: "win",
+        weight_entries: [
+          { amount: "95", micrograms: "43091275150", unit: "lb" },
+        ],
+      },
+      {
+        assignment_id: "assignment-retired-chest",
+        duration_seconds: null,
+        performed_at: "2026-07-01T10:00:00Z",
+        protocol: "rest_pause",
+        reps: [8, 4, 2],
+        structure: "11-15",
+        target_sets: [{ min: 11, max: 15 }],
+        verdict: "failure",
+        weight_entries: [
+          { amount: "100", micrograms: "45359237000", unit: "lb" },
+        ],
+      },
+    ];
+  } else {
+    step.previous_reps = [8, 4, 2];
+    step.previous_weight_entries = [
+      { amount: "100", micrograms: "45359237000", unit: "lb" },
+    ];
+  }
+  return [step];
+};
+
+const applyMockLogbookVerdict = (step, scenario) => {
+  step.set_verdicts = [];
+  if (scenario === "win") {
+    step.verdict = "win";
+    step.enforcement_action = null;
+    return;
+  }
+  if (scenario === "returned_baseline") {
+    step.verdict = null;
+    step.enforcement_action = null;
+    return;
+  }
+  if (scenario === "ambiguous") {
+    step.verdict = null;
+    step.enforcement_action = "abs_choice";
+    return;
+  }
+  step.verdict = "failure";
+  step.enforcement_action =
+    scenario === "second_failure" ? "replacement_required" : "first_failure";
+};
+
+const finishLogbookResult = (step, complete) => {
+  if (complete) {
+    const completedSlot = workoutResult.data.slot;
+    workoutResult.data = {
+      ...workoutResult.data,
+      completed_at: "2026-08-10T14:00:00Z",
+      status: "completed",
+    };
+    rotationState = {
+      last_completed_slot: completedSlot,
+      next_slot: rotationOrder[completedSlot],
+    };
+    rotationAdvancements += 1;
+  }
+  return {
+    completed_now: complete,
+    next_slot: rotationState.next_slot,
+    step,
+    workout: workoutResult.data,
+  };
+};
+
+const mockStartWorkout = () => {
+  if (workoutResult.data) return workoutResult;
+  const slot = rotationState.next_slot;
+  const workout = {
+    completed_at: null,
+    slot,
+    status: "in_progress",
+    workout_id: logbookScenario
+      ? `workout-logbook-${++logbookWorkoutCount}`
+      : `workout-${slot}`,
+  };
+  workoutSteps = logbookScenario
+    ? logbookWorkoutTemplate(logbookScenario, workout.workout_id)
+    : workoutTemplate(slot, workout.workout_id);
+  if (!logbookScenario && slot.startsWith("B")) {
+    const previous = workoutSteps.find((step) => step.body_part === "forearms");
+    previous.previous_weight_entries = [
+      { amount: "80", micrograms: "36287389600", unit: "lb" },
+      { amount: "60", micrograms: "27215542200", unit: "lb" },
+    ];
+    previous.previous_reps = [11, 20];
+    previous.fresh_baseline = false;
+  }
+  workoutResult = { data: workout, error: null };
+  return workoutResult;
+};
+
+const mockSaveWorkoutStep = (values) => {
+  if (workoutOperations.has(values.p_operation_id)) {
+    const step = workoutSteps.find(
+      (item) =>
+        item.step_id === workoutOperations.get(values.p_operation_id).stepId,
+    );
+    return {
+      data: {
+        next_slot: rotationState.next_slot,
+        step,
+        workout: workoutResult.data,
+      },
+      error: null,
+    };
+  }
+  const stepIndex = workoutSteps.findIndex(
+    (item) => item.step_id === values.p_step_id,
+  );
+  const step = structuredClone(workoutSteps[stepIndex]);
+  workoutOperations.set(values.p_operation_id, {
+    before: structuredClone(step),
+    stepId: step.step_id,
+  });
+  step.status = values.p_status;
+  step.last_operation_id = values.p_operation_id;
+  step.reps = values.p_reps;
+  step.duration_seconds = values.p_duration_seconds;
+  step.weight_entries = values.p_weights.map((weight) => ({
+    ...weight,
+    micrograms: String(
+      BigInt(
+        Math.round(Number(weight.amount) * (weight.unit === "lb" ? 2 : 4)),
+      ) * BigInt(weight.unit === "lb" ? 226796185 : 250000000),
+    ),
+  }));
+  if (logbookScenario) applyMockLogbookVerdict(step, logbookScenario);
+  workoutSteps[stepIndex] = step;
+  const completedNow = workoutSteps.every(
+    (item) => item.status !== "pending" && item.enforcement_action === null,
+  );
+  if (completedNow) {
+    const completedSlot = workoutResult.data.slot;
+    workoutResult.data = {
+      ...workoutResult.data,
+      completed_at: "2026-08-09T13:00:00Z",
+      status: "completed",
+    };
+    rotationState = {
+      last_completed_slot: completedSlot,
+      next_slot: rotationOrder[completedSlot],
+    };
+    rotationAdvancements += 1;
+  }
+  return workoutSaveResponse({
+    completed_now: completedNow,
+    next_slot: rotationState.next_slot,
+    step,
+    workout: workoutResult.data,
+  });
+};
+
+const mockResolveLogbookAction = (values) => {
+  if (logbookOperations.has(values.p_operation_id)) {
+    return {
+      data: logbookOperations.get(values.p_operation_id),
+      error: null,
+    };
+  }
+  const step = workoutSteps.find((item) => item.step_id === values.p_step_id);
+  step.enforcement_action =
+    values.p_action === "count_failure" ? "first_failure" : null;
+  if (step.enforcement_action === null) step.last_operation_id = null;
+  step.resolution = values.p_action;
+  if (values.p_action === "count_win") step.verdict = "win";
+  if (values.p_action === "count_failure") step.verdict = "failure";
+  const data = finishLogbookResult(step, step.enforcement_action === null);
+  logbookOperations.set(values.p_operation_id, data);
+  return { data, error: null };
+};
+
+const mockReplaceFailedAssignment = (values) => {
+  if (failNextReplacement) {
+    failNextReplacement = false;
+    return { data: null, error: { message: "REPLACEMENT RPC FAILED" } };
+  }
+  if (logbookOperations.has(values.p_operation_id)) {
+    return {
+      data: logbookOperations.get(values.p_operation_id),
+      error: null,
+    };
+  }
+  const step = workoutSteps.find((item) => item.step_id === values.p_step_id);
+  step.enforcement_action = null;
+  step.last_operation_id = null;
+  step.resolution = "replaced";
+  const data = {
+    ...finishLogbookResult(step, true),
+    assignment: {
+      active: true,
+      assignment_id: `replacement-${logbookWorkoutCount}`,
+      body_part: step.body_part,
+      exercise: values.p_exercise,
+      protocol: values.p_protocol,
+      replaced_assignment_id: step.assignment_id,
+      slot: workoutResult.data.slot,
+      structure: values.p_structure,
+      target_sets: values.p_target_sets,
+    },
+  };
+  logbookOperations.set(values.p_operation_id, data);
+  return { data, error: null };
+};
+
+const mockUndoWorkoutStep = (values) => {
+  const operation = workoutOperations.get(values.p_operation_id);
+  const index = workoutSteps.findIndex(
+    (item) => item.step_id === operation.stepId,
+  );
+  workoutSteps[index] = operation.before;
+  return { data: workoutSteps[index], error: null };
+};
+
+const mockSaveRotationAssignment = (values) => {
+  const previous = assignmentResult.data.find(
+    (row) =>
+      row.active &&
+      row.slot === values.p_slot &&
+      row.body_part === values.p_body_part,
+  );
+  const row = {
+    active: true,
+    assignment_id: `assignment-${calls.length}`,
+    body_part: values.p_body_part,
+    exercise: values.p_exercise,
+    protocol: values.p_protocol,
+    replaced_assignment_id: previous?.assignment_id ?? null,
+    slot: values.p_slot,
+    structure: values.p_structure,
+    target_sets: values.p_target_sets,
+  };
+  assignmentResult = {
+    data: [
+      ...assignmentResult.data.map((item) =>
+        item === previous ? { ...item, active: false } : item,
+      ),
+      row,
+    ],
+    error: null,
+  };
+  return { data: row, error: null };
+};
+
+const mockRpc = (name, values) => {
+  const handler =
+    {
+      replace_failed_assignment: mockReplaceFailedAssignment,
+      resolve_logbook_action: mockResolveLogbookAction,
+      save_a1_workout_step: mockSaveWorkoutStep,
+      start_a1_workout: mockStartWorkout,
+      undo_a1_workout_step: mockUndoWorkoutStep,
+    }[name] ?? mockSaveRotationAssignment;
+  return handler(values);
+};
+
 const client = {
   auth: {
     getClaims: async (token, options) => {
@@ -359,123 +668,7 @@ const client = {
   },
   async rpc(name, values) {
     calls.push(["rpc", name, values]);
-    if (name === "start_a1_workout") {
-      if (workoutResult.data) return workoutResult;
-      const slot = rotationState.next_slot;
-      const workout = {
-        completed_at: null,
-        slot,
-        status: "in_progress",
-        workout_id: `workout-${slot}`,
-      };
-      workoutSteps = workoutTemplate(slot, workout.workout_id);
-      if (slot.startsWith("B")) {
-        const previous = workoutSteps.find(
-          (step) => step.body_part === "forearms",
-        );
-        previous.previous_weight_entries = [
-          { amount: "80", micrograms: "36287389600", unit: "lb" },
-          { amount: "60", micrograms: "27215542200", unit: "lb" },
-        ];
-        previous.previous_reps = [11, 20];
-      }
-      workoutResult = { data: workout, error: null };
-      return workoutResult;
-    }
-    if (name === "save_a1_workout_step") {
-      if (workoutOperations.has(values.p_operation_id)) {
-        const step = workoutSteps.find(
-          (item) =>
-            item.step_id ===
-            workoutOperations.get(values.p_operation_id).stepId,
-        );
-        return {
-          data: {
-            next_slot: rotationState.next_slot,
-            step,
-            workout: workoutResult.data,
-          },
-          error: null,
-        };
-      }
-      const stepIndex = workoutSteps.findIndex(
-        (item) => item.step_id === values.p_step_id,
-      );
-      const step = structuredClone(workoutSteps[stepIndex]);
-      workoutOperations.set(values.p_operation_id, {
-        before: structuredClone(step),
-        stepId: step.step_id,
-      });
-      step.status = values.p_status;
-      step.reps = values.p_reps;
-      step.duration_seconds = values.p_duration_seconds;
-      step.weight_entries = values.p_weights.map((weight) => ({
-        ...weight,
-        micrograms: String(
-          BigInt(
-            Math.round(Number(weight.amount) * (weight.unit === "lb" ? 2 : 4)),
-          ) * BigInt(weight.unit === "lb" ? 226796185 : 250000000),
-        ),
-      }));
-      workoutSteps[stepIndex] = step;
-      const completedNow = workoutSteps.every(
-        (item) => item.status !== "pending",
-      );
-      if (completedNow) {
-        const completedSlot = workoutResult.data.slot;
-        workoutResult.data = {
-          ...workoutResult.data,
-          completed_at: "2026-08-09T13:00:00Z",
-          status: "completed",
-        };
-        rotationState = {
-          last_completed_slot: completedSlot,
-          next_slot: rotationOrder[completedSlot],
-        };
-        rotationAdvancements += 1;
-      }
-      return workoutSaveResponse({
-        completed_now: completedNow,
-        next_slot: rotationState.next_slot,
-        step,
-        workout: workoutResult.data,
-      });
-    }
-    if (name === "undo_a1_workout_step") {
-      const operation = workoutOperations.get(values.p_operation_id);
-      const index = workoutSteps.findIndex(
-        (item) => item.step_id === operation.stepId,
-      );
-      workoutSteps[index] = operation.before;
-      return { data: workoutSteps[index], error: null };
-    }
-    const previous = assignmentResult.data.find(
-      (row) =>
-        row.active &&
-        row.slot === values.p_slot &&
-        row.body_part === values.p_body_part,
-    );
-    const row = {
-      active: true,
-      assignment_id: `assignment-${calls.length}`,
-      body_part: values.p_body_part,
-      exercise: values.p_exercise,
-      protocol: values.p_protocol,
-      replaced_assignment_id: previous?.assignment_id ?? null,
-      slot: values.p_slot,
-      structure: values.p_structure,
-      target_sets: values.p_target_sets,
-    };
-    assignmentResult = {
-      data: [
-        ...assignmentResult.data.map((item) =>
-          item === previous ? { ...item, active: false } : item,
-        ),
-        row,
-      ],
-      error: null,
-    };
-    return { data: row, error: null };
+    return mockRpc(name, values);
   },
 };
 
@@ -1160,7 +1353,8 @@ await saveExercise("100.5");
 const responseLossRetried =
   text().includes("NETWORK RESPONSE LOST") && workoutOperations.size === 1;
 await saveExercise("100.5");
-const undoOffered = text().includes("SAVED") && text().includes("UNDO");
+const undoOffered =
+  text().includes("FRESH BASELINE") && text().includes("UNDO");
 await act(async () => {
   [...document.querySelectorAll("button")]
     .find((button) => button.textContent.trim() === "UNDO")
@@ -1493,7 +1687,228 @@ const fullWorkoutRuntime =
   bHomeAdvanced &&
   entryStructureMatrixPassed;
 
+const startLogbookScenario = async (scenario) => {
+  logbookScenario = scenario;
+  workoutResult = { data: null, error: null };
+  await act(async () => {
+    [...document.querySelectorAll("button")]
+      .find((button) => button.textContent.includes("START"))
+      .click();
+    await flush();
+  });
+};
+const finishLogbookScreen = async () => {
+  await act(async () =>
+    [...document.querySelectorAll("button")]
+      .find((button) => button.textContent.trim() === "DONE")
+      .click(),
+  );
+};
+
+await startLogbookScenario("win");
+await setInput("weight-0", "100");
+await setInput("rep-0", "9");
+await setInput("rep-1", "4");
+await setInput("rep-2", "2");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("SAVE & NEXT"))
+    .click();
+  await flush();
+});
+const logbookWinShown =
+  text().includes("COMPLETE") &&
+  document.querySelector(".completion-verdict")?.textContent.includes("WIN");
+await finishLogbookScreen();
+
+await startLogbookScenario("ambiguous");
+await saveExercise("100");
+const ambiguousChoiceShown =
+  text().includes("COUNT THIS RESULT") &&
+  [...document.querySelectorAll(".logbook-actions button")].some(
+    (button) => button.textContent.trim() === "COUNT AS FAILURE",
+  );
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "COUNT AS FAILURE")
+    .click();
+  await flush();
+});
+await act(async () => authCallback("SIGNED_OUT", null));
+await act(async () => {
+  authCallback("SIGNED_IN", session);
+  await flush();
+});
+await act(settleLoading);
+const chainedFailureReloaded = text().includes("RESUME");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("RESUME"))
+    .click();
+  await flush();
+});
+const chainedFailureUndoOffered =
+  text().includes("LOGBOOK FAILURE") && text().includes("UNDO SAVE");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "UNDO SAVE")
+    .click();
+  await flush();
+});
+const chainedFailureUndoRestored =
+  text().toUpperCase().includes("INCLINE BARBELL PRESS") &&
+  !text().includes("LOGBOOK FAILURE");
+await saveExercise("100");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "COUNT AS WIN")
+    .click();
+  await flush();
+});
+await finishLogbookScreen();
+
+await startLogbookScenario("first_failure");
+await saveExercise("100");
+const firstFailureButtons = [
+  ...document.querySelectorAll(".logbook-actions button"),
+].map((button) => button.textContent.trim());
+const firstFailureBlocked =
+  text().includes("LOGBOOK FAILURE") &&
+  JSON.stringify(firstFailureButtons) ===
+    JSON.stringify(["USE MULLIGAN", "REPLACE EXERCISE"]);
+const pendingDecisionUndoOffered = text().includes("UNDO SAVE");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "UNDO SAVE")
+    .click();
+  await flush();
+});
+const pendingDecisionUndoRestored =
+  text().toUpperCase().includes("INCLINE BARBELL PRESS") &&
+  !text().includes("LOGBOOK FAILURE");
+await saveExercise("100");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "USE MULLIGAN")
+    .click();
+  await flush();
+});
+const mulliganCall = calls
+  .filter(
+    (call) =>
+      call[0] === "rpc" &&
+      call[1] === "resolve_logbook_action" &&
+      call[2]?.p_action === "use_mulligan",
+  )
+  .at(-1);
+const advancementAfterMulligan = rotationAdvancements;
+await client.rpc(mulliganCall[1], mulliganCall[2]);
+const mulliganRetryIdempotent =
+  rotationAdvancements === advancementAfterMulligan;
+await finishLogbookScreen();
+
+await startLogbookScenario("second_failure");
+const mulliganMarked = text().includes("MULLIGAN USED");
+await saveExercise("100");
+const replacementButtons = [
+  ...document.querySelectorAll(".logbook-actions button"),
+].map((button) => button.textContent.trim());
+const replacementRequired =
+  text().includes("REPLACEMENT REQUIRED") &&
+  JSON.stringify(replacementButtons) === JSON.stringify(["REPLACE EXERCISE"]);
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "REPLACE EXERCISE")
+    .click(),
+);
+const failedExerciseExcluded = ![
+  ...document.querySelectorAll('input[name="exercise"]'),
+].some((input) => input.value === "Incline barbell press");
+await act(async () => document.querySelector('input[name="exercise"]').click());
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE"))
+    .click(),
+);
+await act(async () =>
+  document.querySelector('input[value="rest_pause"]').click(),
+);
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE"))
+    .click(),
+);
+await act(async () => document.querySelector('input[value="11-15"]').click());
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("CONTINUE"))
+    .click(),
+);
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "SAVE")
+    .click();
+  await flush();
+});
+const replacementFailureShown = text().includes("REPLACEMENT RPC FAILED");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "SAVE")
+    .click();
+  await flush();
+});
+const replacementCompleted =
+  text().includes("COMPLETE") &&
+  hasCall("rpc", (call) => call[1] === "replace_failed_assignment");
+const replacementCall = calls
+  .filter(
+    (call) => call[0] === "rpc" && call[1] === "replace_failed_assignment",
+  )
+  .at(-1);
+const advancementAfterReplacement = rotationAdvancements;
+await client.rpc(replacementCall[1], replacementCall[2]);
+const replacementRetryIdempotent =
+  rotationAdvancements === advancementAfterReplacement;
+await finishLogbookScreen();
+
+await startLogbookScenario("returned_baseline");
+const returnedHistoryShown =
+  text().includes("REASSIGNED / FRESH BASELINE") &&
+  text().includes("PRIOR HISTORY PRESERVED") &&
+  text().includes("2026-06-01") &&
+  text().includes("95 LB · 7 / 3 / 2 REPS") &&
+  text().includes("2026-07-01") &&
+  text().includes("WORK SET") &&
+  text().includes("100 LB · 8 / 4 / 2 REPS");
+await saveStraightSets(["105"], [8]);
+const returnedBaselineShown =
+  text().includes("COMPLETE") &&
+  document
+    .querySelector(".completion-verdict")
+    ?.textContent.includes("FRESH BASELINE");
+await finishLogbookScreen();
+
+const logbookRuntime =
+  logbookWinShown &&
+  ambiguousChoiceShown &&
+  chainedFailureReloaded &&
+  chainedFailureUndoOffered &&
+  chainedFailureUndoRestored &&
+  firstFailureBlocked &&
+  pendingDecisionUndoOffered &&
+  pendingDecisionUndoRestored &&
+  mulliganRetryIdempotent &&
+  mulliganMarked &&
+  replacementRequired &&
+  failedExerciseExcluded &&
+  replacementFailureShown &&
+  replacementCompleted &&
+  replacementRetryIdempotent &&
+  returnedHistoryShown &&
+  returnedBaselineShown;
+
 const behavior = {
+  logbook_enforcement_runtime: logbookRuntime,
   entry_structure_matrix: entryStructureMatrixPassed,
   full_workout_runtime: fullWorkoutRuntime,
   a1_workout_completion: a1WorkoutCompletion,
@@ -1642,11 +2057,27 @@ const fullWorkoutDetail = {
   timedHoldOnly,
   widowmakerSeparate,
 };
+const logbookDetail = {
+  ambiguousChoiceShown,
+  chainedFailureReloaded,
+  chainedFailureUndoOffered,
+  chainedFailureUndoRestored,
+  failedExerciseExcluded,
+  firstFailureBlocked,
+  logbookWinShown,
+  mulliganMarked,
+  mulliganRetryIdempotent,
+  replacementCompleted,
+  replacementRequired,
+  replacementRetryIdempotent,
+  returnedBaselineShown,
+  returnedHistoryShown,
+};
 
 assert.deepEqual(
   Object.entries(behavior).filter(([, passed]) => !passed),
   [],
-  `Every workout characterization behavior must pass: ${JSON.stringify({ a1Detail, fullWorkoutDetail })}`,
+  `Every workout characterization behavior must pass: ${JSON.stringify({ a1Detail, fullWorkoutDetail, logbookDetail })}`,
 );
 
 process.stdout.write(
