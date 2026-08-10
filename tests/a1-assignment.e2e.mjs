@@ -325,7 +325,7 @@ const client = {
   },
   async rpc(name, values) {
     calls.push(["rpc", name, values]);
-    if (name === "start_workout") {
+    if (name === "start_a1_workout") {
       if (workoutResult.data) return workoutResult;
       const slot = rotationState.next_slot;
       const workout = {
@@ -348,7 +348,7 @@ const client = {
       workoutResult = { data: workout, error: null };
       return workoutResult;
     }
-    if (name === "save_workout_step") {
+    if (name === "save_a1_workout_step") {
       if (workoutOperations.has(values.p_operation_id)) {
         const step = workoutSteps.find(
           (item) =>
@@ -407,7 +407,7 @@ const client = {
         workout: workoutResult.data,
       });
     }
-    if (name === "undo_workout_step") {
+    if (name === "undo_a1_workout_step") {
       const operation = workoutOperations.get(values.p_operation_id);
       const index = workoutSteps.findIndex(
         (item) => item.step_id === operation.stepId,
@@ -1213,7 +1213,7 @@ const completionShown =
   text().includes("B1") &&
   text().includes("UNDO LAST SAVE");
 const finalSave = calls
-  .filter((call) => call[0] === "rpc" && call[1] === "save_workout_step")
+  .filter((call) => call[0] === "rpc" && call[1] === "save_a1_workout_step")
   .at(-1);
 await client.rpc(finalSave[1], finalSave[2]);
 const retryAdvancedOnce =
@@ -1245,7 +1245,7 @@ const a1WorkoutCompletion =
     (call) =>
       JSON.stringify([call[1], call[2]?.p_weights?.[0], call[2]?.p_reps]) ===
       JSON.stringify([
-        "save_workout_step",
+        "save_a1_workout_step",
         { amount: "100.5", unit: "lb" },
         [8, 4, 2],
       ]),
@@ -1397,7 +1397,7 @@ const finalBSave = calls
   .filter(
     (call) =>
       call[0] === "rpc" &&
-      call[1] === "save_workout_step" &&
+      call[1] === "save_a1_workout_step" &&
       call[2]?.p_step_id === "workout-B1-step-10",
   )
   .at(-1);
@@ -1416,7 +1416,7 @@ const bHomeAdvanced =
     (button) => button.textContent.includes("START A2") && !button.disabled,
   );
 const entryShapeCalls = calls.filter(
-  (call) => call[0] === "rpc" && call[1] === "save_workout_step",
+  (call) => call[0] === "rpc" && call[1] === "save_a1_workout_step",
 );
 const savedShape = (stepId, weightCount, repCount, durationSeconds = null) =>
   entryShapeCalls.some(

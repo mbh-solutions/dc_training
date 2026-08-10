@@ -77,7 +77,7 @@ export async function loadWorkoutState(
 export async function startWorkout(
   operationId: string,
 ): Promise<ApiResult<Workout>> {
-  const { data, error } = await supabase!.rpc("start_workout", {
+  const { data, error } = await supabase!.rpc("start_a1_workout", {
     p_operation_id: operationId,
   });
   return error || !validWorkout(data)
@@ -93,7 +93,7 @@ export async function saveWorkoutStep(
   reps: number[],
   durationSeconds: number | null,
 ): Promise<ApiResult<SaveResult>> {
-  const { data, error } = await supabase!.rpc("save_workout_step", {
+  const { data, error } = await supabase!.rpc("save_a1_workout_step", {
     p_duration_seconds: durationSeconds,
     p_operation_id: operationId,
     p_reps: reps,
@@ -109,7 +109,7 @@ export async function saveWorkoutStep(
 export async function undoWorkoutStep(
   operationId: string,
 ): Promise<ApiResult<WorkoutStep>> {
-  const { data, error } = await supabase!.rpc("undo_workout_step", {
+  const { data, error } = await supabase!.rpc("undo_a1_workout_step", {
     p_operation_id: operationId,
     p_undo_operation_id: crypto.randomUUID(),
   });
