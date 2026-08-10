@@ -93,10 +93,18 @@ let updateResult = { error: null };
 let rotationState = { last_completed_slot: null, next_slot: "A1" };
 let workoutResult = { data: null, error: null };
 let workoutSteps = [];
+let historyMode = false;
+let historyAssignments = [];
+let historyWorkouts = [];
+let historySteps = [];
 let rotationAdvancements = 0;
 let loseNextWorkoutSaveResponse = true;
+let loseNextHistoryCorrectionResponse = true;
+let failReloadAfterNextHistoryCorrection = false;
+let failNextHistoryReload = false;
 const workoutOperations = new Map();
 const logbookOperations = new Map();
+const historyCorrectionOperations = new Map();
 let logbookScenario = null;
 let logbookWorkoutCount = 0;
 let failNextReplacement = true;
@@ -538,6 +546,41 @@ const mockUndoWorkoutStep = (values) => {
   return { data: workoutSteps[index], error: null };
 };
 
+const mockCorrectWorkoutPerformance = (values) => {
+  if (historyCorrectionOperations.has(values.p_operation_id)) {
+    return {
+      data: historyCorrectionOperations.get(values.p_operation_id),
+      error: null,
+    };
+  }
+  const index = historySteps.findIndex(
+    (step) => step.step_id === values.p_step_id,
+  );
+  const step = historySteps[index];
+  step.weight_entries = values.p_weights;
+  step.reps = values.p_reps;
+  step.duration_seconds = values.p_duration_seconds;
+  step.verdict = "win";
+  step.fresh_baseline = false;
+  const data = {
+    recalculated_steps: historySteps.filter(
+      (item) => item.assignment_id === step.assignment_id,
+    ),
+    state: null,
+    step,
+  };
+  historyCorrectionOperations.set(values.p_operation_id, data);
+  if (loseNextHistoryCorrectionResponse) {
+    loseNextHistoryCorrectionResponse = false;
+    return { data: null, error: { message: "NETWORK RESPONSE LOST" } };
+  }
+  if (failReloadAfterNextHistoryCorrection) {
+    failReloadAfterNextHistoryCorrection = false;
+    failNextHistoryReload = true;
+  }
+  return { data, error: null };
+};
+
 const mockSaveRotationAssignment = (values) => {
   const previous = assignmentResult.data.find(
     (row) =>
@@ -571,6 +614,7 @@ const mockSaveRotationAssignment = (values) => {
 const mockRpc = (name, values) => {
   const handler =
     {
+      correct_workout_performance: mockCorrectWorkoutPerformance,
       replace_failed_assignment: mockReplaceFailedAssignment,
       resolve_logbook_action: mockResolveLogbookAction,
       save_a1_workout_step: mockSaveWorkoutStep,
@@ -618,9 +662,26 @@ const client = {
   from(table) {
     calls.push(["from", table]);
     const filters = {};
+    const selectedRows = () => {
+      if (historyMode)
+        return table === "workouts"
+          ? historyWorkouts
+          : table === "rotation_assignment_versions"
+            ? historyAssignments
+            : historySteps.filter(
+                (step) =>
+                  !filters.workout_id || step.workout_id === filters.workout_id,
+              );
+      return table === "workout_steps"
+        ? workoutSteps.filter(
+            (step) =>
+              !filters.workout_id || step.workout_id === filters.workout_id,
+          )
+        : assignmentResult.data;
+    };
     const query = {
-      select(columns) {
-        calls.push(["select", columns]);
+      select(columns, options) {
+        calls.push(["select", columns, options]);
         return query;
       },
       eq(column, value) {
@@ -634,28 +695,44 @@ const client = {
         if (table === "workout_rotation_state") {
           return { data: rotationState, error: null };
         }
-        if (table === "workouts") return workoutResult;
+        if (table === "workouts") {
+          if (!historyMode) return workoutResult;
+          return {
+            data:
+              historyWorkouts.find(
+                (workout) =>
+                  (!filters.status || workout.status === filters.status) &&
+                  (!filters.workout_id ||
+                    workout.workout_id === filters.workout_id),
+              ) ?? null,
+            error: null,
+          };
+        }
         return assignmentResult;
       },
-      order() {
-        calls.push(["order", table]);
+      order(column, options) {
+        calls.push(["order", table, column, options]);
+        return query;
+      },
+      range(from, to) {
+        calls.push(["range", table, from, to]);
+        if (historyMode && failNextHistoryReload) {
+          failNextHistoryReload = false;
+          return Promise.resolve({
+            count: null,
+            data: null,
+            error: { message: "HISTORY RELOAD FAILED" },
+          });
+        }
+        const rows = selectedRows();
         return Promise.resolve({
-          data:
-            table === "workout_steps"
-              ? workoutSteps.filter(
-                  (step) =>
-                    !filters.workout_id ||
-                    step.workout_id === filters.workout_id,
-                )
-              : assignmentResult.data,
+          count: rows.length,
+          data: rows.slice(from, to + 1),
           error: null,
         });
       },
       then(resolve, reject) {
-        const result =
-          table === "workout_steps"
-            ? { data: workoutSteps, error: null }
-            : assignmentResult;
+        const result = { data: selectedRows(), error: null };
         return Promise.resolve(result).then(resolve, reject);
       },
       async upsert(values, options) {
@@ -1888,6 +1965,510 @@ const returnedBaselineShown =
     ?.textContent.includes("FRESH BASELINE");
 await finishLogbookScreen();
 
+const historyAssignment = ({
+  active = true,
+  assignment_id,
+  body_part,
+  created_at,
+  exercise,
+  protocol,
+  slot,
+  structure,
+  target_sets,
+}) => ({
+  active,
+  assignment_id,
+  body_part,
+  created_at,
+  exercise,
+  protocol,
+  slot,
+  structure,
+  target_sets,
+});
+const historyWorkout = (
+  workout_id,
+  slot,
+  started_at,
+  status = "completed",
+) => ({
+  completed_at: status === "completed" ? started_at : null,
+  slot,
+  started_at,
+  status,
+  workout_id,
+});
+const historyWeight = (amount, unit = "lb") => ({
+  amount,
+  micrograms: String(
+    BigInt(Math.round(Number(amount) * (unit === "lb" ? 2 : 4))) *
+      BigInt(unit === "lb" ? 226796185 : 250000000),
+  ),
+  unit,
+});
+const historyStep = ({
+  assignment,
+  duration_seconds = null,
+  fresh_baseline = false,
+  ordinal = 1,
+  reps,
+  verdict,
+  weights,
+  workout_id,
+}) => ({
+  ...exerciseStep({
+    body_part: assignment.body_part,
+    exercise: assignment.exercise,
+    ordinal,
+    protocol: assignment.protocol,
+    structure: assignment.structure,
+    target_sets: assignment.target_sets,
+    workout_id,
+  }),
+  assignment_id: assignment.assignment_id,
+  duration_seconds,
+  fresh_baseline,
+  reps,
+  status: "completed",
+  step_id: `${workout_id}-${assignment.assignment_id}`,
+  verdict,
+  weight_entries: weights,
+});
+
+const restOld = historyAssignment({
+  active: false,
+  assignment_id: "history-rest-old",
+  body_part: "chest",
+  created_at: "2026-04-01T12:00:00Z",
+  exercise: "Incline barbell press",
+  protocol: "rest_pause",
+  slot: "A1",
+  structure: "11-15",
+  target_sets: [{ max: 15, min: 11 }],
+});
+const restCurrent = historyAssignment({
+  active: true,
+  assignment_id: "history-rest-current",
+  body_part: "chest",
+  created_at: "2026-05-01T12:00:00Z",
+  exercise: "Incline barbell press",
+  protocol: "rest_pause",
+  slot: "A1",
+  structure: "11-15",
+  target_sets: [{ max: 15, min: 11 }],
+});
+const straightCurrent = historyAssignment({
+  active: true,
+  assignment_id: "history-straight",
+  body_part: "back_thickness",
+  created_at: "2026-04-01T12:00:00Z",
+  exercise: "Rack deadlift",
+  protocol: "straight_set",
+  slot: "A2",
+  structure: "deadlift-6-8-10-12",
+  target_sets: [
+    { max: 8, min: 6 },
+    { max: 12, min: 10 },
+  ],
+});
+const straightOld = historyAssignment({
+  active: false,
+  assignment_id: "history-straight-old",
+  body_part: "back_thickness",
+  created_at: "2026-03-01T12:00:00Z",
+  exercise: "Rack deadlift",
+  protocol: "rest_pause",
+  slot: "A2",
+  structure: "11-15",
+  target_sets: [{ max: 15, min: 11 }],
+});
+const shoulderCurrent = historyAssignment({
+  active: true,
+  assignment_id: "history-shoulder",
+  body_part: "shoulders",
+  created_at: "2026-04-01T12:00:00Z",
+  exercise: "Standing barbell military press",
+  protocol: "rest_pause",
+  slot: "A1",
+  structure: "11-15",
+  target_sets: [{ max: 15, min: 11 }],
+});
+const timedRetired = historyAssignment({
+  active: false,
+  assignment_id: "history-timed-retired",
+  body_part: "abs_2",
+  created_at: "2026-03-01T12:00:00Z",
+  exercise: "Front Plank",
+  protocol: "timed_hold",
+  slot: "B1",
+  structure: "none",
+  target_sets: [],
+});
+historyAssignments = [
+  restOld,
+  restCurrent,
+  straightOld,
+  straightCurrent,
+  shoulderCurrent,
+  timedRetired,
+];
+const assignmentsBeforeCorrection = JSON.stringify(historyAssignments);
+historyWorkouts = [
+  historyWorkout("history-apr-2", "A1", "2026-04-02T12:00:00Z"),
+  historyWorkout("history-active", "B1", "2026-08-07T12:00:00Z", "in_progress"),
+  historyWorkout("history-may-28", "A1", "2026-05-28T12:00:00Z"),
+  historyWorkout("history-straight-1", "A2", "2026-04-04T12:00:00Z"),
+  historyWorkout("history-apr-16", "A1", "2026-04-16T12:00:00Z"),
+  historyWorkout("history-may-14", "A1", "2026-05-14T12:00:00Z"),
+  historyWorkout("history-straight-old", "A2", "2026-03-20T12:00:00Z"),
+  historyWorkout("history-straight-2", "A2", "2026-04-18T12:00:00Z"),
+  historyWorkout("history-shoulder-old", "A1", "2026-04-20T12:00:00Z"),
+  historyWorkout("history-timed-1", "B1", "2026-03-05T12:00:00Z"),
+  historyWorkout("history-timed-2", "B1", "2026-03-19T12:00:00Z"),
+];
+historySteps = [
+  historyStep({
+    assignment: restOld,
+    fresh_baseline: true,
+    reps: [8, 4, 2],
+    verdict: null,
+    weights: [historyWeight("225")],
+    workout_id: "history-apr-2",
+  }),
+  historyStep({
+    assignment: restOld,
+    reps: [7, 4, 2],
+    verdict: "win",
+    weights: [historyWeight("230")],
+    workout_id: "history-apr-16",
+  }),
+  historyStep({
+    assignment: restCurrent,
+    fresh_baseline: true,
+    reps: [8, 4, 2],
+    verdict: null,
+    weights: [historyWeight("205")],
+    workout_id: "history-may-14",
+  }),
+  historyStep({
+    assignment: restCurrent,
+    reps: [7, 4, 2],
+    verdict: "failure",
+    weights: [historyWeight("210")],
+    workout_id: "history-may-28",
+  }),
+  historyStep({
+    assignment: straightOld,
+    fresh_baseline: true,
+    reps: [8, 4, 2],
+    verdict: null,
+    weights: [historyWeight("355")],
+    workout_id: "history-straight-old",
+  }),
+  historyStep({
+    assignment: straightCurrent,
+    fresh_baseline: true,
+    reps: [8, 12],
+    verdict: null,
+    weights: [historyWeight("365"), historyWeight("315")],
+    workout_id: "history-straight-1",
+  }),
+  historyStep({
+    assignment: straightCurrent,
+    reps: [7, 11],
+    verdict: "win",
+    weights: [historyWeight("375"), historyWeight("325")],
+    workout_id: "history-straight-2",
+  }),
+  historyStep({
+    assignment: shoulderCurrent,
+    fresh_baseline: true,
+    reps: [8, 4, 2],
+    verdict: null,
+    weights: [historyWeight("95")],
+    workout_id: "history-shoulder-old",
+  }),
+  historyStep({
+    assignment: timedRetired,
+    duration_seconds: 45,
+    fresh_baseline: true,
+    reps: [],
+    verdict: null,
+    weights: [historyWeight("20", "kg")],
+    workout_id: "history-timed-1",
+  }),
+  historyStep({
+    assignment: timedRetired,
+    duration_seconds: 60,
+    reps: [],
+    verdict: "win",
+    weights: [historyWeight("25", "kg")],
+    workout_id: "history-timed-2",
+  }),
+  exerciseStep({
+    body_part: "shoulders",
+    exercise: shoulderCurrent.exercise,
+    ordinal: 1,
+    workout_id: "history-active",
+  }),
+];
+historySteps.at(-1).assignment_id = shoulderCurrent.assignment_id;
+historyMode = true;
+const rotationBeforeCorrection = rotationAdvancements;
+const historyNav = [...document.querySelectorAll("button")].find((button) =>
+  button.textContent.includes("HISTORY"),
+);
+await act(async () => {
+  historyNav.click();
+  await flush();
+});
+await settleLoading();
+const exercisesTabCaptured =
+  document.querySelector('[role="tab"][aria-selected="true"]')?.textContent ===
+  "EXERCISES";
+const groupButtons = [...document.querySelectorAll(".exercise-group-toggle")];
+const chestGroup = groupButtons.find((button) =>
+  button.textContent.includes("CHEST"),
+);
+const shoulderGroup = groupButtons.find((button) =>
+  button.textContent.includes("SHOULDERS"),
+);
+const retiredInitiallyCollapsed = groupButtons.some(
+  (button) =>
+    button.textContent.includes("RETIRED EXERCISES") &&
+    button.getAttribute("aria-expanded") === "false",
+);
+await act(async () => {
+  chestGroup.click();
+  await flush();
+  shoulderGroup.click();
+  await flush();
+});
+const oneGroupExpanded =
+  chestGroup.getAttribute("aria-expanded") === "false" &&
+  shoulderGroup.getAttribute("aria-expanded") === "true";
+
+await setInput("history-search", "Rack deadlift");
+await act(async () => {
+  document
+    .getElementById("history-search")
+    .dispatchEvent(
+      new window.KeyboardEvent("keydown", { bubbles: true, key: "Enter" }),
+    );
+  await flush();
+});
+const progressionSegments = [
+  ...document.querySelectorAll(".exercise-performance .progression-segment"),
+];
+const mixedProtocolSegments =
+  progressionSegments.length === 2 &&
+  progressionSegments[0].textContent.includes("REST-PAUSE") &&
+  progressionSegments[0].querySelectorAll(".bar-chart").length === 1 &&
+  progressionSegments[1].textContent.includes("STRAIGHT-SET");
+const straightSegment = progressionSegments[1];
+const straightSetLanes =
+  straightSegment.querySelectorAll(".line-chart").length === 2 &&
+  straightSegment.querySelectorAll(".target-band").length === 0 &&
+  text().includes("SET 1 · 6–8 REPS") &&
+  text().includes("SET 2 · 10–12 REPS");
+const straightCharts = straightSegment.querySelectorAll(".line-chart");
+const absentStraightSetOmitted =
+  straightCharts[0]?.querySelectorAll("circle").length === 2 &&
+  straightCharts[1]?.querySelectorAll("circle").length === 2 &&
+  !straightCharts[1]?.textContent.includes("0 LB");
+await act(async () => {
+  document.querySelector(".history-back").click();
+  await flush();
+});
+await setInput("history-search", "Standing barbell military press");
+await act(async () => {
+  document
+    .getElementById("history-search")
+    .dispatchEvent(
+      new window.KeyboardEvent("keydown", { bubbles: true, key: "Enter" }),
+    );
+  await flush();
+});
+const activeWorkoutCorrectionLocked =
+  document.querySelector(".performance-rows button")?.disabled === true &&
+  text().includes("FINISH ACTIVE WORKOUT TO CORRECT");
+await act(async () => {
+  document.querySelector(".history-back").click();
+  await flush();
+});
+await setInput("history-search", "");
+const chestToggle = [
+  ...document.querySelectorAll(".exercise-group-toggle"),
+].find((button) => button.textContent.includes("CHEST"));
+await act(async () => {
+  chestToggle.click();
+  await flush();
+  [...document.querySelectorAll(".exercise-row")]
+    .find((button) => button.textContent.includes("Incline barbell press"))
+    .click();
+  await flush();
+});
+const restPauseChart =
+  text().includes("TOTAL REPS") &&
+  text().includes("210 LB") &&
+  text().includes("7 / 4 / 2") &&
+  text().includes("REASSIGNED") &&
+  text().includes("FRESH BASELINE") &&
+  document.querySelectorAll(".exercise-performance polyline").length === 2 &&
+  document.querySelectorAll(".exercise-performance .target-band").length ===
+    2 &&
+  document.querySelectorAll(".exercise-performance .chart-date").length === 8;
+const targetBands = [
+  ...document.querySelectorAll(".exercise-performance .target-band"),
+];
+const scaledTargetBands =
+  targetBands.length === 2 &&
+  targetBands.every(
+    (band) =>
+      band.getAttribute("y") === "15" && band.getAttribute("height") === "8",
+  );
+await act(async () => {
+  document.querySelector(".performance-rows button").click();
+  await flush();
+});
+await setInput("correction-reps-0", "0");
+const correctionCallsBeforeInvalidSubmit = calls.filter(
+  (call) => call[0] === "rpc" && call[1] === "correct_workout_performance",
+).length;
+await act(async () => {
+  document.querySelector(".correction-dialog .primary-action").click();
+  await flush();
+});
+const invalidCorrectionBlocked =
+  text().includes("ENTER VALID WEIGHT AND PERFORMANCE VALUES") &&
+  calls.filter(
+    (call) => call[0] === "rpc" && call[1] === "correct_workout_performance",
+  ).length === correctionCallsBeforeInvalidSubmit;
+await setInput("correction-reps-0", "8");
+await act(async () => {
+  document.querySelector(".correction-dialog .primary-action").click();
+  await flush();
+  await flush();
+});
+const lostCorrectionResponse =
+  invalidCorrectionBlocked &&
+  text().includes("NETWORK RESPONSE LOST") &&
+  !text().includes("ENTER VALID WEIGHT AND PERFORMANCE VALUES") &&
+  document.querySelector(".correction-dialog") !== null;
+await setInput("correction-reps-0", "9");
+await act(async () => {
+  document.querySelector(".correction-dialog .primary-action").click();
+  await flush();
+  await flush();
+});
+const correctionCalls = calls.filter(
+  (call) => call[0] === "rpc" && call[1] === "correct_workout_performance",
+);
+const correctionCall = correctionCalls.at(-1);
+const correctionRecalculated =
+  lostCorrectionResponse &&
+  correctionCalls.length === 2 &&
+  correctionCalls[0][2].p_operation_id !==
+    correctionCalls[1][2].p_operation_id &&
+  correctionCall?.[2]?.p_reps.join(",") === "9,4,2" &&
+  rotationAdvancements === rotationBeforeCorrection &&
+  JSON.stringify(historyAssignments) === assignmentsBeforeCorrection &&
+  text().includes("CORRECTION SAVED · VERDICTS RECALCULATED") &&
+  [...document.querySelectorAll(".performance-rows em")].some(
+    (label) => label.textContent === "WIN",
+  );
+failReloadAfterNextHistoryCorrection = true;
+await act(async () => {
+  document.querySelector(".performance-rows button").click();
+  await flush();
+});
+await setInput("correction-reps-0", "10");
+await act(async () => {
+  document.querySelector(".correction-dialog .primary-action").click();
+  await flush();
+  await flush();
+});
+const committedCorrectionReloadFailureShown =
+  text().includes("CORRECTION SAVED · HISTORY REFRESH FAILED") &&
+  document.querySelector(".correction-dialog") === null &&
+  historySteps.find((step) => step.step_id === correctionCall[2].p_step_id)
+    ?.reps[0] === 10;
+await act(async () => {
+  document.querySelector(".history-back").click();
+  await flush();
+});
+const retiredToggle = [
+  ...document.querySelectorAll(".exercise-group-toggle"),
+].find((button) => button.textContent.includes("RETIRED EXERCISES"));
+await act(async () => {
+  retiredToggle.click();
+  await flush();
+  [...document.querySelectorAll(".exercise-row")]
+    .find((button) => button.textContent.includes("Front Plank"))
+    .click();
+  await flush();
+});
+const timedHoldChart =
+  text().includes("HOLD (SECONDS)") &&
+  text().includes("25 KG × 60 SEC") &&
+  document.querySelectorAll(".exercise-performance .target-band").length === 0;
+const retiredDetailLabeled =
+  document
+    .querySelector(".exercise-performance > p")
+    ?.textContent.includes("ABS 2 · RETIRED · TIMED-HOLD") === true;
+await act(async () => {
+  document.querySelector(".history-back").click();
+  await flush();
+  [...document.querySelectorAll('[role="tab"]')]
+    .find((button) => button.textContent === "WORKOUTS")
+    .click();
+  await flush();
+});
+const workoutRows = [...document.querySelectorAll(".workout-row")];
+const workoutsTabCaptured =
+  document.querySelector('[role="tab"][aria-selected="true"]')?.textContent ===
+    "WORKOUTS" &&
+  workoutRows[0]?.textContent.includes("IN PROGRESS") &&
+  text().indexOf("MAY 2026") < text().indexOf("APRIL 2026");
+await act(async () => {
+  workoutRows[0].click();
+  await flush();
+});
+const inProgressDetail =
+  text().includes("B1 WORKOUT") && text().includes("IN PROGRESS");
+const historyPagination = [
+  "workouts",
+  "rotation_assignment_versions",
+  "workout_steps",
+].every((table) =>
+  calls.some(
+    (call) =>
+      call[0] === "range" &&
+      call[1] === table &&
+      call[2] === 0 &&
+      call[3] === 99,
+  ),
+);
+
+const historyRuntime =
+  absentStraightSetOmitted &&
+  activeWorkoutCorrectionLocked &&
+  committedCorrectionReloadFailureShown &&
+  exercisesTabCaptured &&
+  historyPagination &&
+  invalidCorrectionBlocked &&
+  mixedProtocolSegments &&
+  oneGroupExpanded &&
+  retiredInitiallyCollapsed &&
+  retiredDetailLabeled &&
+  scaledTargetBands &&
+  straightSetLanes &&
+  restPauseChart &&
+  correctionRecalculated &&
+  timedHoldChart &&
+  workoutsTabCaptured &&
+  inProgressDetail;
+
 const logbookRuntime =
   logbookWinShown &&
   ambiguousChoiceShown &&
@@ -1908,6 +2489,7 @@ const logbookRuntime =
   returnedBaselineShown;
 
 const behavior = {
+  history_runtime: historyRuntime,
   logbook_enforcement_runtime: logbookRuntime,
   entry_structure_matrix: entryStructureMatrixPassed,
   full_workout_runtime: fullWorkoutRuntime,
@@ -2073,11 +2655,31 @@ const logbookDetail = {
   returnedBaselineShown,
   returnedHistoryShown,
 };
+const historyDetail = {
+  absentStraightSetOmitted,
+  activeWorkoutCorrectionLocked,
+  committedCorrectionReloadFailureShown,
+  correctionRecalculated,
+  exercisesTabCaptured,
+  historyRuntime,
+  historyPagination,
+  invalidCorrectionBlocked,
+  mixedProtocolSegments,
+  inProgressDetail,
+  oneGroupExpanded,
+  retiredInitiallyCollapsed,
+  retiredDetailLabeled,
+  restPauseChart,
+  scaledTargetBands,
+  straightSetLanes,
+  timedHoldChart,
+  workoutsTabCaptured,
+};
 
 assert.deepEqual(
   Object.entries(behavior).filter(([, passed]) => !passed),
   [],
-  `Every workout characterization behavior must pass: ${JSON.stringify({ a1Detail, fullWorkoutDetail, logbookDetail })}`,
+  `Every workout characterization behavior must pass: ${JSON.stringify({ a1Detail, fullWorkoutDetail, historyDetail, logbookDetail })}`,
 );
 
 process.stdout.write(

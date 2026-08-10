@@ -1,88 +1,75 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "After each saved exercise performance, apply the locked protocol-aware verdict, block unresolved abs/failure decisions, permit one mulligan, require replacement after the post-mulligan failure, and preserve retired performance history behind a fresh reassignment baseline."
-proof = "tests/logbook-enforcement.test.mjs covers the locked table-driven verdict boundaries and deterministic retries. tests/a1-assignment.e2e.mjs mounts src/main.tsx with React and captures win, exact first-failure choices, pending-decision undo, mulligan marking, replacement-only enforcement, visible replacement failures, matching-category replacement, operation retries, and every historically formatted returned-exercise performance behind a fresh baseline. Rollback-only database proof denies authenticated writes across every assignment/workout/logbook lifecycle table while trusted owner-checking RPCs retain authority."
+intended_behavior = "Authenticated owners can browse current, retired, in-progress, and completed history; inspect protocol-specific progression; and correct a saved performance while affected verdicts recalculate without changing assignments or advancing rotation."
+proof = "tests/history.test.mjs covers deterministic workout, body-part, slot-aware retired/reactivated ordering, active-workout assignment detection, and poisons the correction function for rotation or assignment mutation while proving the transactional active-workout guard follows the owner lock. tests/a1-assignment.e2e.mjs mounts src/main.tsx with React and captures both tabs, exact-count pagination, one-open grouping, search, workout detail, every chart variant, rep-scaled target bands only on rep axes, per-assignment protocol configuration, absent-lane omission, original units, reassignment separation, active-workout correction locking, invalid-input blocking with cleared validation before a valid retry, payload-bound correction retries, visible committed-correction reload failure, retired detail labels, recalculated verdict, and unchanged rotation advancement count. Rollback-only production database proof exercises owner-scoped history reads and the correction RPC with synthetic users only."
 
 [characterization]
-captured_behavior = "The qualified auth/offline shell, full rotation setup, and six-slot workout runtime remain while a1-workout-v1 continues to fail closed on the established compatibility RPC and workout surface contracts."
-proof = "The existing foundation-shell-v2, rotation-setup-v1, and a1-workout-v1 characterization definitions remain unchanged; the directly relevant real-React runtime proof is extended instead of replaced."
+captured_behavior = "The qualified auth/offline shell, rotation setup, six-slot workout runtime, and logbook enforcement remain while history-v1 bridges the established correction seam to the actual History screen."
+proof = "The existing foundation-shell-v2, rotation-setup-v1, and a1-workout-v1 definitions remain unchanged. The additive history-v1 regression proves the predecessor correction seam on the base and its History consumer on the head; the directly relevant real-React packet exercises the complete S06 interaction."
 
 [separation_of_concerns]
-before = "The S04 boundaries persisted complete workouts and previous performance but deliberately deferred logbook verdicts and replacement enforcement."
-after = "workout-domain owns row validation plus deterministic client-side truth-table proof; WorkoutTracer owns verdict and blocking presentation; useWorkout owns retry-stable React transitions; workout-api owns validated RPC calls; and the forward-only migration owns authoritative transactional verdict, lifecycle, replacement, correction, read-only table access, and RLS invariants."
+before = "S05 already persisted owner-isolated workout rows and exposed a retry-stable correction RPC with assignment-wide verdict recalculation, but deliberately had no history interface."
+after = "workout-domain owns pure slot-aware history ordering, active-workout detection, and fail-closed row validation; HistoryScreen owns history navigation, per-assignment protocol rendering, and payload-bound correction input; workout-api alone owns paginated owner-filtered Supabase reads and correction RPC validation; the forward function replacement owns transactional active-workout exclusion and recalculation."
 
 [architecture]
-dependency_direction = "App composes FoundationHome; FoundationHome composes RotationSetup, WorkoutTracer, and useWorkout; useWorkout delegates cloud I/O to workout-api; workout-api alone reaches Supabase; workout-domain validates rows and expresses the locked comparison rules for targeted proof; the database remains authoritative."
+dependency_direction = "FoundationHome composes HistoryScreen; HistoryScreen delegates cloud I/O to workout-api and pure ordering/validation to workout-domain; workout-api alone reaches Supabase; the existing correction RPC remains the authoritative mutation boundary."
 reviewed_paths = [
-    "supabase/migrations/20260810100806_enforce_logbook_rules.sql",
     "src/FoundationHome.tsx",
-    "src/RotationSetup.tsx",
-    "src/RotationSetupView.tsx",
-    "src/WorkoutTracer.tsx",
-    "src/hooks/use-rotation-editor.ts",
-    "src/hooks/use-rotation-flow.ts",
-    "src/hooks/use-workout.ts",
+    "src/HomeScreen.tsx",
+    "src/HistoryScreen.tsx",
     "src/workout-api.ts",
     "src/workout-domain.ts",
-    "tests/logbook-enforcement.test.mjs",
+    "supabase/migrations/20260810150000_guard_history_correction_during_active_workout.sql",
+    "tests/history.test.mjs",
     "tests/a1-assignment.e2e.mjs",
+    "tests/characterization/history-v1.characterization.mjs",
+    "tests/characterization/history-v1.golden.json",
+    ".supportability-characterization.json",
 ]
 
 [responsibility_boundary]
-path = "supabase/migrations/20260810100806_enforce_logbook_rules.sql"
-owns = "Canonical-weight comparisons, per-assignment lifecycle state, blocking decisions, idempotent replacement, historical recalculation, read-only owner-scoped RLS, and trusted owner-checking mutation RPCs."
-does_not_own = "Workout visuals, general rotation editing, history screens, cruise timing, or offline mutation queuing."
+path = "src/HistoryScreen.tsx"
+owns = "History tabs, grouping, search, workout and exercise detail, protocol-specific SVG lanes, reassignment markers, saved-entry presentation, and online correction input."
+does_not_own = "Workout logging, rotation advancement, assignment changes, authoritative verdict calculation, database authorization, offline mutation queuing, analytics, or exports."
 
 [incremental_refactor]
-target = "Add only S05 logbook enforcement to the qualified S04 workout boundaries."
-completed_step = "Extended existing step rows and RPCs forward-only, reused the rotation editor for category-safe replacement, and retained the compatibility workout RPC names."
+target = "Add only S06 history and correction presentation to the qualified S05 persistence boundaries."
+completed_step = "Reused the established correction RPC and workout rows, added owner-filtered read calls and pure presentation helpers, and forward-replaced only the correction function to serialize an active-workout guard after its owner lock; no table shape, package, or Supportability Gate change."
 
 [review_handoff]
-summary = "Review locked verdict truth tables, blocking action cardinality, fresh-baseline history separation, transactional operation IDs, correction recalculation, owner isolation, and the real-React lifecycle capture."
+summary = "Review owner-filtered reads, reactivated-versus-retired grouping, assignment-specific chart configurations, original units, disconnected reassignment segments, payload-bound correction operation IDs, the transactional active-workout guard, fail-closed responses, and actual-React runtime evidence."
 remaining_risks = [
-    "Historical correction recalculation is enforced by the database API; a history/correction screen is intentionally outside S05.",
-    "Offline mutation queuing remains intentionally deferred; confirmed cloud actions resume after reconnect.",
+    "Offline history mutation queuing remains explicitly outside S06; corrections are disabled without connectivity.",
+    "Charts intentionally use native SVG and the approved single-exercise views; analytics and combined progression scores remain outside scope.",
 ]
 
 [human_review]
-naming = "Logbook verdict, enforcement action, resolution, mulligan, replacement, and fresh-baseline names match the locked product ledger."
-cohesion = "Presentation, React state, cloud I/O, row validation, pure comparison proof, and authoritative persistence remain separate."
-intended_behavior = "The owner receives deterministic verdicts and cannot proceed past an unresolved logbook decision; replacement changes future assignments without deleting the failed performance."
-reviewability = "One forward migration, focused pure domain logic/test, narrow extensions to established workout/rotation boundaries, and one extended actual-React runtime packet cover S05 only."
+naming = "History, workout, exercise, retired, reassigned, fresh baseline, correction, and verdict labels match the locked product ledger."
+cohesion = "Presentation, cloud I/O, pure ordering, row validation, and authoritative transactional correction remain separate."
+intended_behavior = "The owner can inspect all required history forms and correct durable performance values without silently changing assignments or replaying rotation advancement."
+reviewability = "One new screen, narrow established-boundary extensions, one focused domain/poison test, and one extended actual-React packet cover S06 only."
 
 [[module_boundaries]]
-path = "src/WorkoutTracer.tsx"
-owner_path = "src/WorkoutTracer.tsx"
+path = "src/HistoryScreen.tsx"
+owner_path = "src/HistoryScreen.tsx"
 basis = "responsibility"
-justification = "Owns win/baseline visibility, comparison tables, blocking sheets, mulligan badges, and returned-history presentation only."
-
-[[module_boundaries]]
-path = "src/hooks/use-workout.ts"
-owner_path = "src/hooks/use-workout.ts"
-basis = "responsibility"
-justification = "Owns retry-stable save, resolution, replacement, completion, and React state transitions only."
+justification = "Owns S06 history presentation and online correction input only."
 
 [[module_boundaries]]
 path = "src/workout-api.ts"
 owner_path = "src/workout-api.ts"
 basis = "responsibility"
-justification = "Owns validated owner-filtered workout, logbook-decision, and replacement Supabase calls only."
+justification = "Owns explicit owner-filtered history reads and validation of the established correction RPC response only."
 
 [[module_boundaries]]
 path = "src/workout-domain.ts"
 owner_path = "src/workout-domain.ts"
 basis = "responsibility"
-justification = "Owns fail-closed validation for extended workout rows plus the locked pure comparison truth tables; it performs no I/O or React state."
+justification = "Owns pure ordering, retired/reactivated identity, history row validation, and entry-shape rules without I/O or React state."
 
 [[module_boundaries]]
-path = "src/RotationSetup.tsx"
-owner_path = "src/RotationSetup.tsx"
+path = "supabase/migrations/20260810150000_guard_history_correction_during_active_workout.sql"
+owner_path = "supabase/migrations/20260810150000_guard_history_correction_during_active_workout.sql"
 basis = "responsibility"
-justification = "Reuses the established assignment editor for a current-exercise-excluded, matching-category replacement path."
-
-[[module_boundaries]]
-path = "supabase/migrations/20260810100806_enforce_logbook_rules.sql"
-owner_path = "supabase/migrations/20260810100806_enforce_logbook_rules.sql"
-basis = "responsibility"
-justification = "Owns authoritative transactional comparison, lifecycle, future-only replacement, correction recalculation, idempotency, read-only RLS exposure, and trusted owner-checking mutation RPCs."
+justification = "Forward-replaces only the established correction RPC to reject an assignment captured by an in-progress workout after acquiring the same owner transaction lock used by workout start."

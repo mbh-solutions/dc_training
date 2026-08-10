@@ -1,9 +1,13 @@
 import type { WorkoutSlot } from "./rotation-config.js";
 import {
   isWorkoutSlot,
+  sortHistoryWorkouts,
+  validHistoryAssignment,
+  validHistoryWorkout,
   validRotationState,
   validWorkout,
   validWorkoutStep,
+  type HistoryData,
   type Workout,
   type WorkoutStep,
 } from "./workout-domain.js";
@@ -11,6 +15,12 @@ import { supabase } from "./lib/supabase.js";
 import type { WeightEntry } from "./weight-conversion.js";
 
 type ApiResult<T> = { data: T | null; error: string };
+type HistoryTable =
+  "rotation_assignment_versions" | "workouts" | "workout_steps";
+type HistoryOrder = { ascending?: boolean; column: string };
+const historyPageSize = 100;
+const workoutStepColumns =
+  "step_id,workout_id,ordinal,kind,body_part,assignment_id,exercise,protocol,structure,target_sets,status,weight_entries,reps,duration_seconds,previous_weight_entries,previous_reps,previous_duration_seconds,verdict,set_verdicts,enforcement_action,fresh_baseline,mulligan_used,reference_history,resolution,last_operation_id";
 export type SaveResult = {
   completed_now?: boolean;
   next_slot: WorkoutSlot;
@@ -58,9 +68,7 @@ export async function loadWorkoutState(
 
   const stepResult = await supabase!
     .from("workout_steps")
-    .select(
-      "step_id,workout_id,ordinal,kind,body_part,assignment_id,exercise,protocol,structure,target_sets,status,weight_entries,reps,duration_seconds,previous_weight_entries,previous_reps,previous_duration_seconds,verdict,set_verdicts,enforcement_action,fresh_baseline,mulligan_used,reference_history,resolution,last_operation_id",
-    )
+    .select(workoutStepColumns)
     .eq("user_id", userId)
     .eq("workout_id", workout.workout_id)
     .order("ordinal");
@@ -72,6 +80,110 @@ export async function loadWorkoutState(
     steps: stepResult.data,
     workout,
   });
+}
+
+export async function loadHistoryState(
+  userId: string,
+): Promise<ApiResult<HistoryData>> {
+  const [workouts, assignments, steps] = await Promise.all([
+    loadAllHistoryRows(
+      "workouts",
+      "workout_id,slot,status,started_at,completed_at",
+      userId,
+      [{ ascending: false, column: "started_at" }, { column: "workout_id" }],
+    ),
+    loadAllHistoryRows(
+      "rotation_assignment_versions",
+      "assignment_id,slot,body_part,exercise,protocol,structure,target_sets,active,created_at",
+      userId,
+      [{ column: "created_at" }, { column: "assignment_id" }],
+    ),
+    loadAllHistoryRows("workout_steps", workoutStepColumns, userId, [
+      { column: "workout_id" },
+      { column: "ordinal" },
+      { column: "step_id" },
+    ]),
+  ]);
+  if (
+    workouts.error ||
+    assignments.error ||
+    steps.error ||
+    !Array.isArray(workouts.data) ||
+    !workouts.data.every(validHistoryWorkout) ||
+    !Array.isArray(assignments.data) ||
+    !assignments.data.every(validHistoryAssignment) ||
+    !Array.isArray(steps.data) ||
+    !steps.data.every(validWorkoutStep)
+  )
+    return failure("HISTORY COULD NOT BE LOADED");
+  return success({
+    assignments: assignments.data as HistoryData["assignments"],
+    steps: steps.data as HistoryData["steps"],
+    workouts: sortHistoryWorkouts(workouts.data as HistoryData["workouts"]),
+  });
+}
+
+async function loadAllHistoryRows(
+  table: HistoryTable,
+  columns: string,
+  userId: string,
+  orders: HistoryOrder[],
+): Promise<{ data: unknown[] | null; error: boolean }> {
+  const rows: unknown[] = [];
+  let expectedCount: number | null = null;
+  for (let from = 0; ; from += historyPageSize) {
+    let query = supabase!
+      .from(table)
+      .select(columns, { count: "exact" })
+      .eq("user_id", userId);
+    for (const order of orders)
+      query = query.order(order.column, { ascending: order.ascending ?? true });
+    const page = await query.range(from, from + historyPageSize - 1);
+    if (!validHistoryPage(page, expectedCount))
+      return { data: null, error: true };
+    expectedCount ??= page.count;
+    rows.push(...page.data);
+    if (rows.length === expectedCount) return { data: rows, error: false };
+    if (page.data.length !== historyPageSize || rows.length > expectedCount)
+      return { data: null, error: true };
+  }
+}
+
+function validHistoryPage(
+  page: { count: number | null; data: unknown; error: unknown },
+  expectedCount: number | null,
+): page is { count: number; data: unknown[]; error: null } {
+  return (
+    !page.error &&
+    Number.isSafeInteger(page.count) &&
+    page.count! >= 0 &&
+    Array.isArray(page.data) &&
+    (expectedCount === null || page.count === expectedCount)
+  );
+}
+
+export async function correctHistoryPerformance(
+  operationId: string,
+  stepId: string,
+  weights: WeightEntry[],
+  reps: number[],
+  durationSeconds: number | null,
+): Promise<ApiResult<WorkoutStep>> {
+  const { data, error } = await supabase!.rpc("correct_workout_performance", {
+    p_duration_seconds: durationSeconds,
+    p_operation_id: operationId,
+    p_reps: reps,
+    p_step_id: stepId,
+    p_weights: weights,
+  });
+  if (error || !data || typeof data !== "object")
+    return failure(error?.message ?? "CORRECTION COULD NOT BE SAVED");
+  const result = data as Record<string, unknown>;
+  return validWorkoutStep(result.step) &&
+    Array.isArray(result.recalculated_steps) &&
+    result.recalculated_steps.every(validWorkoutStep)
+    ? success(result.step)
+    : failure("CORRECTION RESPONSE WAS INVALID");
 }
 
 export async function startWorkout(
