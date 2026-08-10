@@ -355,6 +355,11 @@ const applyMockLogbookVerdict = (step, scenario) => {
     step.enforcement_action = null;
     return;
   }
+  if (scenario === "ambiguous") {
+    step.verdict = null;
+    step.enforcement_action = "abs_choice";
+    return;
+  }
   step.verdict = "failure";
   step.enforcement_action =
     scenario === "second_failure" ? "replacement_required" : "first_failure";
@@ -1695,6 +1700,39 @@ const logbookWinShown =
   document.querySelector(".completion-verdict")?.textContent.includes("WIN");
 await finishLogbookScreen();
 
+await startLogbookScenario("ambiguous");
+await saveExercise("100");
+const ambiguousChoiceShown =
+  text().includes("COUNT THIS RESULT") &&
+  [...document.querySelectorAll(".logbook-actions button")].some(
+    (button) => button.textContent.trim() === "COUNT AS FAILURE",
+  );
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "COUNT AS FAILURE")
+    .click();
+  await flush();
+});
+const chainedFailureUndoOffered =
+  text().includes("LOGBOOK FAILURE") && text().includes("UNDO SAVE");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "UNDO SAVE")
+    .click();
+  await flush();
+});
+const chainedFailureUndoRestored =
+  text().toUpperCase().includes("INCLINE BARBELL PRESS") &&
+  !text().includes("LOGBOOK FAILURE");
+await saveExercise("100");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "COUNT AS WIN")
+    .click();
+  await flush();
+});
+await finishLogbookScreen();
+
 await startLogbookScenario("first_failure");
 await saveExercise("100");
 const firstFailureButtons = [
@@ -1818,6 +1856,9 @@ await finishLogbookScreen();
 
 const logbookRuntime =
   logbookWinShown &&
+  ambiguousChoiceShown &&
+  chainedFailureUndoOffered &&
+  chainedFailureUndoRestored &&
   firstFailureBlocked &&
   pendingDecisionUndoOffered &&
   pendingDecisionUndoRestored &&
@@ -1982,6 +2023,9 @@ const fullWorkoutDetail = {
   widowmakerSeparate,
 };
 const logbookDetail = {
+  ambiguousChoiceShown,
+  chainedFailureUndoOffered,
+  chainedFailureUndoRestored,
   failedExerciseExcluded,
   firstFailureBlocked,
   logbookWinShown,

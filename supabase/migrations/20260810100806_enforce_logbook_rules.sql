@@ -838,7 +838,10 @@ begin
     verdict = current_step.verdict,
     enforcement_action = current_step.enforcement_action,
     resolution = p_action,
-    last_operation_id = null,
+    last_operation_id = case
+      when current_step.enforcement_action is not null then current_step.last_operation_id
+      else null
+    end,
     updated_at = now()
   where step_id = current_step.step_id
   returning * into current_step;

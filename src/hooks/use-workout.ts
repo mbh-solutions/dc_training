@@ -156,8 +156,10 @@ export function useWorkout(userId: string, online: boolean) {
     }
     pendingOperationIds.current.delete(key);
     applySaveResult(response.data);
-    setLastOperationId(null);
-    setLastOperationStatus(null);
+    if (response.data.step.enforcement_action === null) {
+      setLastOperationId(null);
+      setLastOperationStatus(null);
+    }
     return true;
   };
 
