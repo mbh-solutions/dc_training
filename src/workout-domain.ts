@@ -9,11 +9,16 @@ export type Workout = {
 };
 
 export type WorkoutStep = {
+  assignment_id: string | null;
   body_part: string;
+  duration_seconds: number | null;
   exercise: string | null;
   kind: "exercise" | "stretch";
   ordinal: number;
-  protocol: "rest_pause" | "straight_set" | null;
+  previous_duration_seconds: number | null;
+  previous_reps: number[];
+  previous_weight_entries: WeightEntry[];
+  protocol: "rest_pause" | "straight_set" | "timed_hold" | null;
   reps: number[];
   status: "completed" | "pending" | "skipped";
   step_id: string;
@@ -29,8 +34,40 @@ const exerciseBodyParts = new Set([
   "triceps",
   "back_width",
   "back_thickness",
+  "biceps",
+  "forearms",
+  "calves",
+  "hamstrings",
+  "quadriceps",
+  "abs_1",
+  "abs_2",
 ]);
-const stretchBodyParts = new Set(["chest", "shoulders", "triceps", "back"]);
+const stretchBodyParts = new Set([
+  "chest",
+  "shoulders",
+  "triceps",
+  "biceps",
+  "back",
+  "hamstrings",
+  "quadriceps",
+]);
+
+export type WorkoutEntryShape = {
+  metric: "reps" | "seconds";
+  valueCount: number;
+  weightCount: number;
+};
+
+export function workoutEntryShape(
+  step: Pick<WorkoutStep, "protocol" | "target_sets">,
+): WorkoutEntryShape {
+  if (step.protocol === "rest_pause")
+    return { metric: "reps", valueCount: 3, weightCount: 1 };
+  if (step.protocol === "timed_hold")
+    return { metric: "seconds", valueCount: 1, weightCount: 1 };
+  const sets = Math.max(step.target_sets.length, 1);
+  return { metric: "reps", valueCount: sets, weightCount: sets };
+}
 
 export function isWorkoutSlot(value: unknown): value is WorkoutSlot {
   return WORKOUT_SLOTS.includes(value as WorkoutSlot);
@@ -74,7 +111,8 @@ function validStepIdentity(row: Record<string, unknown>) {
     typeof row.step_id === "string" &&
     typeof row.workout_id === "string" &&
     Number.isInteger(row.ordinal) &&
-    Number(row.ordinal) > 0
+    Number(row.ordinal) > 0 &&
+    Number(row.ordinal) <= 10
   );
 }
 
@@ -97,10 +135,14 @@ function validStepCollections(row: Record<string, unknown>) {
 }
 
 function validExerciseState(row: Record<string, unknown>) {
+  const abs = row.body_part === "abs_1" || row.body_part === "abs_2";
   return (
     exerciseBodyParts.has(row.body_part as string) &&
+    typeof row.assignment_id === "string" &&
     typeof row.exercise === "string" &&
-    (row.protocol === "rest_pause" || row.protocol === "straight_set") &&
+    (abs
+      ? row.protocol === "straight_set" || row.protocol === "timed_hold"
+      : row.protocol === "rest_pause" || row.protocol === "straight_set") &&
     typeof row.structure === "string"
   );
 }
@@ -108,6 +150,7 @@ function validExerciseState(row: Record<string, unknown>) {
 function validStretchState(row: Record<string, unknown>) {
   return (
     stretchBodyParts.has(row.body_part as string) &&
+    row.assignment_id === null &&
     row.exercise === null &&
     row.protocol === null &&
     row.structure === null
@@ -118,42 +161,105 @@ function validCollectionShape(row: Record<string, unknown>): row is Record<
   string,
   unknown
 > & {
+  duration_seconds: unknown;
+  previous_duration_seconds: unknown;
+  previous_reps: unknown[];
+  previous_weight_entries: unknown[];
   reps: unknown[];
   target_sets: unknown[];
   weight_entries: unknown[];
 } {
-  return [row.target_sets, row.weight_entries, row.reps].every(Array.isArray);
+  return [
+    row.target_sets,
+    row.weight_entries,
+    row.reps,
+    row.previous_weight_entries,
+    row.previous_reps,
+  ].every(Array.isArray);
 }
 
 function validEmptyCollections(row: {
+  duration_seconds: unknown;
+  previous_duration_seconds: unknown;
+  previous_reps: unknown[];
+  previous_weight_entries: unknown[];
   reps: unknown[];
   target_sets: unknown[];
   weight_entries: unknown[];
 }) {
-  return [row.target_sets, row.weight_entries, row.reps].every(
-    (items) => items.length === 0,
+  return (
+    [
+      row.target_sets,
+      row.weight_entries,
+      row.reps,
+      row.previous_weight_entries,
+      row.previous_reps,
+    ].every((items) => items.length === 0) &&
+    row.duration_seconds === null &&
+    row.previous_duration_seconds === null
   );
 }
 
 function validExerciseCollections(
   row: Record<string, unknown> & {
+    previous_reps: unknown[];
+    previous_weight_entries: unknown[];
     reps: unknown[];
     target_sets: unknown[];
     weight_entries: unknown[];
   },
 ) {
-  if (row.target_sets.length === 0 || !row.target_sets.every(validTargetSet))
+  if (!row.target_sets.every(validTargetSet)) return false;
+  if (row.protocol === "rest_pause" && row.target_sets.length !== 1)
     return false;
-  if (row.status !== "completed")
-    return row.weight_entries.length === 0 && row.reps.length === 0;
-  const expected = row.protocol === "rest_pause" ? 3 : row.target_sets.length;
-  return (
-    row.weight_entries.length ===
-      (row.protocol === "rest_pause" ? 1 : expected) &&
-    row.weight_entries.every(validWeightEntry) &&
-    row.reps.length === expected &&
-    row.reps.every((rep) => Number.isInteger(rep) && Number(rep) > 0)
-  );
+  if (row.protocol === "timed_hold" && row.target_sets.length !== 0)
+    return false;
+  const shape = workoutEntryShape(row as WorkoutStep);
+  const currentValid =
+    row.status === "completed"
+      ? validPerformance(
+          shape,
+          row.weight_entries,
+          row.reps,
+          row.duration_seconds,
+        )
+      : emptyPerformance(row.weight_entries, row.reps, row.duration_seconds);
+  const previousValid =
+    emptyPerformance(
+      row.previous_weight_entries,
+      row.previous_reps,
+      row.previous_duration_seconds,
+    ) ||
+    validPerformance(
+      shape,
+      row.previous_weight_entries,
+      row.previous_reps,
+      row.previous_duration_seconds,
+    );
+  return currentValid && previousValid;
+}
+
+function emptyPerformance(
+  weights: unknown[],
+  reps: unknown[],
+  duration: unknown,
+) {
+  return weights.length === 0 && reps.length === 0 && duration === null;
+}
+
+function validPerformance(
+  shape: WorkoutEntryShape,
+  weights: unknown[],
+  reps: unknown[],
+  duration: unknown,
+) {
+  if (weights.length !== shape.weightCount || !weights.every(validWeightEntry))
+    return false;
+  return shape.metric === "seconds"
+    ? reps.length === 0 && Number.isInteger(duration) && Number(duration) > 0
+    : duration === null &&
+        reps.length === shape.valueCount &&
+        reps.every((rep) => Number.isInteger(rep) && Number(rep) > 0);
 }
 
 function validTargetSet(value: unknown) {

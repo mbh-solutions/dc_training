@@ -21,6 +21,10 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
   if (workout.completedWorkout) {
     return (
       <WorkoutComplete
+        lastOperationStatus={workout.lastOperationStatus}
+        message={workout.message}
+        nextSlot={workout.nextSlot}
+        onUndo={workout.undo}
         workout={workout.completedWorkout}
         onDone={() => {
           workout.dismissCompleted();
@@ -34,9 +38,11 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
     return (
       <WorkoutTracer
         lastOperationId={workout.lastOperationId}
+        lastOperationStatus={workout.lastOperationStatus}
         message={workout.message}
         onExit={() => setShowWorkout(false)}
         onSave={workout.saveStep}
+        onSkip={workout.skipStep}
         onUndo={workout.undo}
         steps={workout.steps}
         workout={workout.activeWorkout}

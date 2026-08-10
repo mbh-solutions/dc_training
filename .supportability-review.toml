@@ -1,20 +1,22 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Let the authenticated owner start or resume the automatically selected A1 workout, durably log every configured exercise and required stretch, undo the latest save, complete once, and return Home with B1 next."
-proof = "tests/a1-assignment.e2e.mjs mounts src/main.tsx with real React, drives Home through A1 completion, leaves/resumes, preserves a step operation ID across a lost response, undoes/re-saves, checks exact stretch copy, retries the final operation, and returns to Home with B1. tests/workout-domain.test.mjs proves exact canonical conversion."
+intended_behavior = "Let the authenticated owner start or resume any automatically selected A1/B1/A2/B2/A3/B3 workout, record every configured work-set shape or timed hold, complete or skip every approved stretch, undo the latest action, finish later, and advance the six-slot rotation exactly once only after every step is satisfied."
+proof = "tests/a1-assignment.e2e.mjs mounts src/main.tsx with real React and drives one A workout plus one B workout with both abs protocols, a previous-performance mirror, calf instructions, separate widowmaker entries, exercise/stretch skip, immediate undo, leave/resume, final retry, and exact next-slot results. tests/workout-domain.test.mjs proves the full entry-shape matrix and fail-closed timed-hold rows."
 
 [characterization]
-captured_behavior = "The qualified auth/offline shell and full rotation setup remain, while a1-workout-v1 fail-closed checks the A1 surface declarations, RPC calls, conversion constants, and Home selectors without executing target-controlled code."
-proof = "The existing foundation-shell-v2 and rotation-setup-v1 scenarios remain registered; the staged a1-workout-v1 static contract covers the new production paths, while tests/a1-assignment.e2e.mjs separately mounts the real React application and proves the complete workout path."
+captured_behavior = "The qualified auth/offline shell and full rotation setup remain, while the unchanged a1-workout-v1 definition fail-closed checks the established compatibility RPC names, workout surface declarations, conversion constants, and Home selectors without executing target-controlled code."
+proof = "The existing foundation-shell-v2, rotation-setup-v1, and a1-workout-v1 definitions remain unchanged; the compatibility RPC names now delegate to six-slot generic database functions, while tests/a1-assignment.e2e.mjs mounts the real React application and proves both A- and B-day runtime paths."
 
 [separation_of_concerns]
-before = "FoundationHome selected Home or Rotation Setup; no workout state, persistence, or execution UI existed."
-after = "FoundationHome selects Home, Rotation Setup, active workout, or completion; useWorkout owns React state transitions; workout-api owns validated Supabase calls; workout-domain owns row guards; weight-conversion owns exact conversion; WorkoutTracer owns controlled presentation."
+before = "The S03 boundaries supported A1-only rest-pause and straight-set tracing with four A-day stretches."
+after = "The same boundaries now support all six slots and every approved entry shape: WorkoutTracer owns controlled presentation, useWorkout owns state transitions, workout-api owns validated Supabase calls, workout-domain owns row guards and entry shapes, and the migration owns atomic persistence and rotation invariants."
 
 [architecture]
 dependency_direction = "App composes FoundationHome; FoundationHome composes HomeScreen, RotationSetup, WorkoutTracer, and useWorkout; useWorkout delegates cloud I/O to workout-api; workout-api alone reaches the Supabase client; row validation and weight conversion remain inward dependencies."
 reviewed_paths = [
+    "supabase/migrations/20260810084701_complete_full_workout_flow.sql",
+    "supabase/migrations/20260810092500_add_full_workout_compatibility_rpc.sql",
     "src/FoundationHome.tsx",
     "src/HomeScreen.tsx",
     "src/WorkoutTracer.tsx",
@@ -22,35 +24,37 @@ reviewed_paths = [
     "src/weight-conversion.ts",
     "src/workout-api.ts",
     "src/workout-domain.ts",
+    "vite.config.ts",
 ]
 
 [responsibility_boundary]
 path = "src/hooks/use-workout.ts"
 owns = "React state transitions for validated workout loads, saves, undo, and completion results."
-does_not_own = "Workout visuals, Supabase calls, response validation, SQL invariants, or future B-workout execution."
+does_not_own = "Workout visuals, Supabase calls, response validation, SQL invariants, future logbook verdicts, or offline mutation queuing."
 
 [incremental_refactor]
-target = "Add only the S03 A1 tracer to the qualified S02 application."
-completed_step = "Reused fixed assignment contracts and added focused A1 presentation, state, API, row-validation, and weight-conversion boundaries plus one additive migration."
+target = "Expand only the qualified S03 tracer into the complete S04 workout flow."
+completed_step = "Reused fixed assignment and S03 workout boundaries, preserved the established compatibility RPC names over six-slot database functions, generalized presentation to all slots, added B-day stretches and abs, and added forward-only migrations for persistence plus timed-hold compatibility."
 
 [review_handoff]
-summary = "Review A1-only client orchestration, exact weight conversion, approved stretch presentation, additive RLS schema, and atomic idempotent final-step transition."
+summary = "Review six-slot client orchestration, exact entry-shape mapping, approved stretch/calf presentation, additive RLS schema, first-unfinished enforcement, and atomic idempotent cyclic advancement."
 remaining_risks = [
-    "The owner must finish the remaining A1 assignments before Start is enabled by the database contract.",
-    "B1 is displayed after completion but intentionally cannot start until a later slice.",
+    "The owner must save every assignment for the selected slot before the database permits that workout to start.",
+    "Logbook win, failure, mulligan, and replacement enforcement remains deliberately deferred to S05.",
+    "Offline mutation queuing remains deliberately deferred; confirmed cloud work resumes after reconnect or a later session.",
 ]
 
 [human_review]
 naming = "WorkoutTracer, useWorkout, workout-api, workout-domain, and weight-conversion name their presentation, state, I/O, row-validation, and conversion responsibilities directly."
-cohesion = "The hook owns React state, workout-api owns cloud I/O, workout-domain owns row guards, weight-conversion owns exact conversion, and WorkoutTracer owns A1 presentation."
-intended_behavior = "The owner gains one durable A1 completion path with no B-day, history, logbook-failure, cruise, or offline-queue expansion."
-reviewability = "The diff adds five focused source modules, one migration, one targeted unit check, and one real-React behavior extension."
+cohesion = "The hook owns React state, workout-api owns cloud I/O, workout-domain owns row guards and entry shapes, weight-conversion owns exact conversion, and WorkoutTracer owns six-slot presentation."
+intended_behavior = "The owner gains the complete configured workout flow without history views, logbook verdict enforcement, cruise lifecycle, warm-ups, timers, or offline-mutation expansion."
+reviewability = "The diff generalizes the existing focused workout modules, adds two forward-only migrations, extends one targeted unit check, and extends the existing real-React behavior proof without changing established characterization definitions."
 
 [[module_boundaries]]
 path = "src/WorkoutTracer.tsx"
 owner_path = "src/WorkoutTracer.tsx"
 basis = "responsibility"
-justification = "Owns A1 exercise, stretch, and completion presentation only."
+justification = "Owns six-slot exercise, stretch, calf-information, and completion presentation only."
 
 [[module_boundaries]]
 path = "src/hooks/use-workout.ts"
@@ -75,3 +79,15 @@ path = "src/weight-conversion.ts"
 owner_path = "src/weight-conversion.ts"
 basis = "responsibility"
 justification = "Owns exact weight parsing, integer-microgram conversion, and display conversion only."
+
+[[module_boundaries]]
+path = "supabase/migrations/20260810084701_complete_full_workout_flow.sql"
+owner_path = "supabase/migrations/20260810084701_complete_full_workout_flow.sql"
+basis = "responsibility"
+justification = "Owns authenticated workout persistence, entry-shape validation, undo history, previous snapshots, and six-slot advancement only."
+
+[[module_boundaries]]
+path = "supabase/migrations/20260810092500_add_full_workout_compatibility_rpc.sql"
+owner_path = "supabase/migrations/20260810092500_add_full_workout_compatibility_rpc.sql"
+basis = "responsibility"
+justification = "Owns the timed-hold overload for the established authenticated workout-save compatibility RPC only."

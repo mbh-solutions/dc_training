@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Workout, WorkoutStep } from "../workout-domain.js";
 import {
   loadWorkoutState,
-  saveA1WorkoutStep,
-  startA1Workout,
-  undoA1WorkoutStep,
+  saveWorkoutStep,
+  startWorkout,
+  undoWorkoutStep,
 } from "../workout-api.js";
 import type { WeightEntry } from "../weight-conversion.js";
 import type { WorkoutSlot } from "../rotation-config.js";
@@ -17,6 +17,9 @@ export function useWorkout(userId: string, online: boolean) {
   const [lastCompletedSlot, setLastCompletedSlot] =
     useState<WorkoutSlot | null>(null);
   const [lastOperationId, setLastOperationId] = useState<string | null>(null);
+  const [lastOperationStatus, setLastOperationStatus] = useState<
+    "completed" | "skipped" | null
+  >(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [nextSlot, setNextSlot] = useState<WorkoutSlot>("A1");
@@ -50,12 +53,12 @@ export function useWorkout(userId: string, online: boolean) {
   const start = async () => {
     setMessage("");
     const operationId = crypto.randomUUID();
-    const result = await startA1Workout(operationId);
+    const result = await startWorkout(operationId);
     if (!result.data) {
       setMessage(
-        result.error.includes("five saved assignments")
-          ? "FINISH ALL FIVE A1 ASSIGNMENTS IN ROTATION SETUP"
-          : "A1 WORKOUT COULD NOT BE STARTED",
+        result.error.includes("saved assignments")
+          ? `FINISH ALL ${nextSlot} ASSIGNMENTS IN ROTATION SETUP`
+          : "WORKOUT COULD NOT BE STARTED",
       );
       return false;
     }
@@ -67,12 +70,34 @@ export function useWorkout(userId: string, online: boolean) {
     step: WorkoutStep,
     weights: WeightEntry[] = [],
     reps: number[] = [],
+    durationSeconds: number | null = null,
+  ) => {
+    return submitStep(step, "completed", weights, reps, durationSeconds);
+  };
+
+  const skipStep = async (step: WorkoutStep) => {
+    return submitStep(step, "skipped", [], [], null);
+  };
+
+  const submitStep = async (
+    step: WorkoutStep,
+    status: "completed" | "skipped",
+    weights: WeightEntry[],
+    reps: number[],
+    durationSeconds: number | null,
   ) => {
     const operationId = retryOperationId(
       pendingOperationIds.current,
       step.step_id,
     );
-    const response = await saveA1WorkoutStep(operationId, step, weights, reps);
+    const response = await saveWorkoutStep(
+      operationId,
+      step,
+      status,
+      weights,
+      reps,
+      durationSeconds,
+    );
     if (!response.data) {
       setMessage(response.error);
       return false;
@@ -90,16 +115,22 @@ export function useWorkout(userId: string, online: boolean) {
       setCompletedWorkout(result.workout);
       setLastCompletedSlot(result.workout.slot);
       setActiveWorkout(null);
-      setLastOperationId(null);
+      setLastOperationId(operationId);
+      setLastOperationStatus(
+        result.step.status === "skipped" ? "skipped" : "completed",
+      );
     } else {
       setLastOperationId(operationId);
+      setLastOperationStatus(
+        result.step.status === "skipped" ? "skipped" : "completed",
+      );
     }
     return true;
   };
 
   const undo = async () => {
     if (!lastOperationId) return;
-    const result = await undoA1WorkoutStep(lastOperationId);
+    const result = await undoWorkoutStep(lastOperationId);
     if (!result.data) {
       setMessage(result.error);
       return;
@@ -109,20 +140,31 @@ export function useWorkout(userId: string, online: boolean) {
         item.step_id === result.data!.step_id ? result.data! : item,
       ),
     );
+    if (completedWorkout) {
+      setCompletedWorkout(null);
+      await load();
+    }
     setLastOperationId(null);
+    setLastOperationStatus(null);
     setMessage("");
   };
 
   return {
     activeWorkout,
     completedWorkout,
-    dismissCompleted: () => setCompletedWorkout(null),
+    dismissCompleted: () => {
+      setCompletedWorkout(null);
+      setLastOperationId(null);
+      setLastOperationStatus(null);
+    },
     lastCompletedSlot,
     lastOperationId,
+    lastOperationStatus,
     loading,
     message,
     nextSlot,
     saveStep,
+    skipStep,
     start,
     steps,
     undo,

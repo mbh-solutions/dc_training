@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { type Workout, type WorkoutStep } from "./workout-domain.js";
+import type { WorkoutSlot } from "./rotation-config.js";
+import {
+  workoutEntryShape,
+  type Workout,
+  type WorkoutStep,
+} from "./workout-domain.js";
 import { conversionPreview, type WeightEntry } from "./weight-conversion.js";
 
 const backIllustration = new URL(
@@ -8,6 +13,18 @@ const backIllustration = new URL(
 ).href;
 const chestReference = new URL(
   "../docs/design/chest-stretch-info-approved.png",
+  import.meta.url,
+).href;
+const bicepsIllustration = new URL(
+  "../docs/design/biceps-stretch-illustration-approved.png",
+  import.meta.url,
+).href;
+const hamstringIllustration = new URL(
+  "../docs/design/hamstring-stretch-illustration-approved.png",
+  import.meta.url,
+).href;
+const quadIllustration = new URL(
+  "../docs/design/quad-stretch-illustration-approved.png",
   import.meta.url,
 ).href;
 const shoulderIllustration = new URL(
@@ -59,6 +76,17 @@ const stretchDetails: Record<
     name: "ONE-ARM OVERHEAD STRETCH",
     reference: true,
   },
+  biceps: {
+    copy: [
+      "Set bar around neck height.",
+      "Face away. Grip bar behind you, palms down.",
+      "Sink down into the stretch.",
+      "Hold 45–60 seconds.",
+      "Stop for joint pain.",
+    ],
+    image: bicepsIllustration,
+    name: "BEHIND-BACK BAR STRETCH",
+  },
   back: {
     copy: [
       "Grip a fixed bar at chest height.",
@@ -71,17 +99,44 @@ const stretchDetails: Record<
     image: backIllustration,
     name: "STATIONARY ROUNDED-BACK PULL",
   },
+  hamstrings: {
+    copy: [
+      "Place one heel on a high fixed bar.",
+      "Hold your toe.",
+      "Use your free hand to keep the leg straight.",
+      "Hinge forward into the stretch.",
+      "Hold 60 seconds.",
+      "Stop for joint pain.",
+    ],
+    image: hamstringIllustration,
+    name: "ELEVATED STRAIGHT-LEG STRETCH",
+  },
+  quadriceps: {
+    copy: [
+      "Grip a fixed bar in front of you.",
+      "Keep your knees off the floor.",
+      "Drive knees and hips forward.",
+      "Lean back into the stretch.",
+      "Hold 45–60 seconds.",
+      "Stop for knee or joint pain.",
+    ],
+    image: quadIllustration,
+    name: "SUPPORTED QUAD STRETCH",
+  },
 };
 
 type Props = {
   lastOperationId: string | null;
+  lastOperationStatus: "completed" | "skipped" | null;
   message: string;
   onExit: () => void;
   onSave: (
     step: WorkoutStep,
     weights?: WeightEntry[],
     reps?: number[],
+    durationSeconds?: number | null,
   ) => Promise<boolean>;
+  onSkip: (step: WorkoutStep) => Promise<boolean>;
   onUndo: () => Promise<void>;
   steps: WorkoutStep[];
   workout: Workout;
@@ -90,6 +145,7 @@ type Props = {
 export function WorkoutTracer(props: Props) {
   const step = props.steps.find((item) => item.status === "pending");
   if (!step) return <WorkoutLoadError {...props} />;
+  const progress = workoutProgress(props.steps, step);
   return (
     <div className="app-shell workout-shell">
       <style>{workoutStyles}</style>
@@ -100,13 +156,16 @@ export function WorkoutTracer(props: Props) {
         <div>
           <strong>DC TRAINING</strong>
           <p>
-            {props.workout.slot} <span>{exerciseNumber(step)} OF 5</span>
+            {props.workout.slot}{" "}
+            <span>
+              {progress.current} OF {progress.total}
+            </span>
           </p>
         </div>
       </header>
       {props.lastOperationId && (
         <div className="undo-strip">
-          SAVED
+          {props.lastOperationStatus === "skipped" ? "SKIPPED" : "SAVED"}
           <button type="button" onClick={() => void props.onUndo()}>
             UNDO
           </button>
@@ -124,42 +183,67 @@ export function WorkoutTracer(props: Props) {
 function ExerciseEntry({
   message,
   onSave,
+  onSkip,
   step,
 }: Props & { step: WorkoutStep }) {
-  const weightsNeeded = setCount(step);
-  const repsNeeded = repCount(step);
+  const shape = workoutEntryShape(step);
   const [weights, setWeights] = useState<WeightEntry[]>(
-    Array.from({ length: weightsNeeded }, () => ({ amount: "", unit: "lb" })),
+    Array.from({ length: shape.weightCount }, () => ({
+      amount: "",
+      unit: "lb",
+    })),
   );
-  const [reps, setReps] = useState<string[]>(
-    Array.from({ length: repsNeeded }, () => ""),
+  const [values, setValues] = useState<string[]>(
+    Array.from({ length: shape.valueCount }, () => ""),
   );
   const [saving, setSaving] = useState(false);
+  const [calfInfoOpen, setCalfInfoOpen] = useState(false);
   const valid =
     weights.every((entry) => conversionPreview(entry) !== "") &&
-    reps.every((value) => Number.isInteger(Number(value)) && Number(value) > 0);
+    values.every(
+      (value) => Number.isInteger(Number(value)) && Number(value) > 0,
+    );
 
   const save = async () => {
     if (!valid) return;
     setSaving(true);
-    const saved = await onSave(step, weights, reps.map(Number));
+    const saved = await onSave(
+      step,
+      weights,
+      shape.metric === "reps" ? values.map(Number) : [],
+      shape.metric === "seconds" ? Number(values[0]) : null,
+    );
     if (!saved) setSaving(false);
+  };
+
+  const skip = async () => {
+    setSaving(true);
+    if (!(await onSkip(step))) setSaving(false);
   };
 
   return (
     <main className="workout-main">
       <p className="workout-part">{displayBodyPart(step.body_part)}</p>
       <h1>{step.exercise}</h1>
-      <section className="previous-card">
-        <p>PREVIOUS PERFORMANCE</p>
-        <strong>NO PREVIOUS PERFORMANCE</strong>
-      </section>
+      <PreviousPerformance step={step} />
       <p className="today-label">TODAY</p>
       <div className="entry-list">
         {weights.map((weight, index) => (
           <section className="entry-card" key={index}>
             <p>
               {step.protocol === "rest_pause" ? "WORK SET" : `SET ${index + 1}`}
+              {step.body_part === "calves" &&
+                step.structure === "single-10-12" &&
+                index === 0 && (
+                  <button
+                    aria-label="CALF 10–12 INFORMATION"
+                    className="entry-info"
+                    type="button"
+                    onClick={() => setCalfInfoOpen(true)}
+                  >
+                    ⓘ
+                  </button>
+                )}
             </p>
             <div className="weight-entry">
               <input
@@ -203,22 +287,34 @@ function ExerciseEntry({
                 {conversionPreview(weight)}
               </small>
             )}
-            <div className="rep-entry">
-              {repIndexes(step, index).map((repIndex) => (
-                <label key={repIndex}>
-                  {step.protocol === "rest_pause"
-                    ? `MINI ${repIndex + 1}`
-                    : "REPS"}
+            <div
+              className={`rep-entry ${shape.valueCount === 1 ? "rep-entry--single" : ""}`}
+            >
+              {valueIndexes(step, index).map((valueIndex) => (
+                <label key={valueIndex}>
+                  {shape.metric === "seconds"
+                    ? "HOLD SECONDS"
+                    : step.protocol === "rest_pause"
+                      ? `MINI ${valueIndex + 1}`
+                      : "REPS"}
                   <input
-                    aria-label={`REP ${repIndex + 1}`}
-                    id={`rep-${repIndex}`}
+                    aria-label={
+                      shape.metric === "seconds"
+                        ? "HOLD SECONDS"
+                        : `REP ${valueIndex + 1}`
+                    }
+                    id={
+                      shape.metric === "seconds"
+                        ? "duration-seconds"
+                        : `rep-${valueIndex}`
+                    }
                     inputMode="numeric"
                     placeholder="0"
-                    value={reps[repIndex]}
+                    value={values[valueIndex]}
                     onChange={(event) =>
-                      setReps((current) =>
+                      setValues((current) =>
                         current.map((value, itemIndex) =>
-                          itemIndex === repIndex ? event.target.value : value,
+                          itemIndex === valueIndex ? event.target.value : value,
                         ),
                       )
                     }
@@ -238,17 +334,64 @@ function ExerciseEntry({
       >
         {saving ? "SAVING" : "SAVE & NEXT"}
       </button>
+      <button
+        className="secondary-action skip-action"
+        disabled={saving}
+        type="button"
+        onClick={() => void skip()}
+      >
+        SKIP
+      </button>
+      {calfInfoOpen && (
+        <InformationDialog
+          label="CALF 10–12 INFORMATION"
+          lines={calfInstructions}
+          title="DC CALF REP"
+          onClose={() => setCalfInfoOpen(false)}
+        />
+      )}
     </main>
+  );
+}
+
+function PreviousPerformance({ step }: { step: WorkoutStep }) {
+  const hasPrevious = step.previous_weight_entries.length > 0;
+  return (
+    <section className="previous-card">
+      <p>PREVIOUS PERFORMANCE</p>
+      {!hasPrevious ? (
+        <strong>NO PREVIOUS PERFORMANCE</strong>
+      ) : (
+        <div className="previous-list">
+          {step.previous_weight_entries.map((weight, index) => (
+            <output key={index}>
+              <b>{entryLabel(step, index)}</b>
+              <span>{previousValue(step, weight, index)}</span>
+            </output>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
 function StretchEntry({
   message,
   onSave,
+  onSkip,
   step,
 }: Props & { step: WorkoutStep }) {
   const [infoOpen, setInfoOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
   const detail = stretchDetails[step.body_part];
+  const complete = async () => {
+    setSaving(true);
+    if (!(await onSave(step))) setSaving(false);
+  };
+  const skip = async () => {
+    setSaving(true);
+    if (!(await onSkip(step))) setSaving(false);
+  };
   return (
     <main className="workout-main stretch-main">
       <p className="workout-part">{displayBodyPart(step.body_part)} COMPLETE</p>
@@ -277,10 +420,19 @@ function StretchEntry({
       {message && <p className="form-message">{message}</p>}
       <button
         className="primary-action"
+        disabled={saving}
         type="button"
-        onClick={() => void onSave(step)}
+        onClick={() => void complete()}
       >
-        STRETCH COMPLETE
+        {saving ? "SAVING" : "STRETCH COMPLETE"}
+      </button>
+      <button
+        className="secondary-action skip-action"
+        disabled={saving}
+        type="button"
+        onClick={() => void skip()}
+      >
+        SKIP
       </button>
       {infoOpen && (
         <div className="stretch-dialog-backdrop">
@@ -319,10 +471,18 @@ function StretchEntry({
 }
 
 export function WorkoutComplete({
+  lastOperationStatus,
+  message,
+  nextSlot,
   onDone,
+  onUndo,
   workout,
 }: {
+  lastOperationStatus: "completed" | "skipped" | null;
+  message: string;
+  nextSlot: WorkoutSlot;
   onDone: () => void;
+  onUndo: () => Promise<void>;
   workout: Workout;
 }) {
   return (
@@ -333,8 +493,18 @@ export function WorkoutComplete({
       <h1>{workout.slot} COMPLETE</h1>
       <section>
         <p>NEXT WORKOUT</p>
-        <b>B1</b>
+        <b>{nextSlot}</b>
       </section>
+      {message && <p className="form-message">{message}</p>}
+      {lastOperationStatus && (
+        <button
+          className="secondary-action complete-undo"
+          type="button"
+          onClick={() => void onUndo()}
+        >
+          {lastOperationStatus === "skipped" ? "UNDO SKIP" : "UNDO LAST SAVE"}
+        </button>
+      )}
       <button className="primary-action" type="button" onClick={onDone}>
         DONE
       </button>
@@ -342,30 +512,84 @@ export function WorkoutComplete({
   );
 }
 
-function repIndexes(step: WorkoutStep, setIndex: number) {
-  return step.protocol === "rest_pause" ? [0, 1, 2] : [setIndex];
+function valueIndexes(step: WorkoutStep, setIndex: number) {
+  if (step.protocol === "rest_pause") return [0, 1, 2];
+  if (step.protocol === "timed_hold") return [0];
+  return [setIndex];
 }
 
-function exerciseNumber(step: WorkoutStep) {
-  if (step.body_part === "chest") return 1;
-  if (step.body_part === "shoulders") return 2;
-  if (step.body_part === "triceps") return 3;
-  if (step.body_part === "back_width") return 4;
-  return 5;
+function workoutProgress(steps: WorkoutStep[], step: WorkoutStep) {
+  const exercises = steps.filter((item) => item.kind === "exercise");
+  return {
+    current: exercises.filter((item) => item.ordinal <= step.ordinal).length,
+    total: exercises.length,
+  };
 }
 
-function setCount(step: WorkoutStep) {
-  return step.protocol === "rest_pause"
-    ? 1
-    : Math.max(step.target_sets.length, 1);
+function entryLabel(step: WorkoutStep, index: number) {
+  if (step.protocol === "rest_pause") return "WORK SET";
+  if (step.protocol === "timed_hold") return "TIMED HOLD";
+  return `SET ${index + 1}`;
 }
 
-function repCount(step: WorkoutStep) {
-  return step.protocol === "rest_pause" ? 3 : setCount(step);
+function previousValue(step: WorkoutStep, weight: WeightEntry, index: number) {
+  const load = `${weight.amount} ${weight.unit.toUpperCase()}`;
+  if (step.protocol === "timed_hold")
+    return `${load} · ${step.previous_duration_seconds} SECONDS`;
+  if (step.protocol === "rest_pause")
+    return `${load} · ${step.previous_reps.join(" / ")} REPS`;
+  return `${load} · ${step.previous_reps[index]} REPS`;
 }
 
 function displayBodyPart(bodyPart: string) {
   return bodyPart.replaceAll("_", " ").toUpperCase();
+}
+
+const calfInstructions = [
+  "Lower slowly over 5 seconds.",
+  "Hold the bottom position for 15 seconds.",
+  "Explode upward onto your toes.",
+];
+
+function InformationDialog({
+  label,
+  lines,
+  onClose,
+  title,
+}: {
+  label: string;
+  lines: string[];
+  onClose: () => void;
+  title: string;
+}) {
+  return (
+    <div className="stretch-dialog-backdrop">
+      <section
+        aria-label={label}
+        aria-modal="true"
+        className="stretch-dialog"
+        role="dialog"
+      >
+        <button
+          aria-label={`CLOSE ${label}`}
+          className="dialog-close"
+          type="button"
+          onClick={onClose}
+        >
+          ×
+        </button>
+        <h2>
+          <span>DC</span> {title}
+        </h2>
+        {lines.map((line) => (
+          <p key={line}>{line}</p>
+        ))}
+        <button className="primary-action" type="button" onClick={onClose}>
+          GOT IT
+        </button>
+      </section>
+    </div>
+  );
 }
 
 const workoutStyles = `
@@ -383,15 +607,21 @@ const workoutStyles = `
 .previous-card, .entry-card, .stretch-card, .workout-complete section { border: 1px solid var(--line); border-radius: 12px; padding: 20px; background: linear-gradient(145deg, rgba(22,22,22,.88), rgba(8,8,8,.96)); }
 .previous-card p, .entry-card > p, .workout-complete section p { margin: 0 0 13px; color: var(--gray); font-family: Impact, sans-serif; letter-spacing: .06em; }
 .previous-card strong { color: var(--gray); }
+.previous-list { display: grid; gap: 10px; }
+.previous-list output { display: flex; justify-content: space-between; gap: 12px; color: var(--gray); }
+.previous-list b { color: var(--white); }
 .today-label { margin-top: 30px; }
 .entry-list { display: grid; gap: 14px; }
 .weight-entry { display: grid; grid-template-columns: 1fr 82px; gap: 8px; }
 .weight-entry input, .weight-entry select, .rep-entry input { min-height: 58px; border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; color: var(--white); background: var(--panel); font-family: Impact, sans-serif; font-size: 1.55rem; }
 .conversion-preview { display: block; margin-top: 6px; color: var(--gray); text-align: right; }
 .rep-entry { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+.rep-entry--single { grid-template-columns: 1fr; }
 .rep-entry label { color: var(--gray); font-size: .72rem; text-align: center; }
 .rep-entry input { width: 100%; margin-top: 6px; text-align: center; }
 .skip-action { display: block; margin: 10px auto 0; }
+.entry-card > p { display: flex; justify-content: space-between; align-items: center; }
+.entry-info { min-width: 44px; min-height: 44px; border: 0; color: var(--white); background: transparent; font-size: 1.5rem; cursor: pointer; }
 .stretch-card { border-color: var(--red); }
 .stretch-card h2 { margin: 0 0 12px; font-size: 1.7rem; }
 .stretch-meta { display: flex; align-items: center; gap: 12px; }
@@ -411,6 +641,7 @@ const workoutStyles = `
 .workout-complete h1 { margin: 0 0 36px; font-size: clamp(3rem, 15vw, 5rem); }
 .workout-complete section { width: 100%; text-align: left; }
 .workout-complete section b { font-family: Impact, sans-serif; font-size: 4rem; }
+.workout-complete .complete-undo { margin-top: 18px; }
 .workout-complete .primary-action { margin-top: auto; }
 `;
 
