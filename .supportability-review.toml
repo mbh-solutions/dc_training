@@ -6,7 +6,7 @@ proof = "tests/blast-cruise.test.mjs verifies fail-closed lifecycle shapes and p
 
 [characterization]
 captured_behavior = "The qualified auth/offline shell, rotation setup, six-slot workout runtime, logbook enforcement, and history correction remain while blast-cruise-v1 adds the lifecycle seam around the existing fixed rotation."
-proof = "The existing foundation-shell-v2, rotation-setup-v1, a1-workout-v1, and history-v1 definitions remain unchanged. The additive blast-cruise-v1 definition proves the predecessor on base and the S07 schema/UI/runtime contract on head; the directly relevant actual-React packet exercises the complete S07 interaction."
+proof = "The rotation-setup-v1, a1-workout-v1, and history-v1 definitions remain unchanged. The foundation-shell-v2 driver keeps its golden behavior while selecting Sign Out by label after the new outlined Cruise action changed button order. The additive blast-cruise-v1 definition proves the predecessor on base and the S07 schema/UI/runtime contract on head; the directly relevant actual-React packet exercises the complete S07 interaction."
 
 [separation_of_concerns]
 before = "S06 persisted the fixed rotation, workout history, and correction semantics but deliberately had no blast or cruise lifecycle."
@@ -26,6 +26,7 @@ reviewed_paths = [
     "tests/a1-assignment.e2e.mjs",
     "tests/characterization/blast-cruise-v1.characterization.mjs",
     "tests/characterization/blast-cruise-v1.golden.json",
+    "tests/characterization/foundation-shell.characterization.mjs",
     ".supportability-characterization.json",
 ]
 

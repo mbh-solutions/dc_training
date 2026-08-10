@@ -357,7 +357,9 @@ await act(async () => {
 });
 
 await act(async () => {
-  document.querySelector("button.secondary-action").click();
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "SIGN OUT")
+    .click();
   await flush();
 });
 const signOutSubmitted = hasCall("signOut", (call) => call[1] === undefined);
