@@ -96,6 +96,146 @@ let workoutSteps = [];
 let rotationAdvancements = 0;
 let loseNextWorkoutSaveResponse = true;
 const workoutOperations = new Map();
+const rotationOrder = {
+  A1: "B1",
+  B1: "A2",
+  A2: "B2",
+  B2: "A3",
+  A3: "B3",
+  B3: "A1",
+};
+
+const exerciseStep = ({
+  body_part,
+  exercise,
+  ordinal,
+  protocol = "rest_pause",
+  structure = "11-15",
+  target_sets = [{ max: 15, min: 11 }],
+  workout_id,
+}) => ({
+  assignment_id: `assignment-${workout_id}-${body_part}`,
+  body_part,
+  duration_seconds: null,
+  exercise,
+  kind: "exercise",
+  ordinal,
+  previous_duration_seconds: null,
+  previous_reps: [],
+  previous_weight_entries: [],
+  protocol,
+  reps: [],
+  status: "pending",
+  step_id: `${workout_id}-step-${ordinal}`,
+  structure,
+  target_sets,
+  weight_entries: [],
+  workout_id,
+});
+
+const stretchStep = (workout_id, body_part, ordinal) => ({
+  assignment_id: null,
+  body_part,
+  duration_seconds: null,
+  exercise: null,
+  kind: "stretch",
+  ordinal,
+  previous_duration_seconds: null,
+  previous_reps: [],
+  previous_weight_entries: [],
+  protocol: null,
+  reps: [],
+  status: "pending",
+  step_id: `${workout_id}-step-${ordinal}`,
+  structure: null,
+  target_sets: [],
+  weight_entries: [],
+  workout_id,
+});
+
+const workoutTemplate = (slot, workout_id) => {
+  if (slot.startsWith("A")) {
+    return [
+      exerciseStep({ body_part: "chest", exercise: "Incline barbell press", ordinal: 1, workout_id }),
+      stretchStep(workout_id, "chest", 2),
+      exerciseStep({ body_part: "shoulders", exercise: "Standing barbell military press", ordinal: 3, workout_id }),
+      stretchStep(workout_id, "shoulders", 4),
+      exerciseStep({ body_part: "triceps", exercise: "Close-grip barbell bench press", ordinal: 5, workout_id }),
+      stretchStep(workout_id, "triceps", 6),
+      exerciseStep({ body_part: "back_width", exercise: "Pull-ups", ordinal: 7, workout_id }),
+      exerciseStep({
+        body_part: "back_thickness",
+        exercise: "Conventional deadlift",
+        ordinal: 8,
+        protocol: "straight_set",
+        structure: "deadlift-6-8-10-12",
+        target_sets: [{ max: 8, min: 6 }, { max: 12, min: 10 }],
+        workout_id,
+      }),
+      stretchStep(workout_id, "back", 9),
+    ];
+  }
+  return [
+    exerciseStep({ body_part: "biceps", exercise: "Straight-bar curl", ordinal: 1, workout_id }),
+    stretchStep(workout_id, "biceps", 2),
+    exerciseStep({
+      body_part: "forearms",
+      exercise: "Alternating hammer curl",
+      ordinal: 3,
+      protocol: "straight_set",
+      structure: "custom",
+      target_sets: [{ max: 12, min: 10 }, { max: 20, min: 20 }],
+      workout_id,
+    }),
+    exerciseStep({
+      body_part: "calves",
+      exercise: "Standing barbell calf raise",
+      ordinal: 4,
+      protocol: "straight_set",
+      structure: "single-10-12",
+      target_sets: [{ max: 12, min: 10 }],
+      workout_id,
+    }),
+    exerciseStep({
+      body_part: "hamstrings",
+      exercise: "Barbell stiff-leg deadlift",
+      ordinal: 5,
+      protocol: "straight_set",
+      structure: "single-10-15",
+      target_sets: [{ max: 15, min: 10 }],
+      workout_id,
+    }),
+    stretchStep(workout_id, "hamstrings", 6),
+    exerciseStep({
+      body_part: "quadriceps",
+      exercise: "Barbell back squat",
+      ordinal: 7,
+      protocol: "straight_set",
+      structure: "widowmaker-4-6-20",
+      target_sets: [{ max: 6, min: 4 }, { max: 20, min: 20 }],
+      workout_id,
+    }),
+    stretchStep(workout_id, "quadriceps", 8),
+    exerciseStep({
+      body_part: "abs_1",
+      exercise: "High-pulley cable crunch",
+      ordinal: 9,
+      protocol: "straight_set",
+      structure: "none",
+      target_sets: [],
+      workout_id,
+    }),
+    exerciseStep({
+      body_part: "abs_2",
+      exercise: "Front Plank",
+      ordinal: 10,
+      protocol: "timed_hold",
+      structure: "none",
+      target_sets: [],
+      workout_id,
+    }),
+  ];
+};
 
 const client = {
   auth: {
@@ -185,61 +325,30 @@ const client = {
   },
   async rpc(name, values) {
     calls.push(["rpc", name, values]);
-    if (name === "start_a1_workout") {
+    if (name === "start_workout") {
       if (workoutResult.data) return workoutResult;
+      const slot = rotationState.next_slot;
       const workout = {
         completed_at: null,
-        slot: "A1",
+        slot,
         status: "in_progress",
-        workout_id: "workout-1",
+        workout_id: `workout-${slot}`,
       };
-      const exercises = [
-        ["chest", "Incline barbell press", 1],
-        ["shoulders", "Standing barbell military press", 3],
-        ["triceps", "Close-grip barbell bench press", 5],
-        ["back_width", "Pull-ups", 7],
-        ["back_thickness", "Landmine T-bar row", 8],
-      ];
-      workoutSteps = exercises.map(([body_part, exercise, ordinal]) => ({
-        body_part,
-        exercise,
-        kind: "exercise",
-        ordinal,
-        protocol: "rest_pause",
-        reps: [],
-        status: "pending",
-        step_id: `step-${ordinal}`,
-        structure: "11-15",
-        target_sets: [{ max: 15, min: 11 }],
-        weight_entries: [],
-        workout_id: workout.workout_id,
-      }));
-      for (const [body_part, ordinal] of [
-        ["chest", 2],
-        ["shoulders", 4],
-        ["triceps", 6],
-        ["back", 9],
-      ]) {
-        workoutSteps.push({
-          body_part,
-          exercise: null,
-          kind: "stretch",
-          ordinal,
-          protocol: null,
-          reps: [],
-          status: "pending",
-          step_id: `step-${ordinal}`,
-          structure: null,
-          target_sets: [],
-          weight_entries: [],
-          workout_id: workout.workout_id,
-        });
+      workoutSteps = workoutTemplate(slot, workout.workout_id);
+      if (slot.startsWith("B")) {
+        const previous = workoutSteps.find(
+          (step) => step.body_part === "forearms",
+        );
+        previous.previous_weight_entries = [
+          { amount: "80", micrograms: "36287389600", unit: "lb" },
+          { amount: "60", micrograms: "27215542200", unit: "lb" },
+        ];
+        previous.previous_reps = [11, 20];
       }
-      workoutSteps.sort((left, right) => left.ordinal - right.ordinal);
       workoutResult = { data: workout, error: null };
       return workoutResult;
     }
-    if (name === "save_a1_workout_step") {
+    if (name === "save_workout_step") {
       if (workoutOperations.has(values.p_operation_id)) {
         const step = workoutSteps.find(
           (item) =>
@@ -265,6 +374,7 @@ const client = {
       });
       step.status = values.p_status;
       step.reps = values.p_reps;
+      step.duration_seconds = values.p_duration_seconds;
       step.weight_entries = values.p_weights.map((weight) => ({
         ...weight,
         micrograms: String(
@@ -278,12 +388,16 @@ const client = {
         (item) => item.status !== "pending",
       );
       if (completedNow) {
+        const completedSlot = workoutResult.data.slot;
         workoutResult.data = {
           ...workoutResult.data,
           completed_at: "2026-08-09T13:00:00Z",
           status: "completed",
         };
-        rotationState = { last_completed_slot: "A1", next_slot: "B1" };
+        rotationState = {
+          last_completed_slot: completedSlot,
+          next_slot: rotationOrder[completedSlot],
+        };
         rotationAdvancements += 1;
       }
       return workoutSaveResponse({
@@ -293,7 +407,7 @@ const client = {
         workout: workoutResult.data,
       });
     }
-    if (name === "undo_a1_workout_step") {
+    if (name === "undo_workout_step") {
       const operation = workoutOperations.get(values.p_operation_id);
       const index = workoutSteps.findIndex(
         (item) => item.step_id === operation.stepId,
@@ -966,6 +1080,18 @@ const saveExercise = async (weight = "100") => {
     await flush();
   });
 };
+const saveStraightSets = async (weights, reps) => {
+  for (let index = 0; index < weights.length; index += 1) {
+    await setInput(`weight-${index}`, weights[index]);
+    await setInput(`rep-${index}`, String(reps[index]));
+  }
+  await act(async () => {
+    [...document.querySelectorAll("button")]
+      .find((button) => button.textContent.includes("SAVE & NEXT"))
+      .click();
+    await flush();
+  });
+};
 const completeStretch = async () => {
   await act(async () => {
     [...document.querySelectorAll("button")]
@@ -973,6 +1099,24 @@ const completeStretch = async () => {
       .click();
     await flush();
   });
+};
+const captureStretch = async (asset, lines) => {
+  await act(async () =>
+    document.querySelector('button[aria-label="STRETCH INFORMATION"]').click(),
+  );
+  const dialog = document.querySelector('[role="dialog"]');
+  const copy = dialog?.textContent ?? "";
+  const captured =
+    lines.every((line) => copy.includes(line)) &&
+    document.querySelector(".stretch-card img")?.src.includes(asset) &&
+    !copy.toLowerCase().includes("countdown") &&
+    !copy.toLowerCase().includes("timer");
+  await act(async () =>
+    [...document.querySelectorAll("button")]
+      .find((button) => button.textContent.includes("GOT IT"))
+      .click(),
+  );
+  return captured;
 };
 
 const startedA1 =
@@ -991,17 +1135,14 @@ await act(async () => {
 });
 const undoRestored = text().toUpperCase().includes("INCLINE BARBELL PRESS");
 await saveExercise("100.5");
-await act(async () =>
-  document.querySelector('button[aria-label="STRETCH INFORMATION"]').click(),
-);
-const stretchCopyExact =
-  text().includes("Use a bent-arm fly position.") &&
-  text().includes("Hold a safe, controlled stretch for 60–90 seconds.") &&
-  !text().toLowerCase().includes("countdown");
-await act(async () =>
-  [...document.querySelectorAll("button")]
-    .find((button) => button.textContent.includes("GOT IT"))
-    .click(),
+const chestStretchExact = await captureStretch(
+  "chest-stretch-info-approved.png",
+  [
+    "Use a bent-arm fly position.",
+    "Keep back on bench, hips off edge, and chest high.",
+    "Hold a safe, controlled stretch for 60–90 seconds.",
+    "Stop for shoulder or joint pain.",
+  ],
 );
 await completeStretch();
 
@@ -1020,19 +1161,59 @@ const resumedFirstUnfinished = text()
   .includes("STANDING BARBELL MILITARY PRESS");
 
 await saveExercise();
+const shoulderStretchExact = await captureStretch(
+  "shoulder-stretch-illustration-approved.png",
+  [
+    "Set bar at shoulder height.",
+    "Face away. Grip bar behind you, palms up.",
+    "Sink down into the stretch.",
+    "Roll shoulders down.",
+    "Hold 60–90 seconds.",
+    "Stop for joint pain.",
+  ],
+);
 await completeStretch();
 await saveExercise();
+const tricepsStretchExact = await captureStretch(
+  "triceps-stretch-info-approved.png",
+  [
+    "Sit with back supported.",
+    "Lower one dumbbell behind your head.",
+    "Keep elbow pointed up.",
+    "Lean back slightly. Use the back of your head to gently deepen the stretch.",
+    "Hold 60–90 seconds.",
+    "Stop for joint pain.",
+  ],
+);
 await completeStretch();
 await saveExercise();
-await saveExercise();
+await saveStraightSets(["315", "225"], [8, 12]);
+const backStretchExact = await captureStretch(
+  "back-stretch-illustration-approved.png",
+  [
+    "Grip a fixed bar at chest height.",
+    "Keep your arms straight.",
+    "Sit your hips back.",
+    "Round your upper back and pull away.",
+    "Hold 45–60 seconds.",
+    "Stop for shoulder or joint pain.",
+  ],
+);
 await completeStretch();
+
+const aStretchCopyExact =
+  chestStretchExact &&
+  shoulderStretchExact &&
+  tricepsStretchExact &&
+  backStretchExact;
 
 const completionShown =
   text().includes("A1 COMPLETE") &&
   text().includes("NEXT WORKOUT") &&
-  text().includes("B1");
+  text().includes("B1") &&
+  text().includes("UNDO LAST SAVE");
 const finalSave = calls
-  .filter((call) => call[0] === "rpc" && call[1] === "save_a1_workout_step")
+  .filter((call) => call[0] === "rpc" && call[1] === "save_workout_step")
   .at(-1);
 await client.rpc(finalSave[1], finalSave[2]);
 const retryAdvancedOnce =
@@ -1046,14 +1227,14 @@ const homeAdvancedOnce =
   text().includes("NEXT WORKOUT") &&
   text().includes("B1") &&
   [...document.querySelectorAll("button")].some(
-    (button) => button.textContent.includes("START B1") && button.disabled,
+    (button) => button.textContent.includes("START B1") && !button.disabled,
   );
 const a1WorkoutCompletion =
   startedA1 &&
   responseLossRetried &&
   undoOffered &&
   undoRestored &&
-  stretchCopyExact &&
+  aStretchCopyExact &&
   inProgressPreserved &&
   resumedFirstUnfinished &&
   completionShown &&
@@ -1064,13 +1245,220 @@ const a1WorkoutCompletion =
     (call) =>
       JSON.stringify([call[1], call[2]?.p_weights?.[0], call[2]?.p_reps]) ===
       JSON.stringify([
-        "save_a1_workout_step",
+        "save_workout_step",
         { amount: "100.5", unit: "lb" },
         [8, 4, 2],
       ]),
   );
 
+workoutResult = { data: null, error: null };
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("START B1"))
+    .click();
+  await flush();
+});
+const startedB1 =
+  text().toUpperCase().includes("STRAIGHT-BAR CURL") && text().includes("1 OF 7");
+
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "SKIP")
+    .click();
+  await flush();
+});
+const exerciseSkipRecorded =
+  text().includes("SKIPPED") &&
+  text().includes("UNDO") &&
+  workoutSteps[0].status === "skipped" &&
+  workoutSteps[0].weight_entries.length === 0;
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "UNDO")
+    .click();
+  await flush();
+});
+const skipUndoRestored =
+  text().toUpperCase().includes("STRAIGHT-BAR CURL") &&
+  workoutSteps[0].status === "pending";
+
+await saveExercise("80");
+const bicepsStretchExact = await captureStretch(
+  "biceps-stretch-illustration-approved.png",
+  [
+    "Set bar around neck height.",
+    "Face away. Grip bar behind you, palms down.",
+    "Sink down into the stretch.",
+    "Hold 45–60 seconds.",
+    "Stop for joint pain.",
+  ],
+);
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "SKIP")
+    .click();
+  await flush();
+});
+const stretchSkipRecorded = workoutSteps[1].status === "skipped";
+
+const previousMirrorsStructure =
+  text().includes("PREVIOUS PERFORMANCE") &&
+  document.querySelectorAll(".previous-card output").length === 2 &&
+  document.querySelector(".previous-card input") === null &&
+  text().includes("80 LB · 11 REPS") &&
+  text().includes("60 LB · 20 REPS");
+await saveStraightSets(["85", "65"], [12, 20]);
+
+await act(async () =>
+  document.querySelector('button[aria-label="CALF 10–12 INFORMATION"]').click(),
+);
+const calfRuntimePanel =
+  text().includes("Lower slowly over 5 seconds.") &&
+  text().includes("Hold the bottom position for 15 seconds.") &&
+  text().includes("Explode upward onto your toes.") &&
+  !document.querySelector('[role="dialog"]').textContent.toLowerCase().includes("timer");
+await act(async () =>
+  document
+    .querySelector('button[aria-label="CLOSE CALF 10–12 INFORMATION"]')
+    .click(),
+);
+await saveStraightSets(["100"], [12]);
+await saveStraightSets(["120"], [12]);
+const hamstringStretchExact = await captureStretch(
+  "hamstring-stretch-illustration-approved.png",
+  [
+    "Place one heel on a high fixed bar.",
+    "Hold your toe.",
+    "Use your free hand to keep the leg straight.",
+    "Hinge forward into the stretch.",
+    "Hold 60 seconds.",
+    "Stop for joint pain.",
+  ],
+);
+await completeStretch();
+
+const widowmakerSeparate =
+  document.querySelectorAll('[id^="weight-"]').length === 2 &&
+  document.querySelectorAll('[id^="rep-"]').length === 2 &&
+  text().includes("SET 1") &&
+  text().includes("SET 2");
+await saveStraightSets(["225", "135"], [6, 20]);
+const quadricepsStretchExact = await captureStretch(
+  "quad-stretch-illustration-approved.png",
+  [
+    "Grip a fixed bar in front of you.",
+    "Keep your knees off the floor.",
+    "Drive knees and hips forward.",
+    "Lean back into the stretch.",
+    "Hold 45–60 seconds.",
+    "Stop for knee or joint pain.",
+  ],
+);
+await completeStretch();
+
+const absStraightOnly =
+  text().includes("ABS 1") &&
+  document.querySelectorAll('[id^="weight-"]').length === 1 &&
+  document.querySelectorAll('[id^="rep-"]').length === 1 &&
+  document.getElementById("duration-seconds") === null;
+await saveStraightSets(["50"], [20]);
+
+await act(async () =>
+  document.querySelector('button[aria-label="LEAVE WORKOUT"]').click(),
+);
+const bFinishLaterPreserved =
+  text().includes("WORKOUT IN PROGRESS") && text().includes("RESUME B1");
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("RESUME B1"))
+    .click(),
+);
+const timedHoldOnly =
+  text().includes("ABS 2") &&
+  text().includes("HOLD SECONDS") &&
+  document.getElementById("duration-seconds") !== null &&
+  document.querySelectorAll('[id^="rep-"]').length === 0 &&
+  !text().includes("TARGET RANGE");
+await setInput("weight-0", "25");
+await setInput("duration-seconds", "60");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("SAVE & NEXT"))
+    .click();
+  await flush();
+});
+
+const bCompletionShown =
+  text().includes("B1 COMPLETE") &&
+  text().includes("NEXT WORKOUT") &&
+  text().includes("A2") &&
+  text().includes("UNDO LAST SAVE");
+const finalBSave = calls
+  .filter(
+    (call) =>
+      call[0] === "rpc" &&
+      call[1] === "save_workout_step" &&
+      call[2]?.p_step_id === "workout-B1-step-10",
+  )
+  .at(-1);
+await client.rpc(finalBSave[1], finalBSave[2]);
+const bRetryAdvancedOnce =
+  rotationAdvancements === 2 && rotationState.next_slot === "A2";
+await act(async () =>
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "DONE")
+    .click(),
+);
+const bHomeAdvanced =
+  text().includes("NEXT WORKOUT") &&
+  text().includes("A2") &&
+  [...document.querySelectorAll("button")].some(
+    (button) => button.textContent.includes("START A2") && !button.disabled,
+  );
+const entryShapeCalls = calls.filter(
+  (call) => call[0] === "rpc" && call[1] === "save_workout_step",
+);
+const savedShape = (stepId, weightCount, repCount, durationSeconds = null) =>
+  entryShapeCalls.some(
+    (call) =>
+      call[2]?.p_step_id === stepId &&
+      call[2]?.p_weights?.length === weightCount &&
+      call[2]?.p_reps?.length === repCount &&
+      call[2]?.p_duration_seconds === durationSeconds,
+  );
+const entryStructureMatrix = {
+  custom: savedShape("workout-B1-step-3", 2, 2),
+  multiple_straight: savedShape("workout-A1-step-8", 2, 2),
+  rest_pause: savedShape("workout-A1-step-1", 1, 3),
+  single_straight: savedShape("workout-B1-step-4", 1, 1),
+  timed_hold: savedShape("workout-B1-step-10", 1, 0, 60),
+  widowmaker: savedShape("workout-B1-step-7", 2, 2),
+};
+const entryStructureMatrixPassed = Object.values(entryStructureMatrix).every(
+  Boolean,
+);
+const fullWorkoutRuntime =
+  startedB1 &&
+  exerciseSkipRecorded &&
+  skipUndoRestored &&
+  stretchSkipRecorded &&
+  bicepsStretchExact &&
+  hamstringStretchExact &&
+  quadricepsStretchExact &&
+  previousMirrorsStructure &&
+  calfRuntimePanel &&
+  widowmakerSeparate &&
+  absStraightOnly &&
+  bFinishLaterPreserved &&
+  timedHoldOnly &&
+  bCompletionShown &&
+  bRetryAdvancedOnce &&
+  bHomeAdvanced &&
+  entryStructureMatrixPassed;
+
 const behavior = {
+  entry_structure_matrix: entryStructureMatrixPassed,
+  full_workout_runtime: fullWorkoutRuntime,
   a1_workout_completion: a1WorkoutCompletion,
   a1_assignment_round_trip:
     emptyA1 &&
@@ -1192,17 +1580,36 @@ const a1Detail = {
   reviewComplete,
   savedExactlyOnce,
   startedA1,
-  stretchCopyExact,
+  aStretchCopyExact,
   undoOffered,
   undoRestored,
   homeAdvancedOnce,
   inProgressPreserved,
 };
+const fullWorkoutDetail = {
+  absStraightOnly,
+  bCompletionShown,
+  bFinishLaterPreserved,
+  bHomeAdvanced,
+  bRetryAdvancedOnce,
+  calfRuntimePanel,
+  exerciseSkipRecorded,
+  entryStructureMatrix,
+  previousMirrorsStructure,
+  skipUndoRestored,
+  startedB1,
+  stretchSkipRecorded,
+  bicepsStretchExact,
+  hamstringStretchExact,
+  quadricepsStretchExact,
+  timedHoldOnly,
+  widowmakerSeparate,
+};
 
 assert.deepEqual(
   Object.entries(behavior).filter(([, passed]) => !passed),
   [],
-  `Every A1 characterization behavior must pass: ${JSON.stringify(a1Detail)}`,
+  `Every workout characterization behavior must pass: ${JSON.stringify({ a1Detail, fullWorkoutDetail })}`,
 );
 
 process.stdout.write(

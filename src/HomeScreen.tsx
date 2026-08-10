@@ -138,7 +138,7 @@ function WorkoutCard({
       <button
         className="primary-action"
         type="button"
-        disabled={!online || loading || (!activeSlot && nextSlot !== "A1")}
+        disabled={!online || loading}
         onClick={activeSlot ? resume : () => void start()}
       >
         {activeSlot ? `RESUME ${activeSlot}` : `START ${nextSlot}`}

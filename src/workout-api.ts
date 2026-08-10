@@ -59,7 +59,7 @@ export async function loadWorkoutState(
   const stepResult = await supabase!
     .from("workout_steps")
     .select(
-      "step_id,workout_id,ordinal,kind,body_part,exercise,protocol,structure,target_sets,status,weight_entries,reps",
+      "step_id,workout_id,ordinal,kind,body_part,assignment_id,exercise,protocol,structure,target_sets,status,weight_entries,reps,duration_seconds,previous_weight_entries,previous_reps,previous_duration_seconds",
     )
     .eq("user_id", userId)
     .eq("workout_id", workout.workout_id)
@@ -74,27 +74,30 @@ export async function loadWorkoutState(
   });
 }
 
-export async function startA1Workout(
+export async function startWorkout(
   operationId: string,
 ): Promise<ApiResult<Workout>> {
-  const { data, error } = await supabase!.rpc("start_a1_workout", {
+  const { data, error } = await supabase!.rpc("start_workout", {
     p_operation_id: operationId,
   });
   return error || !validWorkout(data)
-    ? failure(error?.message ?? "A1 WORKOUT COULD NOT BE STARTED")
+    ? failure(error?.message ?? "WORKOUT COULD NOT BE STARTED")
     : success(data);
 }
 
-export async function saveA1WorkoutStep(
+export async function saveWorkoutStep(
   operationId: string,
   step: WorkoutStep,
+  status: "completed" | "skipped",
   weights: WeightEntry[],
   reps: number[],
+  durationSeconds: number | null,
 ): Promise<ApiResult<SaveResult>> {
-  const { data, error } = await supabase!.rpc("save_a1_workout_step", {
+  const { data, error } = await supabase!.rpc("save_workout_step", {
+    p_duration_seconds: durationSeconds,
     p_operation_id: operationId,
     p_reps: reps,
-    p_status: "completed",
+    p_status: status,
     p_step_id: step.step_id,
     p_weights: weights,
   });
@@ -103,10 +106,10 @@ export async function saveA1WorkoutStep(
     : success(data);
 }
 
-export async function undoA1WorkoutStep(
+export async function undoWorkoutStep(
   operationId: string,
 ): Promise<ApiResult<WorkoutStep>> {
-  const { data, error } = await supabase!.rpc("undo_a1_workout_step", {
+  const { data, error } = await supabase!.rpc("undo_workout_step", {
     p_operation_id: operationId,
     p_undo_operation_id: crypto.randomUUID(),
   });

@@ -83,17 +83,24 @@ const tokenizerRejectsSpoofs = [
   "`export function Spoof() {}`",
   "/export function Spoof\\(/",
 ].every((source) => !hasSequence(tokenize(source), spoof));
+const workoutRpcContract =
+  sourceHasSequences("src/workout-api.ts", [
+    [".", "rpc", "(", '"start_workout"'],
+    [".", "rpc", "(", '"save_workout_step"'],
+    [".", "rpc", "(", '"undo_workout_step"'],
+  ]) ||
+  sourceHasSequences("src/workout-api.ts", [
+    [".", "rpc", "(", '"start_a1_workout"'],
+    [".", "rpc", "(", '"save_a1_workout_step"'],
+    [".", "rpc", "(", '"undo_a1_workout_step"'],
+  ]);
 const surfaceContract = workoutTracerExists
   ? tokenizerRejectsSpoofs &&
     sourceHasSequences("src/WorkoutTracer.tsx", [
       ["export", "function", "WorkoutTracer", "("],
       ["export", "function", "WorkoutComplete", "("],
     ]) &&
-    sourceHasSequences("src/workout-api.ts", [
-      [".", "rpc", "(", '"start_a1_workout"'],
-      [".", "rpc", "(", '"save_a1_workout_step"'],
-      [".", "rpc", "(", '"undo_a1_workout_step"'],
-    ]) &&
+    workoutRpcContract &&
     sourceHasSequences("src/weight-conversion.ts", [
       ["226796185n"],
       ["250000000n"],
