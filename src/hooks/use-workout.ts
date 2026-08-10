@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import {
   clearRecentCompletion,
+  startWorkoutPayload,
   stepTarget,
   type OfflineAccountState,
   type OfflineOperationInput,
@@ -45,9 +46,17 @@ export function useWorkout(
   };
 
   const start = async () => {
+    if (!state) return false;
     const key = "start_workout";
     const operationId = retryOperationId(pendingOperationIds.current, key);
-    return submit({ id: operationId, kind: "start_workout", payload: {} }, key);
+    return submit(
+      {
+        id: operationId,
+        kind: "start_workout",
+        payload: startWorkoutPayload(state),
+      },
+      key,
+    );
   };
 
   const transitionLifecycle = async (

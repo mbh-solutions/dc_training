@@ -9,6 +9,8 @@ export type Workout = {
 };
 
 export type HistoryWorkout = Workout & {
+  blast_id: string;
+  start_operation_id: string;
   started_at: string;
 };
 
@@ -394,6 +396,8 @@ export function validWorkout(value: unknown): value is Workout {
 export function validHistoryWorkout(value: unknown): value is HistoryWorkout {
   return (
     validWorkout(value) &&
+    typeof (value as Record<string, unknown>).blast_id === "string" &&
+    typeof (value as Record<string, unknown>).start_operation_id === "string" &&
     typeof (value as Record<string, unknown>).started_at === "string"
   );
 }

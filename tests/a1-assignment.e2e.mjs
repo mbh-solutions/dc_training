@@ -2118,9 +2118,12 @@ const historyWorkout = (
   slot,
   started_at,
   status = "completed",
+  blast_id = "blast-1",
 ) => ({
+  blast_id,
   completed_at: status === "completed" ? started_at : null,
   slot,
+  start_operation_id: `start-${workout_id}`,
   started_at,
   status,
   workout_id,

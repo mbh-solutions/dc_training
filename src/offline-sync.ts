@@ -41,8 +41,13 @@ type AssignmentPayload = {
 };
 type AssignmentLogbookState =
   "first_failure_pending" | "mulligan_used" | "replacement_required";
+type StartWorkoutPayload = {
+  assignments: Record<string, string>;
+  blast_id: string;
+  slot: WorkoutSlot;
+};
 export type OfflineOperationInput =
-  | { id: string; kind: "start_workout"; payload: Record<string, never> }
+  | { id: string; kind: "start_workout"; payload: StartWorkoutPayload }
   | {
       id: string;
       kind: "save_workout_step";
@@ -362,6 +367,7 @@ function preserveLocalFeedback(
   cloud: OfflineAccountState,
   local: OfflineAccountState | undefined,
 ) {
+  cloud = preserveActiveWorkoutStepIds(cloud, local);
   return {
     ...cloud,
     activeWorkoutStartOperationId: preservedStartOperation(cloud, local),
@@ -371,12 +377,96 @@ function preserveLocalFeedback(
   };
 }
 
+function preserveActiveWorkoutStepIds(
+  cloud: OfflineAccountState,
+  local: OfflineAccountState | undefined,
+) {
+  const cloudWorkout = activeWorkout(cloud);
+  const localWorkout = activeWorkout(local);
+  if (!cloudWorkout) return cloud;
+  if (!localWorkout) return cloud;
+  if (cloudWorkout.slot !== localWorkout.slot) return cloud;
+  const localStartOperationId = local!.activeWorkoutStartOperationId;
+  if (!localStartOperationId) return cloud;
+  if (
+    startOperationForWorkout(cloud, cloudWorkout.workout_id) !==
+    localStartOperationId
+  )
+    return cloud;
+  const localSteps = new Map(
+    local!.workout!.steps.map((step) => [step.ordinal, step]),
+  );
+  const stepIds = new Map<number, string>();
+  const steps = cloud.workout!.steps.map((step) =>
+    preserveWorkoutStepId(step, localSteps, stepIds),
+  );
+  return {
+    ...cloud,
+    history: preserveHistoryStepIds(
+      cloud.history,
+      cloudWorkout.workout_id,
+      stepIds,
+    ),
+    workout: { ...cloud.workout!, steps },
+  };
+}
+
+function activeWorkout(state: OfflineAccountState | undefined) {
+  return state?.workout?.workout ?? null;
+}
+
+function startOperationForWorkout(
+  state: OfflineAccountState,
+  workoutId: string,
+) {
+  if (!state.history) return null;
+  return (
+    state.history.workouts.find((workout) => workout.workout_id === workoutId)
+      ?.start_operation_id ?? null
+  );
+}
+
+function preserveWorkoutStepId(
+  step: WorkoutStep,
+  localSteps: Map<number, WorkoutStep>,
+  stepIds: Map<number, string>,
+) {
+  const localStep = localSteps.get(step.ordinal);
+  if (!localStep) return step;
+  if (localStep.body_part !== step.body_part) return step;
+  if (localStep.kind !== step.kind) return step;
+  stepIds.set(step.ordinal, localStep.step_id);
+  return { ...step, step_id: localStep.step_id };
+}
+
+function preserveHistoryStepIds(
+  history: HistoryData | null,
+  workoutId: string,
+  stepIds: Map<number, string>,
+) {
+  if (!history) return null;
+  return {
+    ...history,
+    steps: history.steps.map((step) => {
+      if (step.workout_id !== workoutId) return step;
+      const stepId = stepIds.get(step.ordinal);
+      return stepId ? { ...step, step_id: stepId } : step;
+    }),
+  };
+}
+
 function preservedStartOperation(
   cloud: OfflineAccountState,
   local: OfflineAccountState | undefined,
 ) {
-  if (!cloud.workout?.workout) return null;
-  return local?.activeWorkoutStartOperationId ?? null;
+  const cloudWorkoutId = cloud.workout?.workout?.workout_id;
+  const localOperationId = local?.activeWorkoutStartOperationId;
+  if (!cloudWorkoutId || !localOperationId) return null;
+  return cloud.history?.workouts.find(
+    (workout) => workout.workout_id === cloudWorkoutId,
+  )?.start_operation_id === localOperationId
+    ? localOperationId
+    : null;
 }
 
 async function listOfflineOperations(userId: string) {
@@ -453,6 +543,25 @@ export function stepTarget(
   };
 }
 
+export function startWorkoutPayload(
+  state: OfflineAccountState,
+): StartWorkoutPayload {
+  if (!state.workout || !state.history)
+    throw new Error("OWNER DATA IS NOT AVAILABLE ON THIS DEVICE");
+  const blastId = state.workout.lifecycle.blast_id;
+  if (state.workout.lifecycle.phase !== "blast" || !blastId)
+    throw new Error("WORKOUTS REQUIRE AN ACTIVE BLAST");
+  const slot = state.workout.nextSlot;
+  const assignments = Object.fromEntries(
+    positionsFor(slot).map((position) => {
+      const assignment = state.assignments[assignmentKey(slot, position)];
+      if (!assignment) throw new Error(`${slot} REQUIRES SAVED ASSIGNMENTS`);
+      return [position, assignment.assignment_id];
+    }),
+  );
+  return { assignments, blast_id: blastId, slot };
+}
+
 export function reduceOfflineState(
   current: OfflineAccountState,
   operation: OfflineOperation,
@@ -489,7 +598,15 @@ function startLocalWorkout(
   if (state.workout.workout) throw new Error("WORKOUT IS ALREADY IN PROGRESS");
   if (hasPendingLogbookDecision(state))
     throw new Error("RESOLVE THE LOGBOOK DECISION FIRST");
-  const slot = state.workout.nextSlot;
+  const intended = startWorkoutPayload(state);
+  if (
+    operation.payload.slot !== intended.slot ||
+    operation.payload.blast_id !== intended.blast_id ||
+    JSON.stringify(operation.payload.assignments) !==
+      JSON.stringify(intended.assignments)
+  )
+    throw new Error("OFFLINE START CONTEXT CHANGED");
+  const slot = intended.slot;
   const assignments = positionsFor(slot).map(
     (position) => state.assignments[assignmentKey(slot, position)],
   );
@@ -497,8 +614,10 @@ function startLocalWorkout(
     throw new Error(`${slot} REQUIRES SAVED ASSIGNMENTS`);
   const startedAt = new Date(operation.createdAt).toISOString();
   const workout: HistoryWorkout = {
+    blast_id: intended.blast_id,
     completed_at: null,
     slot,
+    start_operation_id: operation.id,
     started_at: startedAt,
     status: "in_progress",
     workout_id: `local:${operation.id}`,
@@ -1108,14 +1227,27 @@ function recalculateLocalAssignmentLogbook(
     logbook: null,
     previous: null,
   };
+  const activeBlastId = active ? state.workout?.lifecycle.blast_id : null;
+  let lastBlastId: string | null = null;
   delete state.logbookStates[assignmentId];
   for (const step of steps) {
-    const result = recalculateLocalStep(step, cursor, active);
+    const blastId = workouts.get(step.workout_id)!.blast_id;
+    if (blastId !== lastBlastId) {
+      cursor = {
+        deferred: false,
+        first: true,
+        logbook: null,
+        previous: null,
+      };
+      lastBlastId = blastId;
+    }
+    const activeLifecycle = blastId === activeBlastId;
+    const result = recalculateLocalStep(step, cursor, activeLifecycle);
     cursor = result.cursor;
     replaceHistoryStep(history, result.step);
     replaceActiveStep(state, result.step);
   }
-  if (active && cursor.logbook)
+  if (lastBlastId === activeBlastId && cursor.logbook)
     state.logbookStates[assignmentId] = cursor.logbook;
 }
 
@@ -1155,6 +1287,9 @@ function recalculateLocalStep(
 
 function resetLocalBaseline(step: WorkoutStep) {
   step.fresh_baseline = true;
+  step.previous_duration_seconds = null;
+  step.previous_reps = [];
+  step.previous_weight_entries = [];
   step.verdict = null;
   step.resolution = null;
   return null;

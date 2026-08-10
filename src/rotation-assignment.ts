@@ -87,6 +87,16 @@ function hasValidStructure(row: Record<string, unknown>) {
   if (!selected || !validTargetSets(row.target_sets)) return false;
   return (
     row.structure === "custom" ||
-    JSON.stringify(row.target_sets) === JSON.stringify(selected.targets)
+    sameTargets(row.target_sets, selected.targets ?? [])
+  );
+}
+
+function sameTargets(left: TargetSet[], right: readonly TargetSet[]) {
+  return (
+    left.length === right.length &&
+    left.every(
+      (target, index) =>
+        target.min === right[index].min && target.max === right[index].max,
+    )
   );
 }

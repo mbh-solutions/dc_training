@@ -97,22 +97,28 @@ test("S06 history ordering and correction boundary stay deterministic", () => {
 
   const workouts = domain.sortHistoryWorkouts([
     {
+      blast_id: "blast-1",
       completed_at: "2026-08-08T12:30:00Z",
       slot: "A1",
+      start_operation_id: "start-older",
       started_at: "2026-08-08T12:00:00Z",
       status: "completed",
       workout_id: "older",
     },
     {
+      blast_id: "blast-1",
       completed_at: null,
       slot: "B1",
+      start_operation_id: "start-active",
       started_at: "2026-08-07T12:00:00Z",
       status: "in_progress",
       workout_id: "active",
     },
     {
+      blast_id: "blast-1",
       completed_at: "2026-08-09T12:30:00Z",
       slot: "A2",
+      start_operation_id: "start-newer",
       started_at: "2026-08-09T12:00:00Z",
       status: "completed",
       workout_id: "newer",

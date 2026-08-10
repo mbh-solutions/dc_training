@@ -4,11 +4,14 @@ import path from "node:path";
 const target =
   process.env.SUPPORTABILITY_CHARACTERIZATION_TARGET ?? process.cwd();
 const offlineModule = "src/offline-sync.ts";
+const assignmentModule = "src/rotation-assignment.ts";
 const syncHook = "src/hooks/use-offline-sync.ts";
 const migration =
   "supabase/migrations/20260810192528_offline_operation_queue.sql";
 const eventTimeMigration =
   "supabase/migrations/20260810211000_preserve_offline_event_time.sql";
+const convergenceMigration =
+  "supabase/migrations/20260810214500_validate_offline_replay_context.sql";
 const read = (relativePath) =>
   readFileSync(path.join(target, relativePath), "utf8");
 const hasAll = (source, fragments) =>
@@ -26,9 +29,11 @@ const predecessorContract =
 
 const offlineContract =
   existsSync(path.join(target, offlineModule)) &&
+  existsSync(path.join(target, assignmentModule)) &&
   existsSync(path.join(target, syncHook)) &&
   existsSync(path.join(target, migration)) &&
   existsSync(path.join(target, eventTimeMigration)) &&
+  existsSync(path.join(target, convergenceMigration)) &&
   hasAll(read(offlineModule), [
     'const databaseName = "dc-training-offline"',
     "[stateStore, operationStore]",
@@ -39,8 +44,11 @@ const offlineContract =
     "created_at: new Date(operation.createdAt).toISOString()",
     '.from("assignment_logbook_states")',
     "recalculateLocalAssignmentLogbook",
+    "preserveActiveWorkoutStepIds",
+    "startWorkoutPayload",
     'operations.index("userId")',
   ]) &&
+  hasAll(read(assignmentModule), ["isAssignment", "sameTargets"]) &&
   hasAll(read(syncHook), [
     'useState<OfflineSyncState>("syncing")',
     "if (!online) return;",
@@ -66,6 +74,13 @@ const offlineContract =
     "set completed_at = p_event_at",
     "set blast_ended_at = event_at",
     "set blast_started_at = event_at",
+  ]) &&
+  hasAll(read(convergenceMigration), [
+    "private.assert_offline_start_context",
+    "Offline start conflicts with an active workout",
+    "Offline start assignments changed",
+    "suggestion_due = not lifecycle.suggestion_dismissed and exists",
+    "public.blast_has_elapsed_seven_weeks",
   ]);
 
 process.stdout.write(
