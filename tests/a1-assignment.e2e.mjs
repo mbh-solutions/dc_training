@@ -389,6 +389,197 @@ const finishLogbookResult = (step, complete) => {
   };
 };
 
+const mockStartWorkout = () => {
+  if (workoutResult.data) return workoutResult;
+  const slot = rotationState.next_slot;
+  const workout = {
+    completed_at: null,
+    slot,
+    status: "in_progress",
+    workout_id: logbookScenario
+      ? `workout-logbook-${++logbookWorkoutCount}`
+      : `workout-${slot}`,
+  };
+  workoutSteps = logbookScenario
+    ? logbookWorkoutTemplate(logbookScenario, workout.workout_id)
+    : workoutTemplate(slot, workout.workout_id);
+  if (!logbookScenario && slot.startsWith("B")) {
+    const previous = workoutSteps.find((step) => step.body_part === "forearms");
+    previous.previous_weight_entries = [
+      { amount: "80", micrograms: "36287389600", unit: "lb" },
+      { amount: "60", micrograms: "27215542200", unit: "lb" },
+    ];
+    previous.previous_reps = [11, 20];
+    previous.fresh_baseline = false;
+  }
+  workoutResult = { data: workout, error: null };
+  return workoutResult;
+};
+
+const mockSaveWorkoutStep = (values) => {
+  if (workoutOperations.has(values.p_operation_id)) {
+    const step = workoutSteps.find(
+      (item) =>
+        item.step_id === workoutOperations.get(values.p_operation_id).stepId,
+    );
+    return {
+      data: {
+        next_slot: rotationState.next_slot,
+        step,
+        workout: workoutResult.data,
+      },
+      error: null,
+    };
+  }
+  const stepIndex = workoutSteps.findIndex(
+    (item) => item.step_id === values.p_step_id,
+  );
+  const step = structuredClone(workoutSteps[stepIndex]);
+  workoutOperations.set(values.p_operation_id, {
+    before: structuredClone(step),
+    stepId: step.step_id,
+  });
+  step.status = values.p_status;
+  step.last_operation_id = values.p_operation_id;
+  step.reps = values.p_reps;
+  step.duration_seconds = values.p_duration_seconds;
+  step.weight_entries = values.p_weights.map((weight) => ({
+    ...weight,
+    micrograms: String(
+      BigInt(
+        Math.round(Number(weight.amount) * (weight.unit === "lb" ? 2 : 4)),
+      ) * BigInt(weight.unit === "lb" ? 226796185 : 250000000),
+    ),
+  }));
+  if (logbookScenario) applyMockLogbookVerdict(step, logbookScenario);
+  workoutSteps[stepIndex] = step;
+  const completedNow = workoutSteps.every(
+    (item) => item.status !== "pending" && item.enforcement_action === null,
+  );
+  if (completedNow) {
+    const completedSlot = workoutResult.data.slot;
+    workoutResult.data = {
+      ...workoutResult.data,
+      completed_at: "2026-08-09T13:00:00Z",
+      status: "completed",
+    };
+    rotationState = {
+      last_completed_slot: completedSlot,
+      next_slot: rotationOrder[completedSlot],
+    };
+    rotationAdvancements += 1;
+  }
+  return workoutSaveResponse({
+    completed_now: completedNow,
+    next_slot: rotationState.next_slot,
+    step,
+    workout: workoutResult.data,
+  });
+};
+
+const mockResolveLogbookAction = (values) => {
+  if (logbookOperations.has(values.p_operation_id)) {
+    return {
+      data: logbookOperations.get(values.p_operation_id),
+      error: null,
+    };
+  }
+  const step = workoutSteps.find((item) => item.step_id === values.p_step_id);
+  step.enforcement_action =
+    values.p_action === "count_failure" ? "first_failure" : null;
+  if (step.enforcement_action === null) step.last_operation_id = null;
+  step.resolution = values.p_action;
+  if (values.p_action === "count_win") step.verdict = "win";
+  if (values.p_action === "count_failure") step.verdict = "failure";
+  const data = finishLogbookResult(step, step.enforcement_action === null);
+  logbookOperations.set(values.p_operation_id, data);
+  return { data, error: null };
+};
+
+const mockReplaceFailedAssignment = (values) => {
+  if (failNextReplacement) {
+    failNextReplacement = false;
+    return { data: null, error: { message: "REPLACEMENT RPC FAILED" } };
+  }
+  if (logbookOperations.has(values.p_operation_id)) {
+    return {
+      data: logbookOperations.get(values.p_operation_id),
+      error: null,
+    };
+  }
+  const step = workoutSteps.find((item) => item.step_id === values.p_step_id);
+  step.enforcement_action = null;
+  step.last_operation_id = null;
+  step.resolution = "replaced";
+  const data = {
+    ...finishLogbookResult(step, true),
+    assignment: {
+      active: true,
+      assignment_id: `replacement-${logbookWorkoutCount}`,
+      body_part: step.body_part,
+      exercise: values.p_exercise,
+      protocol: values.p_protocol,
+      replaced_assignment_id: step.assignment_id,
+      slot: workoutResult.data.slot,
+      structure: values.p_structure,
+      target_sets: values.p_target_sets,
+    },
+  };
+  logbookOperations.set(values.p_operation_id, data);
+  return { data, error: null };
+};
+
+const mockUndoWorkoutStep = (values) => {
+  const operation = workoutOperations.get(values.p_operation_id);
+  const index = workoutSteps.findIndex(
+    (item) => item.step_id === operation.stepId,
+  );
+  workoutSteps[index] = operation.before;
+  return { data: workoutSteps[index], error: null };
+};
+
+const mockSaveRotationAssignment = (values) => {
+  const previous = assignmentResult.data.find(
+    (row) =>
+      row.active &&
+      row.slot === values.p_slot &&
+      row.body_part === values.p_body_part,
+  );
+  const row = {
+    active: true,
+    assignment_id: `assignment-${calls.length}`,
+    body_part: values.p_body_part,
+    exercise: values.p_exercise,
+    protocol: values.p_protocol,
+    replaced_assignment_id: previous?.assignment_id ?? null,
+    slot: values.p_slot,
+    structure: values.p_structure,
+    target_sets: values.p_target_sets,
+  };
+  assignmentResult = {
+    data: [
+      ...assignmentResult.data.map((item) =>
+        item === previous ? { ...item, active: false } : item,
+      ),
+      row,
+    ],
+    error: null,
+  };
+  return { data: row, error: null };
+};
+
+const mockRpc = (name, values) => {
+  const handler =
+    {
+      replace_failed_assignment: mockReplaceFailedAssignment,
+      resolve_logbook_action: mockResolveLogbookAction,
+      save_a1_workout_step: mockSaveWorkoutStep,
+      start_a1_workout: mockStartWorkout,
+      undo_a1_workout_step: mockUndoWorkoutStep,
+    }[name] ?? mockSaveRotationAssignment;
+  return handler(values);
+};
+
 const client = {
   auth: {
     getClaims: async (token, options) => {
@@ -477,182 +668,7 @@ const client = {
   },
   async rpc(name, values) {
     calls.push(["rpc", name, values]);
-    if (name === "start_a1_workout") {
-      if (workoutResult.data) return workoutResult;
-      const slot = rotationState.next_slot;
-      const workout = {
-        completed_at: null,
-        slot,
-        status: "in_progress",
-        workout_id: logbookScenario
-          ? `workout-logbook-${++logbookWorkoutCount}`
-          : `workout-${slot}`,
-      };
-      workoutSteps = logbookScenario
-        ? logbookWorkoutTemplate(logbookScenario, workout.workout_id)
-        : workoutTemplate(slot, workout.workout_id);
-      if (!logbookScenario && slot.startsWith("B")) {
-        const previous = workoutSteps.find(
-          (step) => step.body_part === "forearms",
-        );
-        previous.previous_weight_entries = [
-          { amount: "80", micrograms: "36287389600", unit: "lb" },
-          { amount: "60", micrograms: "27215542200", unit: "lb" },
-        ];
-        previous.previous_reps = [11, 20];
-        previous.fresh_baseline = false;
-      }
-      workoutResult = { data: workout, error: null };
-      return workoutResult;
-    }
-    if (name === "save_a1_workout_step") {
-      if (workoutOperations.has(values.p_operation_id)) {
-        const step = workoutSteps.find(
-          (item) =>
-            item.step_id ===
-            workoutOperations.get(values.p_operation_id).stepId,
-        );
-        return {
-          data: {
-            next_slot: rotationState.next_slot,
-            step,
-            workout: workoutResult.data,
-          },
-          error: null,
-        };
-      }
-      const stepIndex = workoutSteps.findIndex(
-        (item) => item.step_id === values.p_step_id,
-      );
-      const step = structuredClone(workoutSteps[stepIndex]);
-      workoutOperations.set(values.p_operation_id, {
-        before: structuredClone(step),
-        stepId: step.step_id,
-      });
-      step.status = values.p_status;
-      step.last_operation_id = values.p_operation_id;
-      step.reps = values.p_reps;
-      step.duration_seconds = values.p_duration_seconds;
-      step.weight_entries = values.p_weights.map((weight) => ({
-        ...weight,
-        micrograms: String(
-          BigInt(
-            Math.round(Number(weight.amount) * (weight.unit === "lb" ? 2 : 4)),
-          ) * BigInt(weight.unit === "lb" ? 226796185 : 250000000),
-        ),
-      }));
-      if (logbookScenario) applyMockLogbookVerdict(step, logbookScenario);
-      workoutSteps[stepIndex] = step;
-      const completedNow = workoutSteps.every(
-        (item) => item.status !== "pending" && item.enforcement_action === null,
-      );
-      if (completedNow) {
-        const completedSlot = workoutResult.data.slot;
-        workoutResult.data = {
-          ...workoutResult.data,
-          completed_at: "2026-08-09T13:00:00Z",
-          status: "completed",
-        };
-        rotationState = {
-          last_completed_slot: completedSlot,
-          next_slot: rotationOrder[completedSlot],
-        };
-        rotationAdvancements += 1;
-      }
-      return workoutSaveResponse({
-        completed_now: completedNow,
-        next_slot: rotationState.next_slot,
-        step,
-        workout: workoutResult.data,
-      });
-    }
-    if (name === "resolve_logbook_action") {
-      if (logbookOperations.has(values.p_operation_id))
-        return {
-          data: logbookOperations.get(values.p_operation_id),
-          error: null,
-        };
-      const step = workoutSteps.find(
-        (item) => item.step_id === values.p_step_id,
-      );
-      step.enforcement_action =
-        values.p_action === "count_failure" ? "first_failure" : null;
-      if (step.enforcement_action === null) step.last_operation_id = null;
-      step.resolution = values.p_action;
-      if (values.p_action === "count_win") step.verdict = "win";
-      if (values.p_action === "count_failure") step.verdict = "failure";
-      const data = finishLogbookResult(step, step.enforcement_action === null);
-      logbookOperations.set(values.p_operation_id, data);
-      return { data, error: null };
-    }
-    if (name === "replace_failed_assignment") {
-      if (failNextReplacement) {
-        failNextReplacement = false;
-        return { data: null, error: { message: "REPLACEMENT RPC FAILED" } };
-      }
-      if (logbookOperations.has(values.p_operation_id))
-        return {
-          data: logbookOperations.get(values.p_operation_id),
-          error: null,
-        };
-      const step = workoutSteps.find(
-        (item) => item.step_id === values.p_step_id,
-      );
-      step.enforcement_action = null;
-      step.last_operation_id = null;
-      step.resolution = "replaced";
-      const data = {
-        ...finishLogbookResult(step, true),
-        assignment: {
-          active: true,
-          assignment_id: `replacement-${logbookWorkoutCount}`,
-          body_part: step.body_part,
-          exercise: values.p_exercise,
-          protocol: values.p_protocol,
-          replaced_assignment_id: step.assignment_id,
-          slot: workoutResult.data.slot,
-          structure: values.p_structure,
-          target_sets: values.p_target_sets,
-        },
-      };
-      logbookOperations.set(values.p_operation_id, data);
-      return { data, error: null };
-    }
-    if (name === "undo_a1_workout_step") {
-      const operation = workoutOperations.get(values.p_operation_id);
-      const index = workoutSteps.findIndex(
-        (item) => item.step_id === operation.stepId,
-      );
-      workoutSteps[index] = operation.before;
-      return { data: workoutSteps[index], error: null };
-    }
-    const previous = assignmentResult.data.find(
-      (row) =>
-        row.active &&
-        row.slot === values.p_slot &&
-        row.body_part === values.p_body_part,
-    );
-    const row = {
-      active: true,
-      assignment_id: `assignment-${calls.length}`,
-      body_part: values.p_body_part,
-      exercise: values.p_exercise,
-      protocol: values.p_protocol,
-      replaced_assignment_id: previous?.assignment_id ?? null,
-      slot: values.p_slot,
-      structure: values.p_structure,
-      target_sets: values.p_target_sets,
-    };
-    assignmentResult = {
-      data: [
-        ...assignmentResult.data.map((item) =>
-          item === previous ? { ...item, active: false } : item,
-        ),
-        row,
-      ],
-      error: null,
-    };
-    return { data: row, error: null };
+    return mockRpc(name, values);
   },
 };
 
