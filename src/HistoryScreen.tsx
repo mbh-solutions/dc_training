@@ -859,13 +859,7 @@ function BarChart({
           const x = chartX(index, values.length);
           return (
             <g key={performances[index].step.step_id}>
-              <rect
-                className="bar"
-                height={45 - y}
-                width="6"
-                x={x - 3}
-                y={y}
-              />
+              <rect className="bar" height={45 - y} width="6" x={x - 3} y={y} />
               <text x={x} y={Math.max(y - 3, 6)}>
                 {value}
               </text>
