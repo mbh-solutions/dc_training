@@ -2859,7 +2859,8 @@ const behavior = {
     ),
   session_restored:
     loading &&
-    coldOffline.includes("NEXT WORKOUT") &&
+    coldOffline.includes("TRAINING STATUS") &&
+    coldOffline.includes("TRAINING CONTROLS ARE LOCKED") &&
     firstOnline.includes("PROTECTED"),
   sign_in_submitted: hasCall(
     "signInWithPassword",
