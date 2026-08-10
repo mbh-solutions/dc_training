@@ -472,12 +472,14 @@ function StretchEntry({
 
 export function WorkoutComplete({
   lastOperationStatus,
+  message,
   nextSlot,
   onDone,
   onUndo,
   workout,
 }: {
   lastOperationStatus: "completed" | "skipped" | null;
+  message: string;
   nextSlot: WorkoutSlot;
   onDone: () => void;
   onUndo: () => Promise<void>;
@@ -493,6 +495,7 @@ export function WorkoutComplete({
         <p>NEXT WORKOUT</p>
         <b>{nextSlot}</b>
       </section>
+      {message && <p className="form-message">{message}</p>}
       {lastOperationStatus && (
         <button
           className="secondary-action complete-undo"

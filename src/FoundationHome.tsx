@@ -22,6 +22,7 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
     return (
       <WorkoutComplete
         lastOperationStatus={workout.lastOperationStatus}
+        message={workout.message}
         nextSlot={workout.nextSlot}
         onUndo={workout.undo}
         workout={workout.completedWorkout}
