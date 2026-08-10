@@ -5,8 +5,8 @@ intended_behavior = "Authenticated owners can browse current, retired, in-progre
 proof = "tests/history.test.mjs covers deterministic workout, body-part, slot, retired/reactivated ordering and poisons the correction function for rotation or assignment mutation. tests/a1-assignment.e2e.mjs mounts src/main.tsx with React and captures both tabs, one-open grouping, search, workout detail, every chart variant, original units, reassignment separation, retired history, correction, recalculated verdict, and unchanged rotation advancement count. Rollback-only production database proof exercises owner-scoped history reads and the established correction RPC with synthetic users only."
 
 [characterization]
-captured_behavior = "The qualified auth/offline shell, rotation setup, six-slot workout runtime, and logbook enforcement remain while a1-workout-v1 adds the actual History screen and established correction RPC to its fail-closed surface contract."
-proof = "The existing foundation-shell-v2 and rotation-setup-v1 definitions remain unchanged; a1-workout-v1 adds src/HistoryScreen.tsx coverage and its directly relevant real-React runtime packet exercises S06 without replacing earlier behavior."
+captured_behavior = "The qualified auth/offline shell, rotation setup, six-slot workout runtime, and logbook enforcement remain while history-v1 bridges the established correction seam to the actual History screen."
+proof = "The existing foundation-shell-v2, rotation-setup-v1, and a1-workout-v1 definitions remain unchanged. The additive history-v1 regression proves the predecessor correction seam on the base and its History consumer on the head; the directly relevant real-React packet exercises the complete S06 interaction."
 
 [separation_of_concerns]
 before = "S05 already persisted owner-isolated workout rows and exposed a retry-stable correction RPC with assignment-wide verdict recalculation, but deliberately had no history interface."
@@ -22,7 +22,8 @@ reviewed_paths = [
     "src/workout-domain.ts",
     "tests/history.test.mjs",
     "tests/a1-assignment.e2e.mjs",
-    "tests/characterization/a1-workout-v1.characterization.mjs",
+    "tests/characterization/history-v1.characterization.mjs",
+    "tests/characterization/history-v1.golden.json",
     ".supportability-characterization.json",
 ]
 
