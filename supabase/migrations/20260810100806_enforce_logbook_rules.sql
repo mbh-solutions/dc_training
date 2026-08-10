@@ -42,6 +42,52 @@ using (
   )
 );
 
+revoke all on table
+  public.rotation_assignment_versions,
+  public.workout_rotation_state,
+  public.workouts,
+  public.workout_steps,
+  public.workout_step_operations
+from anon, authenticated;
+
+grant select on table
+  public.rotation_assignment_versions,
+  public.workout_rotation_state,
+  public.workouts,
+  public.workout_steps,
+  public.workout_step_operations
+to authenticated;
+
+drop policy if exists "Users can create only their rotation assignment versions"
+on public.rotation_assignment_versions;
+drop policy if exists "Users can update only their rotation assignment versions"
+on public.rotation_assignment_versions;
+
+drop policy if exists "Users own their workout rotation state"
+on public.workout_rotation_state;
+drop policy if exists "Users own their workouts"
+on public.workouts;
+drop policy if exists "Users own their workout steps"
+on public.workout_steps;
+drop policy if exists "Users own their workout step operations"
+on public.workout_step_operations;
+
+create policy "Users can read only their workout rotation state"
+on public.workout_rotation_state for select to authenticated
+using ((select auth.uid()) = user_id);
+
+create policy "Users can read only their workouts"
+on public.workouts for select to authenticated
+using ((select auth.uid()) = user_id);
+
+create policy "Users can read only their workout steps"
+on public.workout_steps for select to authenticated
+using ((select auth.uid()) = user_id);
+
+create policy "Users can read only their workout step operations"
+on public.workout_step_operations for select to authenticated
+using ((select auth.uid()) = user_id);
+
 alter table public.workout_steps
   add column verdict text check (verdict is null or verdict in ('win', 'failure')),
   add column set_verdicts text[] not null default '{}',
@@ -164,7 +210,7 @@ $$;
 create or replace function public.start_workout(p_operation_id uuid)
 returns public.workouts
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
@@ -193,10 +239,7 @@ begin
   if exists (
     select 1
     from public.assignment_logbook_states state
-    join public.rotation_assignment_versions assignment
-      on assignment.assignment_id = state.assignment_id
     where state.user_id = owner_id
-      and assignment.active
       and state.state in ('first_failure_pending', 'replacement_required')
   ) then
     raise exception 'Resolve required exercise replacement first';
@@ -641,7 +684,7 @@ create or replace function public.finish_workout_if_ready(
 )
 returns jsonb
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
@@ -650,6 +693,8 @@ declare
   current_workout public.workouts;
   owner_id uuid := (select auth.uid());
 begin
+  if owner_id is null then raise exception 'Authentication required'; end if;
+
   select * into current_workout
   from public.workouts
   where workout_id = p_workout_id and user_id = owner_id
@@ -921,7 +966,7 @@ create or replace function public.save_rotation_assignment(
 )
 returns public.rotation_assignment_versions
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
@@ -1333,7 +1378,7 @@ $$;
 
 revoke execute on function public.normalize_workout_performance(text, jsonb, jsonb, integer[], integer) from public, anon;
 revoke execute on function public.evaluate_logbook_performance(text, text, jsonb, jsonb, integer[], integer, jsonb, integer[], integer) from public, anon;
-revoke execute on function public.finish_workout_if_ready(uuid, uuid) from public, anon;
+revoke execute on function public.finish_workout_if_ready(uuid, uuid) from public, anon, authenticated;
 revoke execute on function public.start_workout(uuid) from public, anon;
 revoke execute on function public.save_workout_step(uuid, uuid, text, jsonb, integer[], integer) from public, anon;
 revoke execute on function public.resolve_logbook_action(uuid, uuid, text) from public, anon;
@@ -1345,7 +1390,6 @@ revoke execute on function public.undo_workout_step(uuid, uuid) from public, ano
 
 grant execute on function public.normalize_workout_performance(text, jsonb, jsonb, integer[], integer) to authenticated;
 grant execute on function public.evaluate_logbook_performance(text, text, jsonb, jsonb, integer[], integer, jsonb, integer[], integer) to authenticated;
-grant execute on function public.finish_workout_if_ready(uuid, uuid) to authenticated;
 grant execute on function public.start_workout(uuid) to authenticated;
 grant execute on function public.save_workout_step(uuid, uuid, text, jsonb, integer[], integer) to authenticated;
 grant execute on function public.resolve_logbook_action(uuid, uuid, text) to authenticated;

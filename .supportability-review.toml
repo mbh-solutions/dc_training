@@ -2,7 +2,7 @@ schema_version = "1.0"
 
 [behavior]
 intended_behavior = "After each saved exercise performance, apply the locked protocol-aware verdict, block unresolved abs/failure decisions, permit one mulligan, require replacement after the post-mulligan failure, and preserve retired performance history behind a fresh reassignment baseline."
-proof = "tests/logbook-enforcement.test.mjs covers the locked table-driven verdict boundaries and deterministic retries. tests/a1-assignment.e2e.mjs mounts src/main.tsx with React and captures win, exact first-failure choices, mulligan marking, replacement-only enforcement, visible replacement failures, matching-category replacement, operation retries, and historically formatted returned-exercise history with a fresh baseline."
+proof = "tests/logbook-enforcement.test.mjs covers the locked table-driven verdict boundaries and deterministic retries. tests/a1-assignment.e2e.mjs mounts src/main.tsx with React and captures win, exact first-failure choices, mulligan marking, replacement-only enforcement, visible replacement failures, matching-category replacement, operation retries, and historically formatted returned-exercise history with a fresh baseline. Rollback-only database proof denies authenticated writes across every assignment/workout/logbook lifecycle table while trusted owner-checking RPCs retain authority."
 
 [characterization]
 captured_behavior = "The qualified auth/offline shell, full rotation setup, and six-slot workout runtime remain while a1-workout-v1 continues to fail closed on the established compatibility RPC and workout surface contracts."
@@ -10,7 +10,7 @@ proof = "The existing foundation-shell-v2, rotation-setup-v1, and a1-workout-v1 
 
 [separation_of_concerns]
 before = "The S04 boundaries persisted complete workouts and previous performance but deliberately deferred logbook verdicts and replacement enforcement."
-after = "workout-domain owns row validation plus deterministic client-side truth-table proof; WorkoutTracer owns verdict and blocking presentation; useWorkout owns retry-stable React transitions; workout-api owns validated RPC calls; and the forward-only migration owns authoritative transactional verdict, lifecycle, replacement, correction, and RLS invariants."
+after = "workout-domain owns row validation plus deterministic client-side truth-table proof; WorkoutTracer owns verdict and blocking presentation; useWorkout owns retry-stable React transitions; workout-api owns validated RPC calls; and the forward-only migration owns authoritative transactional verdict, lifecycle, replacement, correction, read-only table access, and RLS invariants."
 
 [architecture]
 dependency_direction = "App composes FoundationHome; FoundationHome composes RotationSetup, WorkoutTracer, and useWorkout; useWorkout delegates cloud I/O to workout-api; workout-api alone reaches Supabase; workout-domain validates rows and expresses the locked comparison rules for targeted proof; the database remains authoritative."
