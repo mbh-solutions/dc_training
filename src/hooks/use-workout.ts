@@ -260,8 +260,7 @@ export function useWorkout(userId: string, online: boolean) {
       setLastOperationId(null);
       setLastOperationStatus(null);
     },
-    dismissCruiseSuggestion: () =>
-      transitionLifecycle("dismiss_suggestion"),
+    dismissCruiseSuggestion: () => transitionLifecycle("dismiss_suggestion"),
     lastCompletedSlot,
     lastOperationId,
     lastOperationStatus,

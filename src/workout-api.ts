@@ -101,9 +101,7 @@ export async function loadWorkoutState(
 }
 
 export type TrainingLifecycleAction =
-  | "dismiss_suggestion"
-  | "start_cruise"
-  | "start_new_blast";
+  "dismiss_suggestion" | "start_cruise" | "start_new_blast";
 
 export async function transitionTrainingLifecycle(
   operationId: string,

@@ -63,7 +63,10 @@ test("S07 lifecycle states fail closed and preserve the rotation boundary", () =
   assert.match(transitionFunction, /pg_advisory_xact_lock/);
   assert.match(transitionFunction, /status = 'in_progress'/);
   assert.match(transitionFunction, /training_lifecycle_operations/);
-  assert.match(transitionFunction, /delete from public\.assignment_logbook_states/);
+  assert.match(
+    transitionFunction,
+    /delete from public\.assignment_logbook_states/,
+  );
   assert.doesNotMatch(transitionFunction, /workout_rotation_state/);
   assert.doesNotMatch(transitionFunction, /delete from public\.workouts/);
 

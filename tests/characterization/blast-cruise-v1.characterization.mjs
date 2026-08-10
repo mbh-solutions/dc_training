@@ -52,8 +52,7 @@ const lifecycleContract =
 process.stdout.write(
   JSON.stringify({
     behavior: {
-      blast_cruise_surface_contract:
-        predecessorContract || lifecycleContract,
+      blast_cruise_surface_contract: predecessorContract || lifecycleContract,
     },
     scenario: "blast-cruise-v1",
     schema_version: "1.0",

@@ -352,16 +352,26 @@ export function validTrainingLifecycle(
 ): value is TrainingLifecycle {
   if (!value || typeof value !== "object") return false;
   const row = value as Record<string, unknown>;
-  const common =
+  if (!hasLifecycleFields(row)) return false;
+  if (row.phase === "blast") return validBlastLifecycle(row);
+  return row.phase === "cruise" && validCruiseLifecycle(row);
+}
+
+function hasLifecycleFields(row: Record<string, unknown>) {
+  return (
     typeof row.blast_id === "string" &&
     typeof row.blast_started_at === "string" &&
     typeof row.suggestion_dismissed === "boolean" &&
-    typeof row.suggestion_due === "boolean";
-  if (!common) return false;
-  if (row.phase === "blast")
-    return row.blast_ended_at === null && row.cruise_started_at === null;
+    typeof row.suggestion_due === "boolean"
+  );
+}
+
+function validBlastLifecycle(row: Record<string, unknown>) {
+  return row.blast_ended_at === null && row.cruise_started_at === null;
+}
+
+function validCruiseLifecycle(row: Record<string, unknown>) {
   return (
-    row.phase === "cruise" &&
     typeof row.blast_ended_at === "string" &&
     typeof row.cruise_started_at === "string" &&
     row.suggestion_due === false

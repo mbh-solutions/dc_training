@@ -67,8 +67,6 @@ function HomeScreen({
       />
     );
 
-  const suggestionOpen =
-    online && lifecycle?.suggestion_due === true && !cruiseConfirmationOpen;
   return (
     <div className="app-shell">
       <style>{homeStyles}</style>
@@ -140,28 +138,17 @@ function HomeScreen({
         onHistory={onOpenHistory}
         onRotation={onOpenRotation}
       />
-      {suggestionOpen && (
-        <CruiseSuggestion
-          message={message}
-          nextSlot={nextSlot}
-          online={online}
-          saving={actionSaving}
-          onDismiss={onDismissCruiseSuggestion}
-          onStart={() => setCruiseConfirmationOpen(true)}
-        />
-      )}
-      {cruiseConfirmationOpen && (
-        <CruiseConfirmation
-          message={message}
-          nextSlot={nextSlot}
-          online={online}
-          saving={actionSaving}
-          onCancel={() => setCruiseConfirmationOpen(false)}
-          onConfirm={async () => {
-            if (await onStartCruise()) setCruiseConfirmationOpen(false);
-          }}
-        />
-      )}
+      <LifecycleSheets
+        confirmationOpen={cruiseConfirmationOpen}
+        lifecycle={lifecycle}
+        message={message}
+        nextSlot={nextSlot}
+        online={online}
+        onDismiss={onDismissCruiseSuggestion}
+        onStartCruise={onStartCruise}
+        saving={actionSaving}
+        setConfirmationOpen={setCruiseConfirmationOpen}
+      />
     </div>
   );
 }
@@ -248,7 +235,9 @@ function CruiseHome({
         >
           {actionSaving ? "SAVING" : "START NEW BLAST"}
         </button>
-        <p className="quiet-note">Continue with {nextSlot} when you are ready.</p>
+        <p className="quiet-note">
+          Continue with {nextSlot} when you are ready.
+        </p>
         {!online && <p className="quiet-note">CONNECT TO START A NEW BLAST</p>}
         {message && <p className="form-message">{message}</p>}
         <p className="account-email">SIGNED IN AS {email?.toUpperCase()}</p>
@@ -271,6 +260,56 @@ function CruiseHome({
       />
     </div>
   );
+}
+
+function LifecycleSheets({
+  confirmationOpen,
+  lifecycle,
+  message,
+  nextSlot,
+  online,
+  onDismiss,
+  onStartCruise,
+  saving,
+  setConfirmationOpen,
+}: {
+  confirmationOpen: boolean;
+  lifecycle: TrainingLifecycle | null;
+  message: string;
+  nextSlot: WorkoutSlot;
+  online: boolean;
+  onDismiss: () => Promise<boolean>;
+  onStartCruise: () => Promise<boolean>;
+  saving: boolean;
+  setConfirmationOpen: (open: boolean) => void;
+}) {
+  if (confirmationOpen)
+    return (
+      <CruiseConfirmation
+        message={message}
+        nextSlot={nextSlot}
+        online={online}
+        saving={saving}
+        onCancel={() => setConfirmationOpen(false)}
+        onConfirm={async () => {
+          if (await onStartCruise()) setConfirmationOpen(false);
+        }}
+      />
+    );
+
+  if (online && lifecycle?.suggestion_due === true)
+    return (
+      <CruiseSuggestion
+        message={message}
+        nextSlot={nextSlot}
+        online={online}
+        saving={saving}
+        onDismiss={onDismiss}
+        onStart={() => setConfirmationOpen(true)}
+      />
+    );
+
+  return null;
 }
 
 function CruiseConfirmation({
@@ -414,18 +453,7 @@ function WorkoutCard({
   start: () => Promise<void>;
   unavailable: boolean;
 }) {
-  if (unavailable)
-    return (
-      <section className="foundation-card" aria-labelledby="foundation-title">
-        <p className="section-label">TRAINING STATUS</p>
-        <h2 id="foundation-title">
-          {loading ? "LOADING" : "UNAVAILABLE"}
-        </h2>
-        <p className="foundation-copy">
-          {loading ? "CHECKING YOUR TRAINING PHASE" : "TRAINING CONTROLS ARE LOCKED"}
-        </p>
-      </section>
-    );
+  if (unavailable) return <UnavailableWorkoutCard loading={loading} />;
 
   const slot = activeSlot ?? nextSlot;
   return (
@@ -453,6 +481,20 @@ function WorkoutCard({
           START CRUISE
         </button>
       )}
+    </section>
+  );
+}
+
+function UnavailableWorkoutCard({ loading }: { loading: boolean }) {
+  return (
+    <section className="foundation-card" aria-labelledby="foundation-title">
+      <p className="section-label">TRAINING STATUS</p>
+      <h2 id="foundation-title">{loading ? "LOADING" : "UNAVAILABLE"}</h2>
+      <p className="foundation-copy">
+        {loading
+          ? "CHECKING YOUR TRAINING PHASE"
+          : "TRAINING CONTROLS ARE LOCKED"}
+      </p>
     </section>
   );
 }

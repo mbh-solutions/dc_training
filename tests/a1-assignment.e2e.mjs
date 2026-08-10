@@ -675,7 +675,10 @@ const mockTransitionTrainingLifecycle = (values) => {
       suggestion_due: false,
     };
   }
-  lifecycleOperations.set(values.p_operation_id, structuredClone(lifecycleState));
+  lifecycleOperations.set(
+    values.p_operation_id,
+    structuredClone(lifecycleState),
+  );
   if (values.p_action === "start_cruise" && loseNextCruiseResponse) {
     loseNextCruiseResponse = false;
     return { data: null, error: { message: "NETWORK RESPONSE LOST" } };
@@ -2585,8 +2588,7 @@ const cruiseCalls = calls.filter(
 const cruiseRetryIdempotent =
   lostCruiseResponseShown &&
   cruiseCalls.length >= 2 &&
-  cruiseCalls.at(-2)[2].p_operation_id ===
-    cruiseCalls.at(-1)[2].p_operation_id;
+  cruiseCalls.at(-2)[2].p_operation_id === cruiseCalls.at(-1)[2].p_operation_id;
 const cruiseHomeReadOnly =
   lifecycleState.phase === "cruise" &&
   document.querySelector(".cruise-phase")?.textContent === "CRUISE" &&
