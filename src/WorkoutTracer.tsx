@@ -383,9 +383,16 @@ function ExerciseEntry({
 function PreviousPerformance({ step }: { step: WorkoutStep }) {
   const hasPrevious = step.previous_weight_entries.length > 0;
   if (step.fresh_baseline && step.reference_history.length > 0) {
+    const sameAssignment = step.reference_history.some(
+      (retired) => retired.assignment_id === step.assignment_id,
+    );
     return (
       <section className="previous-card fresh-baseline-card">
-        <p>REASSIGNED / FRESH BASELINE</p>
+        <p>
+          {sameAssignment
+            ? "NEW BLAST / FRESH BASELINE"
+            : "REASSIGNED / FRESH BASELINE"}
+        </p>
         <strong>PRIOR HISTORY PRESERVED</strong>
         <div className="retired-history">
           {step.reference_history.map((retired) => (

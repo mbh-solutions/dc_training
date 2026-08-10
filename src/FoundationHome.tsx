@@ -28,8 +28,8 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
         nextSlot={workout.nextSlot}
         onUndo={workout.undo}
         workout={workout.completedWorkout}
-        onDone={() => {
-          workout.dismissCompleted();
+        onDone={async () => {
+          await workout.dismissCompleted();
           setShowWorkout(false);
         }}
       />
@@ -98,13 +98,18 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
     <HomeScreen
       {...homeProps}
       activeSlot={workout.activeWorkout?.slot ?? null}
+      actionSaving={workout.actionSaving}
       lastCompletedSlot={workout.lastCompletedSlot}
+      lifecycle={workout.lifecycle}
       loadingWorkout={workout.loading}
       message={workout.message}
       nextSlot={workout.nextSlot}
       onOpenHistory={() => setShowHistory(true)}
       onOpenRotation={() => setShowRotationSetup(true)}
       onResumeWorkout={() => setShowWorkout(true)}
+      onDismissCruiseSuggestion={workout.dismissCruiseSuggestion}
+      onStartCruise={workout.startCruise}
+      onStartNewBlast={workout.startNewBlast}
       onStartWorkout={async () => {
         if (await workout.start()) setShowWorkout(true);
       }}

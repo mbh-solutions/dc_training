@@ -30,6 +30,26 @@ export type HistoryData = {
   workouts: HistoryWorkout[];
 };
 
+export type TrainingLifecycle = {
+  blast_ended_at: string | null;
+  blast_id: string | null;
+  blast_started_at: string | null;
+  cruise_started_at: string | null;
+  phase: "blast" | "cruise";
+  suggestion_dismissed: boolean;
+  suggestion_due: boolean;
+};
+
+export const initialTrainingLifecycle: TrainingLifecycle = {
+  blast_ended_at: null,
+  blast_id: null,
+  blast_started_at: null,
+  cruise_started_at: null,
+  phase: "blast",
+  suggestion_dismissed: false,
+  suggestion_due: false,
+};
+
 export type WorkoutStep = {
   assignment_id: string | null;
   body_part: string;
@@ -324,6 +344,27 @@ export function validRotationState(value: unknown): value is {
   return (
     isWorkoutSlot(row.next_slot) &&
     (row.last_completed_slot === null || isWorkoutSlot(row.last_completed_slot))
+  );
+}
+
+export function validTrainingLifecycle(
+  value: unknown,
+): value is TrainingLifecycle {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Record<string, unknown>;
+  const common =
+    typeof row.blast_id === "string" &&
+    typeof row.blast_started_at === "string" &&
+    typeof row.suggestion_dismissed === "boolean" &&
+    typeof row.suggestion_due === "boolean";
+  if (!common) return false;
+  if (row.phase === "blast")
+    return row.blast_ended_at === null && row.cruise_started_at === null;
+  return (
+    row.phase === "cruise" &&
+    typeof row.blast_ended_at === "string" &&
+    typeof row.cruise_started_at === "string" &&
+    row.suggestion_due === false
   );
 }
 

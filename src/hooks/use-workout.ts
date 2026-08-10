@@ -1,13 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Workout, WorkoutStep } from "../workout-domain.js";
+import {
+  initialTrainingLifecycle,
+  type Workout,
+  type WorkoutStep,
+} from "../workout-domain.js";
 import {
   loadWorkoutState,
   replaceFailedAssignment,
   resolveLogbookAction,
   saveWorkoutStep,
   startWorkout,
+  transitionTrainingLifecycle,
   undoWorkoutStep,
   type SaveResult,
+  type TrainingLifecycleAction,
 } from "../workout-api.js";
 import type { WeightEntry } from "../weight-conversion.js";
 import type { WorkoutSlot } from "../rotation-config.js";
@@ -23,6 +29,7 @@ export function useWorkout(userId: string, online: boolean) {
   );
   const [lastCompletedSlot, setLastCompletedSlot] =
     useState<WorkoutSlot | null>(null);
+  const [lifecycle, setLifecycle] = useState(initialTrainingLifecycle);
   const [lastOperationId, setLastOperationId] = useState<string | null>(null);
   const [lastOperationStatus, setLastOperationStatus] =
     useState<WorkoutOperationStatus>(null);
@@ -49,6 +56,7 @@ export function useWorkout(userId: string, online: boolean) {
       return;
     }
     setNextSlot(result.data.nextSlot);
+    setLifecycle(result.data.lifecycle);
     setLastCompletedSlot(result.data.lastCompletedSlot);
     setActiveWorkout(result.data.workout);
     setSteps(result.data.steps);
@@ -78,6 +86,26 @@ export function useWorkout(userId: string, online: boolean) {
       return false;
     }
     await load();
+    return true;
+  };
+
+  const transitionLifecycle = async (action: TrainingLifecycleAction) => {
+    if (!online) {
+      setMessage("CONNECT TO UPDATE YOUR TRAINING PHASE");
+      return false;
+    }
+    const key = `lifecycle:${action}`;
+    const operationId = retryOperationId(pendingOperationIds.current, key);
+    setActionSaving(true);
+    setMessage("");
+    const result = await transitionTrainingLifecycle(operationId, action);
+    setActionSaving(false);
+    if (!result.data) {
+      setMessage(result.error);
+      return false;
+    }
+    pendingOperationIds.current.delete(key);
+    setLifecycle(result.data);
     return true;
   };
 
@@ -225,14 +253,18 @@ export function useWorkout(userId: string, online: boolean) {
       steps.find((step) => step.enforcement_action !== null) ?? null,
     beginReplacement: setReplacementStep,
     completedWorkout,
-    dismissCompleted: () => {
+    dismissCompleted: async () => {
+      await load();
       setCompletedWorkout(null);
       setLastOperationId(null);
       setLastOperationStatus(null);
     },
+    dismissCruiseSuggestion: () =>
+      transitionLifecycle("dismiss_suggestion"),
     lastCompletedSlot,
     lastOperationId,
     lastOperationStatus,
+    lifecycle,
     loading,
     message,
     nextSlot,
@@ -242,6 +274,8 @@ export function useWorkout(userId: string, online: boolean) {
     saveStep,
     skipStep,
     start,
+    startCruise: () => transitionLifecycle("start_cruise"),
+    startNewBlast: () => transitionLifecycle("start_new_blast"),
     steps,
     undo,
   };

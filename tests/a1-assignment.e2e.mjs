@@ -91,6 +91,15 @@ let profileResult = { data: { status: "ready" }, error: null };
 let assignmentResult = { data: [], error: null };
 let updateResult = { error: null };
 let rotationState = { last_completed_slot: null, next_slot: "A1" };
+let lifecycleState = {
+  blast_ended_at: null,
+  blast_id: "blast-1",
+  blast_started_at: "2026-06-01T10:00:00Z",
+  cruise_started_at: null,
+  phase: "blast",
+  suggestion_dismissed: false,
+  suggestion_due: false,
+};
 let workoutResult = { data: null, error: null };
 let workoutSteps = [];
 let historyMode = false;
@@ -105,6 +114,8 @@ let failNextHistoryReload = false;
 const workoutOperations = new Map();
 const logbookOperations = new Map();
 const historyCorrectionOperations = new Map();
+const lifecycleOperations = new Map();
+let loseNextCruiseResponse = true;
 let logbookScenario = null;
 let logbookWorkoutCount = 0;
 let failNextReplacement = true;
@@ -307,18 +318,22 @@ const logbookWorkoutTemplate = (scenario, workout_id) => {
     workout_id,
   });
   step.assignment_id =
-    scenario === "returned_baseline"
+    scenario === "returned_baseline" || scenario === "new_blast_baseline"
       ? "assignment-returned-chest"
       : "assignment-logbook-chest";
-  step.fresh_baseline = scenario === "returned_baseline";
+  step.fresh_baseline =
+    scenario === "returned_baseline" || scenario === "new_blast_baseline";
   step.mulligan_used = scenario === "second_failure";
-  if (scenario === "returned_baseline") {
+  if (scenario === "returned_baseline" || scenario === "new_blast_baseline") {
     step.protocol = "straight_set";
     step.structure = "none";
     step.target_sets = [];
     step.reference_history = [
       {
-        assignment_id: "assignment-retired-chest",
+        assignment_id:
+          scenario === "new_blast_baseline"
+            ? step.assignment_id
+            : "assignment-retired-chest",
         duration_seconds: null,
         performed_at: "2026-06-01T10:00:00Z",
         protocol: "rest_pause",
@@ -331,7 +346,10 @@ const logbookWorkoutTemplate = (scenario, workout_id) => {
         ],
       },
       {
-        assignment_id: "assignment-retired-chest",
+        assignment_id:
+          scenario === "new_blast_baseline"
+            ? step.assignment_id
+            : "assignment-retired-chest",
         duration_seconds: null,
         performed_at: "2026-07-01T10:00:00Z",
         protocol: "rest_pause",
@@ -360,7 +378,7 @@ const applyMockLogbookVerdict = (step, scenario) => {
     step.enforcement_action = null;
     return;
   }
-  if (scenario === "returned_baseline") {
+  if (scenario === "returned_baseline" || scenario === "new_blast_baseline") {
     step.verdict = null;
     step.enforcement_action = null;
     return;
@@ -398,6 +416,11 @@ const finishLogbookResult = (step, complete) => {
 };
 
 const mockStartWorkout = () => {
+  if (lifecycleState.phase === "cruise")
+    return {
+      data: null,
+      error: { message: "Start a new blast before logging a DC workout" },
+    };
   if (workoutResult.data) return workoutResult;
   const slot = rotationState.next_slot;
   const workout = {
@@ -476,6 +499,9 @@ const mockSaveWorkoutStep = (values) => {
       next_slot: rotationOrder[completedSlot],
     };
     rotationAdvancements += 1;
+    if (logbookScenario === "new_blast_baseline") {
+      lifecycleState = { ...lifecycleState, suggestion_due: true };
+    }
   }
   return workoutSaveResponse({
     completed_now: completedNow,
@@ -611,6 +637,52 @@ const mockSaveRotationAssignment = (values) => {
   return { data: row, error: null };
 };
 
+const mockTransitionTrainingLifecycle = (values) => {
+  if (lifecycleOperations.has(values.p_operation_id)) {
+    return {
+      data: lifecycleOperations.get(values.p_operation_id),
+      error: null,
+    };
+  }
+  if (values.p_action === "start_cruise") {
+    if (workoutResult.data?.status === "in_progress")
+      return {
+        data: null,
+        error: { message: "Finish the active workout before starting cruise" },
+      };
+    lifecycleState = {
+      ...lifecycleState,
+      blast_ended_at: "2026-08-10T16:00:00Z",
+      cruise_started_at: "2026-08-10T16:00:00Z",
+      phase: "cruise",
+      suggestion_due: false,
+    };
+  } else if (values.p_action === "start_new_blast") {
+    lifecycleState = {
+      ...lifecycleState,
+      blast_ended_at: null,
+      blast_id: "blast-2",
+      blast_started_at: "2026-08-10T17:00:00Z",
+      cruise_started_at: null,
+      phase: "blast",
+      suggestion_dismissed: false,
+      suggestion_due: false,
+    };
+  } else {
+    lifecycleState = {
+      ...lifecycleState,
+      suggestion_dismissed: true,
+      suggestion_due: false,
+    };
+  }
+  lifecycleOperations.set(values.p_operation_id, structuredClone(lifecycleState));
+  if (values.p_action === "start_cruise" && loseNextCruiseResponse) {
+    loseNextCruiseResponse = false;
+    return { data: null, error: { message: "NETWORK RESPONSE LOST" } };
+  }
+  return { data: lifecycleState, error: null };
+};
+
 const mockRpc = (name, values) => {
   const handler =
     {
@@ -619,6 +691,7 @@ const mockRpc = (name, values) => {
       resolve_logbook_action: mockResolveLogbookAction,
       save_a1_workout_step: mockSaveWorkoutStep,
       start_a1_workout: mockStartWorkout,
+      transition_training_lifecycle: mockTransitionTrainingLifecycle,
       undo_a1_workout_step: mockUndoWorkoutStep,
     }[name] ?? mockSaveRotationAssignment;
   return handler(values);
@@ -663,6 +736,7 @@ const client = {
     calls.push(["from", table]);
     const filters = {};
     const selectedRows = () => {
+      if (table === "training_lifecycle_state") return lifecycleState;
       if (historyMode)
         return table === "workouts"
           ? historyWorkouts
@@ -692,11 +766,23 @@ const client = {
       async maybeSingle() {
         calls.push(["maybeSingle", table]);
         if (table === "foundation_profiles") return profileResult;
+        if (table === "training_lifecycle_state") {
+          return { data: lifecycleState, error: null };
+        }
         if (table === "workout_rotation_state") {
           return { data: rotationState, error: null };
         }
         if (table === "workouts") {
-          if (!historyMode) return workoutResult;
+          if (!historyMode)
+            return {
+              data:
+                workoutResult.data &&
+                (!filters.status ||
+                  workoutResult.data.status === filters.status)
+                  ? workoutResult.data
+                  : null,
+              error: workoutResult.error,
+            };
           return {
             data:
               historyWorkouts.find(
@@ -978,7 +1064,9 @@ await act(async () => {
 });
 
 await act(async () => {
-  document.querySelector("button.secondary-action").click();
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "SIGN OUT")
+    .click();
   await flush();
 });
 const signOutSubmitted = hasCall("signOut", (call) => call[1] === undefined);
@@ -2450,6 +2538,192 @@ const historyPagination = [
   ),
 );
 
+historyMode = false;
+workoutResult = { data: null, error: null };
+logbookScenario = null;
+const rotationBeforeCruise = structuredClone(rotationState);
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("HOME"))
+    .click();
+  await flush();
+});
+const startCruiseButton = () =>
+  [...document.querySelectorAll("button")].find(
+    (button) => button.textContent.trim() === "START CRUISE",
+  );
+await act(async () => {
+  startCruiseButton().click();
+  await flush();
+});
+const cruiseConfirmationNamesSlot =
+  text().includes("START CRUISE?") &&
+  text().includes(`${rotationState.next_slot} will remain your next workout`);
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "CANCEL")
+    .click();
+  await flush();
+});
+const cruiseCancelPreserved =
+  lifecycleState.phase === "blast" &&
+  JSON.stringify(rotationState) === JSON.stringify(rotationBeforeCruise);
+await act(async () => {
+  startCruiseButton().click();
+  await flush();
+  document.querySelector(".bottom-sheet .primary-action").click();
+  await flush();
+});
+const lostCruiseResponseShown = text().includes("NETWORK RESPONSE LOST");
+await act(async () => {
+  document.querySelector(".bottom-sheet .primary-action").click();
+  await flush();
+});
+const cruiseCalls = calls.filter(
+  (call) => call[0] === "rpc" && call[1] === "transition_training_lifecycle",
+);
+const cruiseRetryIdempotent =
+  lostCruiseResponseShown &&
+  cruiseCalls.length >= 2 &&
+  cruiseCalls.at(-2)[2].p_operation_id ===
+    cruiseCalls.at(-1)[2].p_operation_id;
+const cruiseHomeReadOnly =
+  lifecycleState.phase === "cruise" &&
+  document.querySelector(".cruise-phase")?.textContent === "CRUISE" &&
+  document.querySelector(".cruise-title")?.textContent === "RECOVERY" &&
+  document.querySelector(".cruise-card strong")?.textContent ===
+    rotationState.next_slot &&
+  text().includes("Your rotation and assignments are preserved") &&
+  text().includes("START NEW BLAST") &&
+  !text().includes(`START ${rotationState.next_slot}`) &&
+  JSON.stringify(rotationState) === JSON.stringify(rotationBeforeCruise);
+Object.defineProperty(window.navigator, "onLine", {
+  configurable: true,
+  value: false,
+});
+await act(async () => {
+  window.dispatchEvent(new window.Event("offline"));
+  await flush();
+});
+const cruiseOfflineMutationBlocked =
+  window.navigator.onLine === false &&
+  ![...document.querySelectorAll("button")].some(
+    (button) =>
+      button.textContent.includes("START NEW BLAST") && !button.disabled,
+  );
+Object.defineProperty(window.navigator, "onLine", {
+  configurable: true,
+  value: true,
+});
+await act(async () => {
+  window.dispatchEvent(new window.Event("online"));
+  await flush();
+  await flush();
+});
+historyMode = true;
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("HISTORY"))
+    .click();
+  await flush();
+});
+await settleLoading();
+const cruiseHistoryAvailable =
+  document.querySelector(".history-header h1")?.textContent === "HISTORY";
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("HOME"))
+    .click();
+  await flush();
+});
+historyMode = false;
+const cruisePersistsAfterHistory =
+  document.querySelector(".cruise-title")?.textContent === "RECOVERY";
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("START NEW BLAST"))
+    .click();
+  await flush();
+});
+const newBlastPreservedRotation =
+  lifecycleState.phase === "blast" &&
+  lifecycleState.blast_id === "blast-2" &&
+  text().includes(`START ${rotationState.next_slot}`) &&
+  JSON.stringify(rotationState) === JSON.stringify(rotationBeforeCruise);
+
+logbookScenario = "new_blast_baseline";
+workoutResult = { data: null, error: null };
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) =>
+      button.textContent.includes(`START ${rotationState.next_slot}`),
+    )
+    .click();
+  await flush();
+  await flush();
+});
+const newBlastFreshBaseline =
+  text().includes("NEW BLAST / FRESH BASELINE") &&
+  text().includes("PRIOR HISTORY PRESERVED");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "SKIP")
+    .click();
+  await flush();
+});
+const cruiseSuggestionHiddenUntilHome =
+  text().includes("COMPLETE") && !text().includes("IT'S BEEN 7 WEEKS");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "DONE")
+    .click();
+  await flush();
+  await flush();
+});
+const sevenWeekSuggestionShown =
+  text().includes("IT'S BEEN 7 WEEKS") && text().includes("CONSIDER A CRUISE");
+const rotationBeforeDismiss = structuredClone(rotationState);
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("NOT NOW"))
+    .click();
+  await flush();
+});
+Object.defineProperty(window.navigator, "onLine", {
+  configurable: true,
+  value: false,
+});
+await act(async () => {
+  window.dispatchEvent(new window.Event("offline"));
+});
+Object.defineProperty(window.navigator, "onLine", {
+  configurable: true,
+  value: true,
+});
+await act(async () => {
+  window.dispatchEvent(new window.Event("online"));
+  await flush();
+  await flush();
+});
+const cruiseSuggestionDismissedForBlast =
+  lifecycleState.suggestion_dismissed &&
+  !text().includes("IT'S BEEN 7 WEEKS") &&
+  JSON.stringify(rotationState) === JSON.stringify(rotationBeforeDismiss);
+
+const blastCruiseRuntime =
+  cruiseCancelPreserved &&
+  cruiseConfirmationNamesSlot &&
+  cruiseHistoryAvailable &&
+  cruiseHomeReadOnly &&
+  cruiseOfflineMutationBlocked &&
+  cruisePersistsAfterHistory &&
+  cruiseRetryIdempotent &&
+  cruiseSuggestionDismissedForBlast &&
+  cruiseSuggestionHiddenUntilHome &&
+  newBlastFreshBaseline &&
+  newBlastPreservedRotation &&
+  sevenWeekSuggestionShown;
+
 const historyRuntime =
   absentStraightSetOmitted &&
   activeWorkoutCorrectionLocked &&
@@ -2489,6 +2763,7 @@ const logbookRuntime =
   returnedBaselineShown;
 
 const behavior = {
+  blast_cruise_runtime: blastCruiseRuntime,
   history_runtime: historyRuntime,
   logbook_enforcement_runtime: logbookRuntime,
   entry_structure_matrix: entryStructureMatrixPassed,
@@ -2675,11 +2950,26 @@ const historyDetail = {
   timedHoldChart,
   workoutsTabCaptured,
 };
+const blastCruiseDetail = {
+  blastCruiseRuntime,
+  cruiseCancelPreserved,
+  cruiseConfirmationNamesSlot,
+  cruiseHistoryAvailable,
+  cruiseHomeReadOnly,
+  cruiseOfflineMutationBlocked,
+  cruisePersistsAfterHistory,
+  cruiseRetryIdempotent,
+  cruiseSuggestionDismissedForBlast,
+  cruiseSuggestionHiddenUntilHome,
+  newBlastFreshBaseline,
+  newBlastPreservedRotation,
+  sevenWeekSuggestionShown,
+};
 
 assert.deepEqual(
   Object.entries(behavior).filter(([, passed]) => !passed),
   [],
-  `Every workout characterization behavior must pass: ${JSON.stringify({ a1Detail, fullWorkoutDetail, historyDetail, logbookDetail })}`,
+  `Every workout characterization behavior must pass: ${JSON.stringify({ a1Detail, blastCruiseDetail, fullWorkoutDetail, historyDetail, logbookDetail })}`,
 );
 
 process.stdout.write(

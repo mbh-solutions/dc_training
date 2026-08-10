@@ -1,75 +1,82 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Authenticated owners can browse current, retired, in-progress, and completed history; inspect protocol-specific progression; and correct a saved performance while affected verdicts recalculate without changing assignments or advancing rotation."
-proof = "tests/history.test.mjs covers deterministic workout, body-part, slot-aware retired/reactivated ordering, active-workout assignment detection, and poisons the correction function for rotation or assignment mutation while proving the transactional active-workout guard follows the owner lock. tests/a1-assignment.e2e.mjs mounts src/main.tsx with React and captures both tabs, exact-count pagination, one-open grouping, search, workout detail, every chart variant, rep-scaled target bands only on rep axes, per-assignment protocol configuration, absent-lane omission, original units, reassignment separation, active-workout correction locking, invalid-input blocking with cleared validation before a valid retry, payload-bound correction retries, visible committed-correction reload failure, retired detail labels, recalculated verdict, and unchanged rotation advancement count. Rollback-only production database proof exercises owner-scoped history reads and the correction RPC with synthetic users only."
+intended_behavior = "Authenticated owners can enter cruise from Home without consuming the fixed rotation, reload a read-only Cruise Home with History access, start a new blast at the preserved next slot, establish fresh per-blast exercise baselines, and receive one dismissible seven-week suggestion after workout completion and Home return."
+proof = "tests/blast-cruise.test.mjs verifies fail-closed lifecycle shapes and poisons the authoritative SQL transition boundary for rotation mutation, workout deletion, missing owner serialization, missing cruise workout exclusion, missing per-blast tagging, missing fresh-baseline separation, missing one-time dismissal, and missing RLS grants. tests/a1-assignment.e2e.mjs mounts src/main.tsx with React and captures manual confirmation/cancel, retry-stable cruise transition after a lost response, Cruise Home, offline mutation exclusion, History access and return, preserved slot, new blast, same-assignment prior-history guidance with a fresh baseline, completion-gated seven-week suggestion, persistent Not Now dismissal, and unchanged lifecycle rotation. Production rollback-only SQL proof covers before/at/after seven weeks, owner isolation, idempotent transitions, cruise workout rejection, fresh baselines, history preservation, and exact rotation preservation."
 
 [characterization]
-captured_behavior = "The qualified auth/offline shell, rotation setup, six-slot workout runtime, and logbook enforcement remain while history-v1 bridges the established correction seam to the actual History screen."
-proof = "The existing foundation-shell-v2, rotation-setup-v1, and a1-workout-v1 definitions remain unchanged. The additive history-v1 regression proves the predecessor correction seam on the base and its History consumer on the head; the directly relevant real-React packet exercises the complete S06 interaction."
+captured_behavior = "The qualified auth/offline shell, rotation setup, six-slot workout runtime, logbook enforcement, and history correction remain while blast-cruise-v1 adds the lifecycle seam around the existing fixed rotation."
+proof = "The existing foundation-shell-v2, rotation-setup-v1, a1-workout-v1, and history-v1 definitions remain unchanged. The additive blast-cruise-v1 definition proves the predecessor on base and the S07 schema/UI/runtime contract on head; the directly relevant actual-React packet exercises the complete S07 interaction."
 
 [separation_of_concerns]
-before = "S05 already persisted owner-isolated workout rows and exposed a retry-stable correction RPC with assignment-wide verdict recalculation, but deliberately had no history interface."
-after = "workout-domain owns pure slot-aware history ordering, active-workout detection, and fail-closed row validation; HistoryScreen owns history navigation, per-assignment protocol rendering, and payload-bound correction input; workout-api alone owns paginated owner-filtered Supabase reads and correction RPC validation; the forward function replacement owns transactional active-workout exclusion and recalculation."
+before = "S06 persisted the fixed rotation, workout history, and correction semantics but deliberately had no blast or cruise lifecycle."
+after = "workout-domain validates lifecycle rows; workout-api alone reads lifecycle state and calls its mutation RPC; use-workout owns retry-stable React lifecycle state; HomeScreen owns confirmation, suggestion, and Cruise Home presentation; the migration alone owns owner serialization, phase invariants, blast clocks, per-blast baselines, suggestion eligibility, and rotation-independent transitions."
 
 [architecture]
-dependency_direction = "FoundationHome composes HistoryScreen; HistoryScreen delegates cloud I/O to workout-api and pure ordering/validation to workout-domain; workout-api alone reaches Supabase; the existing correction RPC remains the authoritative mutation boundary."
+dependency_direction = "FoundationHome composes HomeScreen and the workout hook; HomeScreen receives lifecycle state and callbacks without cloud access; use-workout delegates lifecycle I/O to workout-api; workout-api alone reaches Supabase; the database RPC and triggers remain authoritative for concurrency, ownership, rotation preservation, and fresh-baseline enforcement."
 reviewed_paths = [
     "src/FoundationHome.tsx",
     "src/HomeScreen.tsx",
-    "src/HistoryScreen.tsx",
+    "src/WorkoutTracer.tsx",
+    "src/hooks/use-workout.ts",
     "src/workout-api.ts",
     "src/workout-domain.ts",
-    "supabase/migrations/20260810150000_guard_history_correction_during_active_workout.sql",
-    "tests/history.test.mjs",
+    "supabase/migrations/20260810163233_add_blast_cruise_lifecycle.sql",
+    "tests/blast-cruise.test.mjs",
     "tests/a1-assignment.e2e.mjs",
-    "tests/characterization/history-v1.characterization.mjs",
-    "tests/characterization/history-v1.golden.json",
+    "tests/characterization/blast-cruise-v1.characterization.mjs",
+    "tests/characterization/blast-cruise-v1.golden.json",
     ".supportability-characterization.json",
 ]
 
 [responsibility_boundary]
-path = "src/HistoryScreen.tsx"
-owns = "History tabs, grouping, search, workout and exercise detail, protocol-specific SVG lanes, reassignment markers, saved-entry presentation, and online correction input."
-does_not_own = "Workout logging, rotation advancement, assignment changes, authoritative verdict calculation, database authorization, offline mutation queuing, analytics, or exports."
+path = "supabase/migrations/20260810163233_add_blast_cruise_lifecycle.sql"
+owns = "Durable owner lifecycle state, exact phase transition idempotency, blast timestamps, one-time suggestion eligibility, cruise workout exclusion, per-blast baseline selection, and active-blast logbook reconstruction."
+does_not_own = "Rotation advancement or reset, assignment changes, prior performance deletion, cruise scheduling, offline mutation queuing, cruise workouts, analytics, or Supportability Gate behavior."
 
 [incremental_refactor]
-target = "Add only S06 history and correction presentation to the qualified S05 persistence boundaries."
-completed_step = "Reused the established correction RPC and workout rows, added owner-filtered read calls and pure presentation helpers, and forward-replaced only the correction function to serialize an active-workout guard after its owner lock; no table shape, package, or Supportability Gate change."
+target = "Add only S07 blast and cruise lifecycle around the qualified S06 rotation and workout boundaries."
+completed_step = "Added one owner lifecycle row, an internal idempotency ledger, one lifecycle RPC, narrow insert/status triggers, a blast-aware replacement of the established recalculation function, and small state/presentation extensions; no package or Supportability Gate change."
 
 [review_handoff]
-summary = "Review owner-filtered reads, reactivated-versus-retired grouping, assignment-specific chart configurations, original units, disconnected reassignment segments, payload-bound correction operation IDs, the transactional active-workout guard, fail-closed responses, and actual-React runtime evidence."
+summary = "Review owner locking and RLS, operation-ID replay, no rotation writes in lifecycle transitions, cruise workout exclusion, stopped blast clock, completion-gated seven-week eligibility, persistent per-blast dismissal, new-blast logbook reset without history deletion, and actual-React runtime evidence."
 remaining_risks = [
-    "Offline history mutation queuing remains explicitly outside S06; corrections are disabled without connectivity.",
-    "Charts intentionally use native SVG and the approved single-exercise views; analytics and combined progression scores remain outside scope.",
+    "Offline lifecycle mutations remain explicitly outside S07; phase actions are disabled without connectivity.",
+    "Cruise remains deliberately manual with no duration, reason, countdown, scheduling, or cruise workout logging.",
 ]
 
 [human_review]
-naming = "History, workout, exercise, retired, reassigned, fresh baseline, correction, and verdict labels match the locked product ledger."
-cohesion = "Presentation, cloud I/O, pure ordering, row validation, and authoritative transactional correction remain separate."
-intended_behavior = "The owner can inspect all required history forms and correct durable performance values without silently changing assignments or replaying rotation advancement."
-reviewability = "One new screen, narrow established-boundary extensions, one focused domain/poison test, and one extended actual-React packet cover S06 only."
+naming = "Start Cruise, Recovery, paused rotation, preserved next workout, Start New Blast, seven weeks, Consider a Cruise, Not Now, and fresh baseline labels match the locked product ledger."
+cohesion = "Presentation, React state, cloud I/O, row validation, and authoritative transactional lifecycle logic remain separate."
+intended_behavior = "The owner controls cruise and new-blast transitions without losing rotation position or history, while the database prevents cruise workouts and old-blast failures from leaking into the new blast."
+reviewability = "One migration, narrow established-boundary extensions, one focused contract test, one additive characterization, and one extended actual-React packet cover S07 only."
 
 [[module_boundaries]]
-path = "src/HistoryScreen.tsx"
-owner_path = "src/HistoryScreen.tsx"
+path = "src/HomeScreen.tsx"
+owner_path = "src/HomeScreen.tsx"
 basis = "responsibility"
-justification = "Owns S06 history presentation and online correction input only."
+justification = "Owns Home lifecycle actions, approved bottom sheets, and read-only Cruise Home presentation only."
+
+[[module_boundaries]]
+path = "src/hooks/use-workout.ts"
+owner_path = "src/hooks/use-workout.ts"
+basis = "responsibility"
+justification = "Owns client lifecycle state, retry-stable operation IDs, and post-completion Home refresh without database policy."
 
 [[module_boundaries]]
 path = "src/workout-api.ts"
 owner_path = "src/workout-api.ts"
 basis = "responsibility"
-justification = "Owns explicit owner-filtered history reads and validation of the established correction RPC response only."
+justification = "Owns validated lifecycle reads and the single lifecycle RPC call without presentation or transition rules."
 
 [[module_boundaries]]
 path = "src/workout-domain.ts"
 owner_path = "src/workout-domain.ts"
 basis = "responsibility"
-justification = "Owns pure ordering, retired/reactivated identity, history row validation, and entry-shape rules without I/O or React state."
+justification = "Owns the fail-closed lifecycle row shape without I/O or React state."
 
 [[module_boundaries]]
-path = "supabase/migrations/20260810150000_guard_history_correction_during_active_workout.sql"
-owner_path = "supabase/migrations/20260810150000_guard_history_correction_during_active_workout.sql"
+path = "supabase/migrations/20260810163233_add_blast_cruise_lifecycle.sql"
+owner_path = "supabase/migrations/20260810163233_add_blast_cruise_lifecycle.sql"
 basis = "responsibility"
-justification = "Forward-replaces only the established correction RPC to reject an assignment captured by an in-progress workout after acquiring the same owner transaction lock used by workout start."
+justification = "Owns durable lifecycle invariants, authorization, concurrency, idempotency, blast-aware baselines, and suggestion timing without changing rotation state."

@@ -48,6 +48,13 @@
       "covers": ["src/HistoryScreen.tsx"],
       "id": "history-v1",
       "kind": "regression"
+    },
+    {
+      "covers": [
+        "supabase/migrations/20260810163233_add_blast_cruise_lifecycle.sql"
+      ],
+      "id": "blast-cruise-v1",
+      "kind": "regression"
     }
   ],
   "schema_version": "1.0"
