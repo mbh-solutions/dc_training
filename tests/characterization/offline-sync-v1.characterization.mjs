@@ -12,6 +12,10 @@ const eventTimeMigration =
   "supabase/migrations/20260810211000_preserve_offline_event_time.sql";
 const convergenceMigration =
   "supabase/migrations/20260810214500_validate_offline_replay_context.sql";
+const lifecycleMigration =
+  "supabase/migrations/20260810222500_validate_offline_lifecycle_context.sql";
+const blastReferenceRepair =
+  "supabase/migrations/20260810223500_fix_offline_blast_reference_resolution.sql";
 const read = (relativePath) =>
   readFileSync(path.join(target, relativePath), "utf8");
 const hasAll = (source, fragments) =>
@@ -34,6 +38,8 @@ const offlineContract =
   existsSync(path.join(target, migration)) &&
   existsSync(path.join(target, eventTimeMigration)) &&
   existsSync(path.join(target, convergenceMigration)) &&
+  existsSync(path.join(target, lifecycleMigration)) &&
+  existsSync(path.join(target, blastReferenceRepair)) &&
   hasAll(read(offlineModule), [
     'const databaseName = "dc-training-offline"',
     "[stateStore, operationStore]",
@@ -45,7 +51,9 @@ const offlineContract =
     '.from("assignment_logbook_states")',
     "recalculateLocalAssignmentLogbook",
     "preserveActiveWorkoutStepIds",
+    "lifecycleTransitionPayload",
     "startWorkoutPayload",
+    "workouts.get(step.workout_id)?.blast_id === currentBlastId",
     'operations.index("userId")',
   ]) &&
   hasAll(read(assignmentModule), ["isAssignment", "sameTargets"]) &&
@@ -81,6 +89,17 @@ const offlineContract =
     "Offline start assignments changed",
     "suggestion_due = not lifecycle.suggestion_dismissed and exists",
     "public.blast_has_elapsed_seven_weeks",
+  ]) &&
+  hasAll(read(lifecycleMigration), [
+    "private.assert_offline_lifecycle_context",
+    "private.resolve_offline_blast_reference",
+    "Offline lifecycle context changed",
+    "perform private.assert_offline_lifecycle_context(owner_id, p_payload)",
+  ]) &&
+  hasAll(read(blastReferenceRepair), [
+    "private.resolve_offline_blast_reference",
+    "reference_operation_id",
+    "Offline lifecycle blast is not synchronized",
   ]);
 
 process.stdout.write(

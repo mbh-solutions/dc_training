@@ -8,6 +8,7 @@ import {
   sortHistoryWorkouts,
   type HistoryData,
   type HistoryWorkout,
+  type TrainingLifecycle,
   type Workout,
   type WorkoutStep,
 } from "./workout-domain.js";
@@ -45,6 +46,13 @@ type StartWorkoutPayload = {
   assignments: Record<string, string>;
   blast_id: string;
   slot: WorkoutSlot;
+};
+type LifecycleTransitionAction =
+  "dismiss_suggestion" | "start_cruise" | "start_new_blast";
+type LifecycleTransitionPayload = {
+  action: LifecycleTransitionAction;
+  blast_id: string;
+  phase: "blast" | "cruise";
 };
 export type OfflineOperationInput =
   | { id: string; kind: "start_workout"; payload: StartWorkoutPayload }
@@ -88,9 +96,7 @@ export type OfflineOperationInput =
   | {
       id: string;
       kind: "transition_training_lifecycle";
-      payload: {
-        action: "dismiss_suggestion" | "start_cruise" | "start_new_blast";
-      };
+      payload: LifecycleTransitionPayload;
     };
 
 export type OfflineOperation = OfflineOperationInput & {
@@ -562,6 +568,20 @@ export function startWorkoutPayload(
   return { assignments, blast_id: blastId, slot };
 }
 
+export function lifecycleTransitionPayload(
+  state: OfflineAccountState,
+  action: LifecycleTransitionAction,
+): LifecycleTransitionPayload {
+  const lifecycle = state.workout?.lifecycle;
+  if (!lifecycle?.blast_id)
+    throw new Error("TRAINING PHASE IS NOT AVAILABLE ON THIS DEVICE");
+  return {
+    action,
+    blast_id: lifecycle.blast_id,
+    phase: lifecycle.phase,
+  };
+}
+
 export function reduceOfflineState(
   current: OfflineAccountState,
   operation: OfflineOperation,
@@ -817,15 +837,11 @@ function previousPerformance(
           Date.parse(workouts.get(right.workout_id)?.started_at ?? "") ||
         left.ordinal - right.ordinal,
     );
-  const blastStart = Date.parse(
-    state.workout!.lifecycle.blast_started_at ?? "",
-  );
+  const currentBlastId = state.workout!.lifecycle.blast_id;
   const currentBlast =
     completed
       .filter(
-        (step) =>
-          Date.parse(workouts.get(step.workout_id)?.started_at ?? "") >=
-          blastStart,
+        (step) => workouts.get(step.workout_id)?.blast_id === currentBlastId,
       )
       .at(-1) ?? null;
   const relatedIds = new Set(
@@ -1390,6 +1406,7 @@ function transitionLocalLifecycle(
     throw new Error("TRAINING PHASE IS NOT AVAILABLE ON THIS DEVICE");
   const action = operation.payload.action;
   const current = state.workout.lifecycle;
+  assertLocalLifecycleContext(current, operation.payload);
   const now = new Date(operation.createdAt).toISOString();
   if (action === "start_cruise") {
     if (current.phase !== "blast" || state.workout.workout)
@@ -1424,6 +1441,14 @@ function transitionLocalLifecycle(
     };
   }
   return state;
+}
+
+function assertLocalLifecycleContext(
+  current: TrainingLifecycle,
+  payload: LifecycleTransitionPayload,
+) {
+  if (current.phase !== payload.phase || current.blast_id !== payload.blast_id)
+    throw new Error("OFFLINE LIFECYCLE CONTEXT CHANGED");
 }
 
 function resetLocalLogbookForNewBlast(state: OfflineAccountState) {

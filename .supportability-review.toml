@@ -2,7 +2,7 @@ schema_version = "1.0"
 
 [behavior]
 intended_behavior = "After one successful owner sign-in and data load, routine training remains usable through temporary connectivity loss. Every change commits an account-bound IndexedDB working copy and a stable ordered operation in one transaction, then synchronizes immediately, on reconnect, or on foreground through one idempotent cloud boundary. The UI reports OFFLINE, SYNCING, SYNCED, or SYNC FAILED and offers Try Again without discarding queued work."
-proof = "A targeted native-IndexedDB Chromium run against the actual React application proves online hydration from canonical Postgres target JSON, all four visible sync states, offline Start A1, Skip, Undo, owner isolation, ordered queue records, stable operation identity across full-page reload, simulated 503 retention, Try Again recovery, preserved unsaved form input across local-to-cloud identity refresh, stable event timestamps, three unique cloud actions, and a drained queue. Production rollback-only SQL proves five assignment writes plus start and nine steps, duplicate replay stability, payload-mismatch rejection, fail-closed start-context drift, queued local assignment/blast reference resolution, preserved assignment/workout event times, event-time-correct cruise suggestion, nine authoritative step writes, one completed workout, exactly one A1-to-B1 rotation advance, and zero residue. A focused reducer probe proves blast-boundary logbook reset. The focused foundation runtime and production build/lint commands verify the directly relevant application boundary."
+proof = "A targeted native-IndexedDB Chromium run against the actual React application proves online hydration from canonical Postgres target JSON, all four visible sync states, offline Start A1, Skip, Undo, owner isolation, ordered queue records, stable operation identity across full-page reload, simulated 503 retention, Try Again recovery, preserved unsaved form input across local-to-cloud identity refresh, stable event timestamps, three unique cloud actions, and a drained queue. Production rollback-only SQL proves five assignment writes plus start and nine steps, duplicate replay stability, payload-mismatch rejection, fail-closed start/lifecycle context drift, queued local assignment/blast reference resolution, preserved assignment/workout event times, event-time-correct cruise suggestion, nine authoritative step writes, one completed workout, exactly one A1-to-B1 rotation advance, and zero residue. Focused reducer probes prove blast-boundary logbook reset and current-blast lookup by immutable blast identity despite device-clock skew. The focused foundation runtime and production build/lint commands verify the directly relevant application boundary."
 
 [characterization]
 captured_behavior = "The qualified auth shell, rotation setup, six-slot workout runtime, logbook enforcement, history correction, and blast/cruise lifecycle remain; S08 replaces routine cloud-only mutations with one durable offline working-copy and synchronization seam while retaining online-only sign-in, sign-out, recovery, deletion, and active-device transfer boundaries."
@@ -10,10 +10,10 @@ proof = "Existing foundation-shell-v2, rotation-setup-v1, a1-workout-v1, history
 
 [separation_of_concerns]
 before = "S07 React hooks called individual Supabase mutation RPCs and disabled routine changes whenever navigator.onLine was false."
-after = "UI hooks submit typed local operations; offline-sync alone owns IndexedDB state reduction, ordering, account logbook hydration, draft-safe cloud identity reconciliation, cloud replay, and authoritative refresh; use-offline-sync alone schedules foreground/reconnect retries and exposes status; the migrations own cross-retry cloud idempotency, local-step/reference resolution, start-context validation, and stable event-time preservation."
+after = "UI hooks submit typed local operations; offline-sync alone owns IndexedDB state reduction, ordering, account logbook hydration, draft-safe cloud identity reconciliation, immutable-blast performance lookup, cloud replay, and authoritative refresh; use-offline-sync alone schedules foreground/reconnect retries and exposes status; the migrations own cross-retry cloud idempotency, local-step/reference resolution, start/lifecycle-context validation, and stable event-time preservation."
 
 [architecture]
-dependency_direction = "App authenticates one owner; FoundationHome composes use-offline-sync; workout, rotation, and history hooks submit typed operations without direct cloud writes; offline-sync persists account state plus stable operation/event identity and calls only apply_offline_operation; the public RPC validates the queued start snapshot, dispatches to established authoritative functions, preserves user event time, and records results in a private ledger. Cache Storage remains owned by the existing Vite PWA configuration."
+dependency_direction = "App authenticates one owner; FoundationHome composes use-offline-sync; workout, rotation, and history hooks submit typed operations without direct cloud writes; offline-sync persists account state plus stable operation/event/context identity and calls only apply_offline_operation; the public RPC validates queued start and lifecycle snapshots, dispatches to established authoritative functions, preserves user event time, and records results in a private ledger. Cache Storage remains owned by the existing Vite PWA configuration."
 reviewed_paths = [
     "src/App.tsx",
     "src/FoundationHome.tsx",
@@ -32,6 +32,8 @@ reviewed_paths = [
     "supabase/migrations/20260810192528_offline_operation_queue.sql",
     "supabase/migrations/20260810211000_preserve_offline_event_time.sql",
     "supabase/migrations/20260810214500_validate_offline_replay_context.sql",
+    "supabase/migrations/20260810222500_validate_offline_lifecycle_context.sql",
+    "supabase/migrations/20260810223500_fix_offline_blast_reference_resolution.sql",
     "tests/a1-assignment.e2e.mjs",
     "tests/history.test.mjs",
     "tests/characterization/foundation-shell.characterization.mjs",
@@ -47,7 +49,7 @@ does_not_own = "Authentication, PWA shell caching, background execution after cl
 
 [incremental_refactor]
 target = "Add only S08 temporary-offline routine training and exactly-once synchronization to the qualified S07 app."
-completed_step = "Reused the existing PWA precache; extracted the shared assignment shape; added one native IndexedDB module, one small scheduling hook, narrow consumer rewiring, one private-ledger dispatcher migration, and two forward repairs preserving stable event time plus validating replay context. No package, active-device, background-sync, conflict-resolution, or Supportability Gate change."
+completed_step = "Reused the existing PWA precache; extracted the shared assignment shape; added one native IndexedDB module, one small scheduling hook, narrow consumer rewiring, one private-ledger dispatcher migration, and four forward repairs preserving stable event time plus validating replay context. No package, active-device, background-sync, conflict-resolution, or Supportability Gate change."
 
 [review_handoff]
 summary = "Review atomic IndexedDB state-plus-operation commits, strict user keys, semantic assignment-target hydration, stable operation replay, step resolution by start-operation plus ordinal, ordered drain/refresh races, retry states, established RPC delegation, private ledger privileges, and preservation of online-only account boundaries."
@@ -60,7 +62,7 @@ remaining_risks = [
 naming = "OFFLINE, SYNCING, SYNCED, SYNC FAILED, Try Again, and Saved on device match the locked S08 product ledger."
 cohesion = "Presentation, scheduling, durable local state, cloud transport, and authoritative database mutation remain separate."
 intended_behavior = "The signed-in owner can train, correct history, edit assignments, complete workouts, and change blast/cruise state during temporary connectivity loss without duplicate cloud effects."
-reviewability = "One client persistence module, one scheduling hook, narrow existing-hook rewiring, three forward-only migrations, and one additive compatibility characterization implement and prove S08; no package was added."
+reviewability = "One client persistence module, one scheduling hook, narrow existing-hook rewiring, five forward-only migrations, and one additive compatibility characterization implement and prove S08; no package was added."
 
 [[module_boundaries]]
 path = "src/hooks/use-offline-sync.ts"
@@ -109,3 +111,15 @@ path = "supabase/migrations/20260810214500_validate_offline_replay_context.sql"
 owner_path = "supabase/migrations/20260810214500_validate_offline_replay_context.sql"
 basis = "responsibility"
 justification = "Owns fail-closed queued-start validation, queued local reference resolution, and cruise-suggestion recomputation after preserved offline completion time."
+
+[[module_boundaries]]
+path = "supabase/migrations/20260810222500_validate_offline_lifecycle_context.sql"
+owner_path = "supabase/migrations/20260810222500_validate_offline_lifecycle_context.sql"
+basis = "responsibility"
+justification = "Owns fail-closed lifecycle replay validation against the queued phase/blast snapshot, including earlier queued local new-blast references."
+
+[[module_boundaries]]
+path = "supabase/migrations/20260810223500_fix_offline_blast_reference_resolution.sql"
+owner_path = "supabase/migrations/20260810223500_fix_offline_blast_reference_resolution.sql"
+basis = "responsibility"
+justification = "Owns the production forward repair for unambiguous lookup of an earlier queued new-blast operation; rollback-only SQL proves local-reference resolution and zero residue."

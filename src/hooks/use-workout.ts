@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import {
   clearRecentCompletion,
+  lifecycleTransitionPayload,
   startWorkoutPayload,
   stepTarget,
   type OfflineAccountState,
@@ -62,12 +63,13 @@ export function useWorkout(
   const transitionLifecycle = async (
     action: "dismiss_suggestion" | "start_cruise" | "start_new_blast",
   ) => {
+    if (!state) return false;
     const key = `lifecycle:${action}`;
     return submit(
       {
         id: retryOperationId(pendingOperationIds.current, key),
         kind: "transition_training_lifecycle",
-        payload: { action },
+        payload: lifecycleTransitionPayload(state, action),
       },
       key,
     );
