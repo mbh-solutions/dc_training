@@ -18,6 +18,7 @@ export function useOfflineSync(userId: string, online: boolean) {
   const [loaded, setLoaded] = useState(false);
   const [syncState, setSyncState] = useState<OfflineSyncState>("syncing");
   const syncPromise = useRef<Promise<boolean> | null>(null);
+  const syncRequested = useRef(false);
 
   const reload = useCallback(async () => {
     const current = await readOfflineState(userId);
@@ -27,23 +28,29 @@ export function useOfflineSync(userId: string, online: boolean) {
 
   const synchronize = useCallback(() => {
     if (!online) return Promise.resolve(false);
-    if (syncPromise.current) return syncPromise.current;
+    if (syncPromise.current) {
+      syncRequested.current = true;
+      return syncPromise.current;
+    }
     setSyncState("syncing");
     setLoadError("");
-    const work = synchronizeOfflineState(userId)
-      .then(async () => {
-        await reload();
+    const work = (async () => {
+      try {
+        do {
+          syncRequested.current = false;
+          await synchronizeOfflineState(userId);
+          await reload();
+        } while (syncRequested.current);
         setSyncState("synced");
         return true;
-      })
-      .catch((error: unknown) => {
+      } catch (error) {
         setSyncState("failed");
         setLoadError(error instanceof Error ? error.message : "SYNC FAILED");
         return false;
-      })
-      .finally(() => {
+      } finally {
         syncPromise.current = null;
-      });
+      }
+    })();
     syncPromise.current = work;
     return work;
   }, [online, reload, userId]);

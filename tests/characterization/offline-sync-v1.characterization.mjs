@@ -65,8 +65,10 @@ const offlineContract =
   hasAll(read(assignmentModule), ["isAssignment", "sameTargets"]) &&
   hasAll(read(syncHook), [
     'useState<OfflineSyncState>("syncing")',
+    "const syncRequested = useRef(false)",
     "if (!online) return;",
     "void synchronize();",
+    "} while (syncRequested.current);",
     'document.addEventListener("visibilitychange"',
     "retry: synchronize",
   ]) &&
