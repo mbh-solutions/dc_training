@@ -22,6 +22,7 @@ reviewed_paths = [
     "src/workout-api.ts",
     "src/workout-domain.ts",
     "supabase/migrations/20260810163233_add_blast_cruise_lifecycle.sql",
+    "supabase/migrations/20260810174144_backfill_migrated_cruise_suggestions.sql",
     "tests/blast-cruise.test.mjs",
     "tests/a1-assignment.e2e.mjs",
     "tests/characterization/blast-cruise-v1.characterization.mjs",
@@ -50,7 +51,7 @@ remaining_risks = [
 naming = "Start Cruise, Recovery, paused rotation, preserved next workout, Start New Blast, seven weeks, Consider a Cruise, Not Now, and fresh baseline labels match the locked product ledger."
 cohesion = "Presentation, React state, cloud I/O, row validation, and authoritative transactional lifecycle logic remain separate."
 intended_behavior = "The owner controls cruise and new-blast transitions without losing rotation position or history, while the database prevents cruise workouts and old-blast failures from leaking into the new blast."
-reviewability = "One migration, narrow established-boundary extensions, one focused contract test, one additive characterization, and one extended actual-React packet cover S07 only."
+reviewability = "Two forward-only migrations, narrow established-boundary extensions, one focused contract test, one additive characterization, and one extended actual-React packet cover S07 only."
 
 [[module_boundaries]]
 path = "src/HomeScreen.tsx"
@@ -81,3 +82,9 @@ path = "supabase/migrations/20260810163233_add_blast_cruise_lifecycle.sql"
 owner_path = "supabase/migrations/20260810163233_add_blast_cruise_lifecycle.sql"
 basis = "responsibility"
 justification = "Owns durable lifecycle invariants, authorization, concurrency, idempotency, blast-aware baselines, and suggestion timing without changing rotation state."
+
+[[module_boundaries]]
+path = "supabase/migrations/20260810174144_backfill_migrated_cruise_suggestions.sql"
+owner_path = "supabase/migrations/20260810174144_backfill_migrated_cruise_suggestions.sql"
+basis = "responsibility"
+justification = "Owns the forward-only eligibility repair for completed workouts migrated into the initial blast without changing dismissal or rotation state."

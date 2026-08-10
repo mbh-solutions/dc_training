@@ -56,10 +56,12 @@ function HomeScreen({
     return (
       <CruiseHome
         actionSaving={actionSaving}
+        email={email}
         message={message}
         nextSlot={nextSlot}
         online={online}
         onOpenHistory={onOpenHistory}
+        onSignOut={onSignOut}
         onStartNewBlast={onStartNewBlast}
         syncState={syncState}
       />
@@ -188,18 +190,22 @@ const homeStyles = [
 
 function CruiseHome({
   actionSaving,
+  email,
   message,
   nextSlot,
   online,
   onOpenHistory,
+  onSignOut,
   onStartNewBlast,
   syncState,
 }: {
   actionSaving: boolean;
+  email?: string;
   message: string;
   nextSlot: WorkoutSlot;
   online: boolean;
   onOpenHistory: () => void;
+  onSignOut: () => Promise<void>;
   onStartNewBlast: () => Promise<boolean>;
   syncState: FoundationHomeProps["syncState"];
 }) {
@@ -245,6 +251,16 @@ function CruiseHome({
         <p className="quiet-note">Continue with {nextSlot} when you are ready.</p>
         {!online && <p className="quiet-note">CONNECT TO START A NEW BLAST</p>}
         {message && <p className="form-message">{message}</p>}
+        <p className="account-email">SIGNED IN AS {email?.toUpperCase()}</p>
+        <button
+          className="secondary-action"
+          disabled={!online}
+          onClick={() => void onSignOut()}
+          type="button"
+        >
+          SIGN OUT
+        </button>
+        {!online && <p className="quiet-note">CONNECT TO SIGN OUT</p>}
       </main>
       <BottomNavigation
         active="home"

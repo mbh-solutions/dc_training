@@ -51,7 +51,8 @@
     },
     {
       "covers": [
-        "supabase/migrations/20260810163233_add_blast_cruise_lifecycle.sql"
+        "supabase/migrations/20260810163233_add_blast_cruise_lifecycle.sql",
+        "supabase/migrations/20260810174144_backfill_migrated_cruise_suggestions.sql"
       ],
       "id": "blast-cruise-v1",
       "kind": "regression"

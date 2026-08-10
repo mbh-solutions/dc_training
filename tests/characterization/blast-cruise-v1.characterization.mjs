@@ -5,6 +5,8 @@ const target =
   process.env.SUPPORTABILITY_CHARACTERIZATION_TARGET ?? process.cwd();
 const lifecycleMigration =
   "supabase/migrations/20260810163233_add_blast_cruise_lifecycle.sql";
+const suggestionBackfill =
+  "supabase/migrations/20260810174144_backfill_migrated_cruise_suggestions.sql";
 const migrationExists = existsSync(path.join(target, lifecycleMigration));
 const read = (relativePath) =>
   readFileSync(path.join(target, relativePath), "utf8");
@@ -23,12 +25,19 @@ const predecessorContract =
 
 const lifecycleContract =
   migrationExists &&
+  existsSync(path.join(target, suggestionBackfill)) &&
   hasAll(read(lifecycleMigration), [
     "create table public.training_lifecycle_state",
     "create or replace function public.transition_training_lifecycle",
     "new.blast_id := lifecycle.blast_id",
     "interval '7 weeks'",
     "enable row level security",
+  ]) &&
+  hasAll(read(suggestionBackfill), [
+    "update public.training_lifecycle_state lifecycle",
+    "not lifecycle.suggestion_dismissed",
+    "workout.status = 'completed'",
+    "public.blast_has_elapsed_seven_weeks",
   ]) &&
   hasAll(read("src/HomeScreen.tsx"), [
     "START CRUISE",
