@@ -36,6 +36,13 @@ const resetMigration = readFileSync(
   ),
   "utf8",
 );
+const rotationGuardMigration = readFileSync(
+  new URL(
+    "../supabase/migrations/20260810182600_guard_rotation_assignment_during_cruise.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const foundationSource = readFileSync(
   new URL("../src/FoundationHome.tsx", import.meta.url),
   "utf8",
@@ -46,6 +53,9 @@ const historySource = readFileSync(
 );
 const transitionFunction = migration.match(
   /create or replace function public\.transition_training_lifecycle[\s\S]*?\n\$\$;/,
+)?.[0];
+const rotationSaveFunction = rotationGuardMigration.match(
+  /create or replace function public\.save_rotation_assignment[\s\S]*?\n\$\$;/,
 )?.[0];
 
 test("S07 lifecycle states fail closed and preserve the rotation boundary", () => {
@@ -92,6 +102,20 @@ test("S07 lifecycle states fail closed and preserve the rotation boundary", () =
   assert.doesNotMatch(resetMigration, /verdict = null/);
   assert.doesNotMatch(resetMigration, /delete from public\.workouts/);
   assert.doesNotMatch(resetMigration, /workout_rotation_state/);
+
+  assert.ok(rotationSaveFunction, "rotation save RPC guard must exist");
+  assert.match(
+    rotationSaveFunction,
+    /pg_advisory_xact_lock[\s\S]*phase = 'blast'/,
+  );
+  assert.match(
+    rotationSaveFunction,
+    /Rotation changes require an active blast/,
+  );
+  assert.doesNotMatch(
+    rotationSaveFunction,
+    /update public\.training_lifecycle_state/,
+  );
 
   assert.match(
     foundationSource,

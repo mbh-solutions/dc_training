@@ -9,6 +9,8 @@ const suggestionBackfill =
   "supabase/migrations/20260810174144_backfill_migrated_cruise_suggestions.sql";
 const newBlastReset =
   "supabase/migrations/20260810180700_reset_new_blast_enforcement.sql";
+const rotationGuard =
+  "supabase/migrations/20260810182600_guard_rotation_assignment_during_cruise.sql";
 const migrationExists = existsSync(path.join(target, lifecycleMigration));
 const read = (relativePath) =>
   readFileSync(path.join(target, relativePath), "utf8");
@@ -29,6 +31,7 @@ const lifecycleContract =
   migrationExists &&
   existsSync(path.join(target, suggestionBackfill)) &&
   existsSync(path.join(target, newBlastReset)) &&
+  existsSync(path.join(target, rotationGuard)) &&
   hasAll(read(lifecycleMigration), [
     "create table public.training_lifecycle_state",
     "create or replace function public.transition_training_lifecycle",
@@ -46,6 +49,12 @@ const lifecycleContract =
     "old.phase = 'cruise'",
     "new.phase = 'blast'",
     "enforcement_action = null",
+  ]) &&
+  hasAll(read(rotationGuard), [
+    "create or replace function public.save_rotation_assignment",
+    "pg_advisory_xact_lock",
+    "phase = 'blast'",
+    "Rotation changes require an active blast",
   ]) &&
   read("src/HistoryScreen.tsx").includes(
     "rotationDisabled={!onOpenRotation}",
