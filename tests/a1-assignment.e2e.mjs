@@ -2331,6 +2331,19 @@ await act(async () => {
   document.querySelector(".performance-rows button").click();
   await flush();
 });
+await setInput("correction-reps-0", "0");
+const correctionCallsBeforeInvalidSubmit = calls.filter(
+  (call) => call[0] === "rpc" && call[1] === "correct_workout_performance",
+).length;
+await act(async () => {
+  document.querySelector(".correction-dialog .primary-action").click();
+  await flush();
+});
+const invalidCorrectionBlocked =
+  text().includes("ENTER VALID WEIGHT AND PERFORMANCE VALUES") &&
+  calls.filter(
+    (call) => call[0] === "rpc" && call[1] === "correct_workout_performance",
+  ).length === correctionCallsBeforeInvalidSubmit;
 await setInput("correction-reps-0", "8");
 await act(async () => {
   document.querySelector(".correction-dialog .primary-action").click();
@@ -2338,7 +2351,9 @@ await act(async () => {
   await flush();
 });
 const lostCorrectionResponse =
+  invalidCorrectionBlocked &&
   text().includes("NETWORK RESPONSE LOST") &&
+  !text().includes("ENTER VALID WEIGHT AND PERFORMANCE VALUES") &&
   document.querySelector(".correction-dialog") !== null;
 await setInput("correction-reps-0", "9");
 await act(async () => {
@@ -2441,6 +2456,7 @@ const historyRuntime =
   committedCorrectionReloadFailureShown &&
   exercisesTabCaptured &&
   historyPagination &&
+  invalidCorrectionBlocked &&
   mixedProtocolSegments &&
   oneGroupExpanded &&
   retiredInitiallyCollapsed &&
@@ -2647,6 +2663,7 @@ const historyDetail = {
   exercisesTabCaptured,
   historyRuntime,
   historyPagination,
+  invalidCorrectionBlocked,
   mixedProtocolSegments,
   inProgressDetail,
   oneGroupExpanded,

@@ -944,6 +944,7 @@ function CorrectionEditor({
       setLocalError("ENTER VALID WEIGHT AND PERFORMANCE VALUES");
       return;
     }
+    setLocalError("");
     await onSave(step, weights, repValues, durationValue);
   };
 
