@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { BottomNavigation } from "./HomeScreen.jsx";
-import { correctHistoryPerformance, loadHistoryState } from "./workout-api.js";
+import { stepTarget, type OfflineAccountState } from "./offline-sync.js";
+import type { CommitOperation } from "./hooks/use-workout.js";
 import {
   activeWorkoutAssignmentIds,
   currentHistoryGroups,
@@ -15,10 +16,10 @@ import {
 import { weightMicrograms, type WeightEntry } from "./weight-conversion.js";
 
 type Props = {
-  online: boolean;
+  accountState: OfflineAccountState | null;
+  commitOperation: CommitOperation;
   onHome: () => void;
   onOpenRotation?: () => void;
-  userId: string;
 };
 
 type Performance = {
@@ -40,14 +41,13 @@ type CorrectionOperation = {
 };
 
 export default function HistoryScreen({
-  online,
+  accountState,
+  commitOperation,
   onHome,
   onOpenRotation,
-  userId,
 }: Props) {
-  const [data, setData] = useState<HistoryData | null>(null);
+  const data = accountState?.history ?? null;
   const [editingStepId, setEditingStepId] = useState<string | null>(null);
-  const [error, setError] = useState(online ? "" : "CONNECT TO LOAD HISTORY");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -61,35 +61,6 @@ export default function HistoryScreen({
   const [tab, setTab] = useState<"exercises" | "workouts">("exercises");
   const correctionOperations = useRef(new Map<string, CorrectionOperation>());
 
-  const reload = useCallback(async () => {
-    const result = await loadHistoryState(userId);
-    if (!result.data) {
-      setError(result.error);
-      return false;
-    }
-    setData(result.data);
-    setError("");
-    return true;
-  }, [userId]);
-
-  useEffect(() => {
-    if (!online) {
-      setError("CONNECT TO LOAD HISTORY");
-      return;
-    }
-    let ignore = false;
-    void loadHistoryState(userId).then((result) => {
-      if (ignore) return;
-      if (result.data) {
-        setData(result.data);
-        setError("");
-      } else setError(result.error);
-    });
-    return () => {
-      ignore = true;
-    };
-  }, [online, userId]);
-
   const saveCorrection = async (
     step: WorkoutStep,
     weights: WeightEntry[],
@@ -98,16 +69,14 @@ export default function HistoryScreen({
   ) => {
     setSaving(true);
     setMessage("");
-    const latest = await loadHistoryState(userId);
-    if (!latest.data) {
+    if (!data || !accountState) {
       setSaving(false);
-      setMessage(latest.error);
+      setMessage("HISTORY IS NOT AVAILABLE ON THIS DEVICE");
       return;
     }
-    setData(latest.data);
     if (
       step.assignment_id !== null &&
-      activeWorkoutAssignmentIds(latest.data).has(step.assignment_id)
+      activeWorkoutAssignmentIds(data).has(step.assignment_id)
     ) {
       setSaving(false);
       setEditingStepId(null);
@@ -124,13 +93,16 @@ export default function HistoryScreen({
       fingerprint,
       operationId,
     });
-    const result = await correctHistoryPerformance(
-      operationId,
-      step.step_id,
-      weights,
-      reps,
-      duration,
-    );
+    const result = await commitOperation({
+      id: operationId,
+      kind: "correct_history_performance",
+      payload: {
+        ...stepTarget(accountState, step),
+        duration_seconds: duration,
+        reps,
+        weights,
+      },
+    });
     setSaving(false);
     if (!result.data) {
       setMessage(result.error);
@@ -138,18 +110,16 @@ export default function HistoryScreen({
     }
     correctionOperations.current.delete(step.step_id);
     setEditingStepId(null);
-    if (await reload()) setMessage("CORRECTION SAVED · VERDICTS RECALCULATED");
-    else setMessage("CORRECTION SAVED · HISTORY REFRESH FAILED");
+    setMessage("CORRECTION SAVED ON DEVICE");
   };
 
   return data ? (
     <LoadedHistory
       data={data}
       editingStepId={editingStepId}
-      error={error}
+      error=""
       expanded={expanded}
       message={message}
-      online={online}
       onEditStep={setEditingStepId}
       onHome={onHome}
       onOpenRotation={onOpenRotation}
@@ -168,7 +138,7 @@ export default function HistoryScreen({
     />
   ) : (
     <HistoryShell onHome={onHome} onOpenRotation={onOpenRotation}>
-      <p className="history-state">{error || "LOADING HISTORY"}</p>
+      <p className="history-state">HISTORY NOT SAVED ON THIS DEVICE</p>
     </HistoryShell>
   );
 }
@@ -179,7 +149,6 @@ function LoadedHistory({
   error,
   expanded,
   message,
-  online,
   onEditStep,
   onHome,
   onOpenRotation,
@@ -201,7 +170,6 @@ function LoadedHistory({
   error: string;
   expanded: string | null;
   message: string;
-  online: boolean;
   onEditStep: (stepId: string | null) => void;
   onHome: () => void;
   onOpenRotation?: () => void;
@@ -231,16 +199,12 @@ function LoadedHistory({
           assignment={selectedAssignment}
           activeAssignmentIds={activeAssignmentIds}
           message={message}
-          online={online}
           onBack={() => {
             onEditStep(null);
             setMessage("");
             onSelectAssignment(null);
           }}
-          onEdit={(step) => {
-            if (online) onEditStep(step.step_id);
-            else setMessage("CONNECT TO CORRECT HISTORY");
-          }}
+          onEdit={(step) => onEditStep(step.step_id)}
           performances={performances}
         />
         {editingStep && (
@@ -265,16 +229,12 @@ function LoadedHistory({
         <WorkoutDetail
           activeAssignmentIds={activeAssignmentIds}
           message={message}
-          online={online}
           onBack={() => {
             onEditStep(null);
             setMessage("");
             onSelectWorkout(null);
           }}
-          onEdit={(step) => {
-            if (online) onEditStep(step.step_id);
-            else setMessage("CONNECT TO CORRECT HISTORY");
-          }}
+          onEdit={(step) => onEditStep(step.step_id)}
           steps={data.steps.filter(
             (step) => step.workout_id === selectedWorkout.workout_id,
           )}
@@ -589,7 +549,6 @@ function WorkoutButton({
 function WorkoutDetail({
   activeAssignmentIds,
   message,
-  online,
   onBack,
   onEdit,
   steps,
@@ -597,7 +556,6 @@ function WorkoutDetail({
 }: {
   activeAssignmentIds: ReadonlySet<string>;
   message: string;
-  online: boolean;
   onBack: () => void;
   onEdit: (step: WorkoutStep) => void;
   steps: WorkoutStep[];
@@ -617,7 +575,6 @@ function WorkoutDetail({
           .map((step) => (
             <button
               disabled={
-                !online ||
                 step.kind !== "exercise" ||
                 step.status !== "completed" ||
                 correctionLocked(activeAssignmentIds, step)
@@ -652,7 +609,6 @@ function ExercisePerformance({
   activeAssignmentIds,
   assignment,
   message,
-  online,
   onBack,
   onEdit,
   performances,
@@ -660,7 +616,6 @@ function ExercisePerformance({
   activeAssignmentIds: ReadonlySet<string>;
   assignment: HistoryAssignment;
   message: string;
-  online: boolean;
   onBack: () => void;
   onEdit: (step: WorkoutStep) => void;
   performances: Performance[];
@@ -701,7 +656,7 @@ function ExercisePerformance({
         {[...performances].reverse().map((performance) => (
           <button
             disabled={
-              !online || correctionLocked(activeAssignmentIds, performance.step)
+              correctionLocked(activeAssignmentIds, performance.step)
             }
             key={performance.step.step_id}
             onClick={() => onEdit(performance.step)}

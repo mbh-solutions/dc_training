@@ -10,6 +10,7 @@
         "src/RotationSetupView.tsx",
         "src/hooks/use-auth-session.ts",
         "src/hooks/use-foundation-profile.ts",
+        "src/hooks/use-offline-sync.ts",
         "src/hooks/use-online.ts",
         "src/hooks/use-owner-access.ts",
         "src/hooks/use-rotation-assignment.ts",
@@ -17,7 +18,8 @@
         "src/lib/auth-callback.ts",
         "src/lib/offline-owner-session.ts",
         "src/lib/supabase.ts",
-        "src/main.tsx"
+        "src/main.tsx",
+        "src/offline-sync.ts"
       ],
       "id": "foundation-shell-v2",
       "kind": "regression"
@@ -28,6 +30,7 @@
         "src/hooks/use-rotation-editor.ts",
         "src/hooks/use-rotation-flow.ts",
         "src/rotation-assignment-draft.ts",
+        "src/rotation-assignment.ts",
         "src/rotation-config.ts"
       ],
       "id": "rotation-setup-v1",
