@@ -59,7 +59,7 @@ export async function loadWorkoutState(
   const stepResult = await supabase!
     .from("workout_steps")
     .select(
-      "step_id,workout_id,ordinal,kind,body_part,assignment_id,exercise,protocol,structure,target_sets,status,weight_entries,reps,duration_seconds,previous_weight_entries,previous_reps,previous_duration_seconds,verdict,set_verdicts,enforcement_action,fresh_baseline,mulligan_used,reference_history,resolution",
+      "step_id,workout_id,ordinal,kind,body_part,assignment_id,exercise,protocol,structure,target_sets,status,weight_entries,reps,duration_seconds,previous_weight_entries,previous_reps,previous_duration_seconds,verdict,set_verdicts,enforcement_action,fresh_baseline,mulligan_used,reference_history,resolution,last_operation_id",
     )
     .eq("user_id", userId)
     .eq("workout_id", workout.workout_id)

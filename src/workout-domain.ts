@@ -17,6 +17,7 @@ export type WorkoutStep = {
   exercise: string | null;
   fresh_baseline: boolean;
   kind: "exercise" | "stretch";
+  last_operation_id: string | null;
   mulligan_used: boolean;
   ordinal: number;
   previous_duration_seconds: number | null;
@@ -246,6 +247,8 @@ function validLogbookState(row: Record<string, unknown>) {
       row.enforcement_action as string | null,
     ) &&
     typeof row.fresh_baseline === "boolean" &&
+    (row.last_operation_id === null ||
+      typeof row.last_operation_id === "string") &&
     typeof row.mulligan_used === "boolean" &&
     [null, "count_failure", "count_win", "replaced", "use_mulligan"].includes(
       row.resolution as string | null,

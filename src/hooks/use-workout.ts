@@ -52,6 +52,11 @@ export function useWorkout(userId: string, online: boolean) {
     setLastCompletedSlot(result.data.lastCompletedSlot);
     setActiveWorkout(result.data.workout);
     setSteps(result.data.steps);
+    const blockingStep = result.data.steps.find(
+      (step) => step.enforcement_action !== null,
+    );
+    setLastOperationId(blockingStep?.last_operation_id ?? null);
+    setLastOperationStatus(blockingStep ? operationStatus(blockingStep) : null);
     setMessage("");
     setLoading(false);
   }, [online, userId]);

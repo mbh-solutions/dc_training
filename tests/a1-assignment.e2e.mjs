@@ -125,6 +125,7 @@ const exerciseStep = ({
   exercise,
   fresh_baseline: true,
   kind: "exercise",
+  last_operation_id: null,
   mulligan_used: false,
   ordinal,
   previous_duration_seconds: null,
@@ -152,6 +153,7 @@ const stretchStep = (workout_id, body_part, ordinal) => ({
   exercise: null,
   fresh_baseline: false,
   kind: "stretch",
+  last_operation_id: null,
   mulligan_used: false,
   ordinal,
   previous_duration_seconds: null,
@@ -528,6 +530,7 @@ const client = {
         stepId: step.step_id,
       });
       step.status = values.p_status;
+      step.last_operation_id = values.p_operation_id;
       step.reps = values.p_reps;
       step.duration_seconds = values.p_duration_seconds;
       step.weight_entries = values.p_weights.map((weight) => ({
@@ -574,6 +577,7 @@ const client = {
       );
       step.enforcement_action =
         values.p_action === "count_failure" ? "first_failure" : null;
+      if (step.enforcement_action === null) step.last_operation_id = null;
       step.resolution = values.p_action;
       if (values.p_action === "count_win") step.verdict = "win";
       if (values.p_action === "count_failure") step.verdict = "failure";
@@ -595,6 +599,7 @@ const client = {
         (item) => item.step_id === values.p_step_id,
       );
       step.enforcement_action = null;
+      step.last_operation_id = null;
       step.resolution = "replaced";
       const data = {
         ...finishLogbookResult(step, true),
@@ -1713,6 +1718,19 @@ await act(async () => {
     .click();
   await flush();
 });
+await act(async () => authCallback("SIGNED_OUT", null));
+await act(async () => {
+  authCallback("SIGNED_IN", session);
+  await flush();
+});
+await act(settleLoading);
+const chainedFailureReloaded = text().includes("RESUME");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.includes("RESUME"))
+    .click();
+  await flush();
+});
 const chainedFailureUndoOffered =
   text().includes("LOGBOOK FAILURE") && text().includes("UNDO SAVE");
 await act(async () => {
@@ -1857,6 +1875,7 @@ await finishLogbookScreen();
 const logbookRuntime =
   logbookWinShown &&
   ambiguousChoiceShown &&
+  chainedFailureReloaded &&
   chainedFailureUndoOffered &&
   chainedFailureUndoRestored &&
   firstFailureBlocked &&
@@ -2024,6 +2043,7 @@ const fullWorkoutDetail = {
 };
 const logbookDetail = {
   ambiguousChoiceShown,
+  chainedFailureReloaded,
   chainedFailureUndoOffered,
   chainedFailureUndoRestored,
   failedExerciseExcluded,

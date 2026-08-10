@@ -245,6 +245,18 @@ begin
     raise exception 'Resolve required exercise replacement first';
   end if;
 
+  if exists (
+    select 1
+    from public.workout_steps step
+    join public.rotation_assignment_versions assignment
+      on assignment.assignment_id = step.assignment_id
+    where step.user_id = owner_id
+      and assignment.active
+      and step.enforcement_action is not null
+  ) then
+    raise exception 'Resolve pending logbook decision first';
+  end if;
+
   insert into public.workout_rotation_state (user_id)
   values (owner_id)
   on conflict (user_id) do nothing;
@@ -846,6 +858,11 @@ begin
   where step_id = current_step.step_id
   returning * into current_step;
 
+  perform public.recalculate_assignment_logbook(current_step.assignment_id);
+  select * into current_step
+  from public.workout_steps
+  where step_id = p_step_id;
+
   finish_result := public.finish_workout_if_ready(current_step.workout_id, p_operation_id);
   result := finish_result || jsonb_build_object('step', to_jsonb(current_step));
   insert into public.logbook_operations (operation_id, user_id, step_id, action, result)
@@ -995,6 +1012,14 @@ begin
     raise exception 'Resolve the active logbook lifecycle first';
   end if;
 
+  if found and exists (
+    select 1 from public.workout_steps
+    where assignment_id = current_assignment.assignment_id
+      and enforcement_action is not null
+  ) then
+    raise exception 'Resolve the active logbook lifecycle first';
+  end if;
+
   if found
     and current_assignment.exercise = p_exercise
     and current_assignment.protocol = p_protocol
@@ -1002,6 +1027,16 @@ begin
     and current_assignment.target_sets = p_target_sets
   then
     return current_assignment;
+  end if;
+
+  if found and exists (
+    select 1
+    from public.workout_steps step
+    join public.workouts workout on workout.workout_id = step.workout_id
+    where step.assignment_id = current_assignment.assignment_id
+      and workout.status = 'in_progress'
+  ) then
+    raise exception 'Finish the active workout before changing this assignment';
   end if;
 
   if found then
@@ -1033,10 +1068,14 @@ declare
   evaluation jsonb;
   evaluation_status text;
   first_performance boolean := true;
+  lifecycle_deferred boolean := false;
+  lifecycle_was_deferred boolean;
   owner_id uuid := (select auth.uid());
   previous_duration integer;
   previous_reps integer[];
   previous_weights jsonb;
+  resolution_before text;
+  state_before_step text;
   state_value text;
 begin
   select active into assignment_active
@@ -1063,6 +1102,9 @@ begin
       and step.status = 'completed'
     order by workout.started_at, step.ordinal
   loop
+    lifecycle_was_deferred := lifecycle_deferred;
+    resolution_before := current_step.resolution;
+    state_before_step := state_value;
     current_step.mulligan_used := coalesce(state_value = 'mulligan_used', false);
     current_step.enforcement_action := null;
     current_step.set_verdicts := '{}';
@@ -1107,7 +1149,9 @@ begin
       if evaluation_status = 'win' then
         current_step.verdict := 'win';
         current_step.enforcement_action := null;
-        if current_step.resolution <> 'replaced' then
+        if current_step.resolution <> 'replaced'
+          and evaluation ->> 'status' <> 'ambiguous'
+        then
           current_step.resolution := null;
         end if;
         state_value := null;
@@ -1129,6 +1173,14 @@ begin
           current_step.enforcement_action := 'first_failure';
         end if;
       end if;
+    end if;
+
+    if lifecycle_was_deferred then
+      state_value := state_before_step;
+      current_step.enforcement_action := null;
+      current_step.resolution := resolution_before;
+    elsif assignment_active and current_step.enforcement_action is not null then
+      lifecycle_deferred := true;
     end if;
 
     if not assignment_active then
