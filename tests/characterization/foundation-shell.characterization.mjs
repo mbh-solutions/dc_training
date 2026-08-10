@@ -129,17 +129,17 @@ const client = {
     return {
       select(columns) {
         calls.push(["select", columns]);
-        return {
+        const query = {
           eq(column, value) {
             calls.push(["eq", column, value]);
-            return {
-              async maybeSingle() {
-                calls.push(["maybeSingle"]);
-                return profileResult;
-              },
-            };
+            return query;
+          },
+          async maybeSingle() {
+            calls.push(["maybeSingle"]);
+            return profileResult;
           },
         };
+        return query;
       },
     };
   },

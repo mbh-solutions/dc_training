@@ -32,6 +32,17 @@
       ],
       "id": "rotation-setup-v1",
       "kind": "regression"
+    },
+    {
+      "covers": [
+        "src/WorkoutTracer.tsx",
+        "src/hooks/use-workout.ts",
+        "src/weight-conversion.ts",
+        "src/workout-api.ts",
+        "src/workout-domain.ts"
+      ],
+      "id": "a1-workout-v1",
+      "kind": "regression"
     }
   ],
   "schema_version": "1.0"

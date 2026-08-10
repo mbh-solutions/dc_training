@@ -56,7 +56,7 @@ const quotedLength = (source, quote) => {
 const regexLength = (source) => {
   let inClass = false;
   for (let index = 1; index < source.length; index += 1) {
-    if (source[index] === "\n" || source[index] === "\r") return 1;
+    if ("\n\r".includes(source[index])) return 1;
     if (source[index] === "\\") index += 1;
     else if (source[index] === "[") inClass = true;
     else if (source[index] === "]") inClass = false;
@@ -89,18 +89,18 @@ const surfaceContract = workoutTracerExists
       ["export", "function", "WorkoutTracer", "("],
       ["export", "function", "WorkoutComplete", "("],
     ]) &&
-    sourceHasSequences("src/hooks/use-workout.ts", [
+    sourceHasSequences("src/workout-api.ts", [
       [".", "rpc", "(", '"start_a1_workout"'],
       [".", "rpc", "(", '"save_a1_workout_step"'],
       [".", "rpc", "(", '"undo_a1_workout_step"'],
     ]) &&
-    sourceHasSequences("src/workout-domain.ts", [
+    sourceHasSequences("src/weight-conversion.ts", [
       ["226796185n"],
       ["250000000n"],
     ]) &&
-    sourceHasSequences("src/index.css", [
-      [".", "rotation", "-", "tracker", ","],
-      [".", "last", "-", "workout", "{"],
+    sourceHasSequences("src/HomeScreen.tsx", [
+      ["const", "homeStyles", "=", "[", '".rotation-tracker,"'],
+      ["<", "style", ">", "{", "homeStyles", "}", "<", "/", "style", ">"],
     ])
   : initialBase &&
     tokenizerRejectsSpoofs &&

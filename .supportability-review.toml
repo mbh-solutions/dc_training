@@ -1,95 +1,77 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Preserve the qualified owner foundation and let the authenticated owner configure every locked A/B rotation slot plus the six fixed abs slots with explicit exercise, protocol, structure, review, replacement lineage, and restored state without starting a workout."
-proof = "tests/a1-assignment.e2e.mjs mounts the real React application and drives A1 rest-pause, B1 custom straight sets, timed abs, review/back/save/edit/reload, calf information-sheet dismissal, and remount restoration; tests/rotation-config.test.mjs verifies the complete locked order, pools, mappings, badges, and display labels."
+intended_behavior = "Let the authenticated owner start or resume the automatically selected A1 workout, durably log every configured exercise and required stretch, undo the latest save, complete once, and return Home with B1 next."
+proof = "tests/a1-assignment.e2e.mjs mounts src/main.tsx with real React, drives Home through A1 completion, leaves/resumes, preserves a step operation ID across a lost response, undoes/re-saves, checks exact stretch copy, retries the final operation, and returns to Home with B1. tests/workout-domain.test.mjs proves exact canonical conversion."
 
 [characterization]
-captured_behavior = "The foundation behaviors remain and the owner can configure and restore all 36 locked rotation and abs assignments without preselected choices."
-proof = "The registered characterization preserves the qualified foundation behavior; tests/a1-assignment.e2e.mjs mounts src/main.tsx and verifies the S02 setup flow, while tests/rotation-config.test.mjs verifies every locked configuration entry and mapping."
+captured_behavior = "The qualified auth/offline shell and full rotation setup remain, while a1-workout-v1 fail-closed checks the A1 surface declarations, RPC calls, conversion constants, and Home selectors without executing target-controlled code."
+proof = "The existing foundation-shell-v2 and rotation-setup-v1 scenarios remain registered; the staged a1-workout-v1 static contract covers the new production paths, while tests/a1-assignment.e2e.mjs separately mounts the real React application and proves the complete workout path."
 
 [separation_of_concerns]
-before = "App owned session lifecycle, network listeners, profile authorization, route selection, and Home presentation; the Supabase module also parsed callback URLs."
-after = "App still selects authentication versus the signed-in surface; focused modules separately own signed-in surface selection, Home rendering, assignment client validation and calls, editor state, and flow rendering."
+before = "FoundationHome selected Home or Rotation Setup; no workout state, persistence, or execution UI existed."
+after = "FoundationHome selects Home, Rotation Setup, active workout, or completion; useWorkout owns React state transitions; workout-api owns validated Supabase calls; workout-domain owns row guards; weight-conversion owns exact conversion; WorkoutTracer owns controlled presentation."
 
 [architecture]
-dependency_direction = "src/main.tsx mounts App; App composes authentication and FoundationHome; FoundationHome selects HomeScreen or RotationSetup; RotationSetup composes focused editor-state, navigation, draft, presentation, and assignment boundaries; only the assignment hook reaches the Supabase client."
+dependency_direction = "App composes FoundationHome; FoundationHome composes HomeScreen, RotationSetup, WorkoutTracer, and useWorkout; useWorkout delegates cloud I/O to workout-api; workout-api alone reaches the Supabase client; row validation and weight conversion remain inward dependencies."
 reviewed_paths = [
-    "src/RotationSetup.tsx",
-    "src/RotationSetupFlow.tsx",
-    "src/RotationSetupView.tsx",
-    "src/hooks/use-rotation-editor.ts",
-    "src/hooks/use-rotation-flow.ts",
-    "src/hooks/use-rotation-assignment.ts",
-    "src/rotation-assignment-draft.ts",
-    "src/rotation-config.ts",
+    "src/FoundationHome.tsx",
+    "src/HomeScreen.tsx",
+    "src/WorkoutTracer.tsx",
+    "src/hooks/use-workout.ts",
+    "src/weight-conversion.ts",
+    "src/workout-api.ts",
+    "src/workout-domain.ts",
 ]
 
 [responsibility_boundary]
-path = "src/rotation-config.ts"
-owns = "The fixed S02 rotation order, choices, mappings, badges, and instructional copy."
-does_not_own = "React state, rendering, Supabase calls, database policy, or workout execution."
+path = "src/hooks/use-workout.ts"
+owns = "React state transitions for validated workout loads, saves, undo, and completion results."
+does_not_own = "Workout visuals, Supabase calls, response validation, SQL invariants, or future B-workout execution."
 
 [incremental_refactor]
-target = "Correct the exact semantic findings without expanding the product scope."
-completed_step = "Expanded the existing setup flow and data boundary to the complete locked A/B rotation and six abs slots, using one fixed config module and one versioned save RPC."
+target = "Add only the S03 A1 tracer to the qualified S02 application."
+completed_step = "Reused fixed assignment contracts and added focused A1 presentation, state, API, row-validation, and weight-conversion boundaries plus one additive migration."
 
 [review_handoff]
-summary = "Review the fixed rotation config, existing editor/view boundary, owner-scoped serialized assignment hook, three additive migrations, and real React characterization."
+summary = "Review A1-only client orchestration, exact weight conversion, approved stretch presentation, additive RLS schema, and atomic idempotent final-step transition."
 remaining_risks = [
-    "The retained legacy assignment table is temporary rollback compatibility and should be removed only after the new contract is proven in production.",
+    "The owner must finish the remaining A1 assignments before Start is enabled by the database contract.",
+    "B1 is displayed after completion but intentionally cannot start until a later slice.",
 ]
 
 [human_review]
-naming = "The changed config, setup component, controlled view, and assignment hook name their direct responsibilities."
-cohesion = "The config contains fixed choices; the draft module derives valid targets; focused hooks own editor state and navigation; RotationSetup wires save orchestration; RotationSetupFlow routes screens; RotationSetupView presents them; the assignment hook owns validated cloud calls."
-intended_behavior = "Qualified owner foundation remains; authenticated owner gains the complete fixed S02 rotation and abs setup with durable replacement history."
-reviewability = "The change reuses the existing setup modules, adds one fixed config module, three additive migrations, and focused checks; no dependency or workout execution model was added."
+naming = "WorkoutTracer, useWorkout, workout-api, workout-domain, and weight-conversion name their presentation, state, I/O, row-validation, and conversion responsibilities directly."
+cohesion = "The hook owns React state, workout-api owns cloud I/O, workout-domain owns row guards, weight-conversion owns exact conversion, and WorkoutTracer owns A1 presentation."
+intended_behavior = "The owner gains one durable A1 completion path with no B-day, history, logbook-failure, cruise, or offline-queue expansion."
+reviewability = "The diff adds five focused source modules, one migration, one targeted unit check, and one real-React behavior extension."
 
 [[module_boundaries]]
-path = "src/RotationSetup.tsx"
-owner_path = "src/RotationSetup.tsx"
+path = "src/WorkoutTracer.tsx"
+owner_path = "src/WorkoutTracer.tsx"
 basis = "responsibility"
-justification = "Owns setup-boundary composition and save orchestration while delegating editor state, edit hydration, navigation, draft validation, routing, fixed data, persistence, and rendering."
+justification = "Owns A1 exercise, stretch, and completion presentation only."
 
 [[module_boundaries]]
-path = "src/RotationSetupFlow.tsx"
-owner_path = "src/RotationSetupFlow.tsx"
+path = "src/hooks/use-workout.ts"
+owner_path = "src/hooks/use-workout.ts"
 basis = "responsibility"
-justification = "Owns setup-screen route selection only and delegates every screen's presentation."
+justification = "Owns React workout state transitions and retry-operation identity only."
 
 [[module_boundaries]]
-path = "src/RotationSetupView.tsx"
-owner_path = "src/RotationSetupView.tsx"
+path = "src/workout-domain.ts"
+owner_path = "src/workout-domain.ts"
 basis = "responsibility"
-justification = "Owns controlled rotation and abs setup presentation only."
+justification = "Owns complete fail-closed guards for workout, rotation, and step rows only."
 
 [[module_boundaries]]
-path = "src/hooks/use-rotation-editor.ts"
-owner_path = "src/hooks/use-rotation-editor.ts"
+path = "src/workout-api.ts"
+owner_path = "src/workout-api.ts"
 basis = "responsibility"
-justification = "Owns rotation editor field state, selection mutations, and saved-assignment hydration only."
+justification = "Owns owner-filtered Supabase workout I/O and validated API results only."
 
 [[module_boundaries]]
-path = "src/hooks/use-rotation-flow.ts"
-owner_path = "src/hooks/use-rotation-flow.ts"
+path = "src/weight-conversion.ts"
+owner_path = "src/weight-conversion.ts"
 basis = "responsibility"
-justification = "Owns the setup screen state and navigation transitions only."
-
-[[module_boundaries]]
-path = "src/hooks/use-rotation-assignment.ts"
-owner_path = "src/hooks/use-rotation-assignment.ts"
-basis = "responsibility"
-justification = "Owns returned-row validation, loading, and versioned persistence of the current owner's rotation assignments."
-
-[[module_boundaries]]
-path = "src/rotation-assignment-draft.ts"
-owner_path = "src/rotation-assignment-draft.ts"
-basis = "responsibility"
-justification = "Owns editable-target conversion, numeric target validation, and assignment-draft derivation."
-
-[[module_boundaries]]
-path = "src/rotation-config.ts"
-owner_path = "src/rotation-config.ts"
-basis = "responsibility"
-justification = "Owns the fixed S02 order, exercise pools, protocols, structure choices, muscle mappings, badges, and protocol information copy."
+justification = "Owns exact weight parsing, integer-microgram conversion, and display conversion only."
