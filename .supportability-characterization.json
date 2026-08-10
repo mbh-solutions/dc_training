@@ -37,7 +37,6 @@
       "covers": [
         "src/WorkoutTracer.tsx",
         "src/hooks/use-workout.ts",
-        "src/logbook-domain.ts",
         "src/weight-conversion.ts",
         "src/workout-api.ts",
         "src/workout-domain.ts"

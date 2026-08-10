@@ -10,10 +10,10 @@ proof = "The existing foundation-shell-v2, rotation-setup-v1, and a1-workout-v1 
 
 [separation_of_concerns]
 before = "The S04 boundaries persisted complete workouts and previous performance but deliberately deferred logbook verdicts and replacement enforcement."
-after = "logbook-domain owns deterministic client-side truth-table proof; WorkoutTracer owns verdict and blocking presentation; useWorkout owns retry-stable React transitions; workout-api owns validated RPC calls; and the forward-only migration owns authoritative transactional verdict, lifecycle, replacement, correction, and RLS invariants."
+after = "workout-domain owns row validation plus deterministic client-side truth-table proof; WorkoutTracer owns verdict and blocking presentation; useWorkout owns retry-stable React transitions; workout-api owns validated RPC calls; and the forward-only migration owns authoritative transactional verdict, lifecycle, replacement, correction, and RLS invariants."
 
 [architecture]
-dependency_direction = "App composes FoundationHome; FoundationHome composes RotationSetup, WorkoutTracer, and useWorkout; useWorkout delegates cloud I/O to workout-api; workout-api alone reaches Supabase; workout-domain validates rows; logbook-domain independently expresses the locked comparison rules for targeted proof; the database remains authoritative."
+dependency_direction = "App composes FoundationHome; FoundationHome composes RotationSetup, WorkoutTracer, and useWorkout; useWorkout delegates cloud I/O to workout-api; workout-api alone reaches Supabase; workout-domain validates rows and expresses the locked comparison rules for targeted proof; the database remains authoritative."
 reviewed_paths = [
     "supabase/migrations/20260810100806_enforce_logbook_rules.sql",
     "src/FoundationHome.tsx",
@@ -23,7 +23,6 @@ reviewed_paths = [
     "src/hooks/use-rotation-editor.ts",
     "src/hooks/use-rotation-flow.ts",
     "src/hooks/use-workout.ts",
-    "src/logbook-domain.ts",
     "src/workout-api.ts",
     "src/workout-domain.ts",
     "tests/logbook-enforcement.test.mjs",
@@ -53,12 +52,6 @@ intended_behavior = "The owner receives deterministic verdicts and cannot procee
 reviewability = "One forward migration, one focused pure module/test, narrow extensions to established workout/rotation boundaries, and one extended actual-React runtime packet cover S05 only."
 
 [[module_boundaries]]
-path = "src/logbook-domain.ts"
-owner_path = "src/logbook-domain.ts"
-basis = "responsibility"
-justification = "Owns the locked comparison truth tables used by targeted deterministic tests; it performs no I/O or React state."
-
-[[module_boundaries]]
 path = "src/WorkoutTracer.tsx"
 owner_path = "src/WorkoutTracer.tsx"
 basis = "responsibility"
@@ -80,7 +73,7 @@ justification = "Owns validated owner-filtered workout, logbook-decision, and re
 path = "src/workout-domain.ts"
 owner_path = "src/workout-domain.ts"
 basis = "responsibility"
-justification = "Owns fail-closed validation for the extended workout-step and reference-history rows only."
+justification = "Owns fail-closed validation for extended workout rows plus the locked pure comparison truth tables; it performs no I/O or React state."
 
 [[module_boundaries]]
 path = "src/RotationSetup.tsx"

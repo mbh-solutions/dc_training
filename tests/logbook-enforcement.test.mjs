@@ -4,10 +4,13 @@ import test from "node:test";
 import ts from "typescript";
 
 const source = readFileSync(
-  new URL("../src/logbook-domain.ts", import.meta.url),
+  new URL("../src/workout-domain.ts", import.meta.url),
   "utf8",
 )
-  .replace('import type { TargetSet } from "./rotation-config.js";', "")
+  .replace(
+    'import { WORKOUT_SLOTS, type WorkoutSlot } from "./rotation-config.js";',
+    'const WORKOUT_SLOTS = ["A1", "B1", "A2", "B2", "A3", "B3"];',
+  )
   .replace('import type { WeightEntry } from "./weight-conversion.js";', "");
 const javascript = ts.transpileModule(source, {
   compilerOptions: {
