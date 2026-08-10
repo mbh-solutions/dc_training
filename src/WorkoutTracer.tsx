@@ -171,7 +171,7 @@ export function WorkoutTracer(props: Props) {
           </p>
         </div>
       </header>
-      {props.lastOperationId && (
+      {props.lastOperationId && !props.blockingStep && (
         <div className="undo-strip">
           {operationLabel(props.lastOperationStatus)}
           <button type="button" onClick={() => void props.onUndo()}>
@@ -198,6 +198,7 @@ export function WorkoutTracer(props: Props) {
           onResolve={(action) =>
             props.onResolveAction(props.blockingStep!, action)
           }
+          onUndo={props.lastOperationId ? props.onUndo : undefined}
         />
       )}
     </div>
@@ -381,26 +382,40 @@ function ExerciseEntry({
 
 function PreviousPerformance({ step }: { step: WorkoutStep }) {
   const hasPrevious = step.previous_weight_entries.length > 0;
-  const retired = step.reference_history.at(-1);
-  if (step.fresh_baseline && retired) {
+  if (step.fresh_baseline && step.reference_history.length > 0) {
     return (
       <section className="previous-card fresh-baseline-card">
         <p>REASSIGNED / FRESH BASELINE</p>
         <strong>PRIOR HISTORY PRESERVED</strong>
-        <div className="previous-list">
-          {retired.weight_entries.map((weight, index) => (
-            <output key={index}>
-              <b>{entryLabel(retired.protocol, index)}</b>
-              <span>
-                {performanceValue(
-                  retired.protocol,
-                  weight,
-                  index,
-                  retired.reps,
-                  retired.duration_seconds,
-                )}
-              </span>
-            </output>
+        <div className="retired-history">
+          {step.reference_history.map((retired) => (
+            <div
+              className="retired-performance"
+              key={`${retired.assignment_id}:${retired.performed_at}`}
+            >
+              <div className="retired-performance-heading">
+                <time dateTime={retired.performed_at}>
+                  {retired.performed_at.slice(0, 10)}
+                </time>
+                <span>{retired.verdict?.toUpperCase() ?? "BASELINE"}</span>
+              </div>
+              <div className="previous-list">
+                {retired.weight_entries.map((weight, index) => (
+                  <output key={index}>
+                    <b>{entryLabel(retired.protocol, index)}</b>
+                    <span>
+                      {performanceValue(
+                        retired.protocol,
+                        weight,
+                        index,
+                        retired.reps,
+                        retired.duration_seconds,
+                      )}
+                    </span>
+                  </output>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </section>
@@ -672,6 +687,7 @@ function LogbookPrompt({
   message,
   onReplace,
   onResolve,
+  onUndo,
   saving,
   step,
 }: {
@@ -680,6 +696,7 @@ function LogbookPrompt({
   onResolve: (
     action: "count_failure" | "count_win" | "use_mulligan",
   ) => Promise<boolean>;
+  onUndo?: () => Promise<void>;
   saving: boolean;
   step: WorkoutStep;
 }) {
@@ -703,6 +720,16 @@ function LogbookPrompt({
           onResolve={onResolve}
           saving={saving}
         />
+        {onUndo && (
+          <button
+            className="secondary-action logbook-undo"
+            disabled={saving}
+            type="button"
+            onClick={() => void onUndo()}
+          >
+            UNDO SAVE
+          </button>
+        )}
       </section>
     </div>
   );
@@ -853,6 +880,9 @@ const workoutStyles = `
 .previous-card strong { color: var(--gray); }
 .fresh-baseline-card { border-color: var(--red); }
 .fresh-baseline-card > strong { display: block; margin-bottom: 14px; }
+.retired-history { display: grid; gap: 16px; }
+.retired-performance { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.retired-performance-heading { display: flex; justify-content: space-between; gap: 12px; color: var(--gray); font-family: Impact, sans-serif; letter-spacing: .05em; }
 .previous-list { display: grid; gap: 10px; }
 .previous-list output { display: flex; justify-content: space-between; gap: 12px; color: var(--gray); }
 .previous-list b { color: var(--white); }
@@ -893,6 +923,7 @@ const workoutStyles = `
 .comparison-table strong { color: var(--red); }
 .logbook-actions { display: grid; gap: 10px; }
 .logbook-actions .primary-action { margin-top: 0; }
+.logbook-undo { width: 100%; margin-top: 10px; }
 .workout-complete { min-height: 100svh; display: flex; flex-direction: column; align-items: center; padding-top: max(100px, env(safe-area-inset-top)); text-align: center; }
 .workout-complete > strong { font-family: Impact, sans-serif; font-size: 1.45rem; letter-spacing: .08em; }
 .complete-check { display: grid; width: 126px; height: 126px; place-items: center; margin: 72px 0 32px; border: 3px solid var(--red); border-radius: 50%; font-size: 5rem; }

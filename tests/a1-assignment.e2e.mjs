@@ -310,6 +310,19 @@ const logbookWorkoutTemplate = (scenario, workout_id) => {
       {
         assignment_id: "assignment-retired-chest",
         duration_seconds: null,
+        performed_at: "2026-06-01T10:00:00Z",
+        protocol: "rest_pause",
+        reps: [7, 3, 2],
+        structure: "11-15",
+        target_sets: [{ min: 11, max: 15 }],
+        verdict: "win",
+        weight_entries: [
+          { amount: "95", micrograms: "43091275150", unit: "lb" },
+        ],
+      },
+      {
+        assignment_id: "assignment-retired-chest",
+        duration_seconds: null,
         performed_at: "2026-07-01T10:00:00Z",
         protocol: "rest_pause",
         reps: [8, 4, 2],
@@ -1691,6 +1704,17 @@ const firstFailureBlocked =
   text().includes("LOGBOOK FAILURE") &&
   JSON.stringify(firstFailureButtons) ===
     JSON.stringify(["USE MULLIGAN", "REPLACE EXERCISE"]);
+const pendingDecisionUndoOffered = text().includes("UNDO SAVE");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "UNDO SAVE")
+    .click();
+  await flush();
+});
+const pendingDecisionUndoRestored =
+  text().toUpperCase().includes("INCLINE BARBELL PRESS") &&
+  !text().includes("LOGBOOK FAILURE");
+await saveExercise("100");
 await act(async () => {
   [...document.querySelectorAll("button")]
     .find((button) => button.textContent.trim() === "USE MULLIGAN")
@@ -1779,6 +1803,9 @@ await startLogbookScenario("returned_baseline");
 const returnedHistoryShown =
   text().includes("REASSIGNED / FRESH BASELINE") &&
   text().includes("PRIOR HISTORY PRESERVED") &&
+  text().includes("2026-06-01") &&
+  text().includes("95 LB · 7 / 3 / 2 REPS") &&
+  text().includes("2026-07-01") &&
   text().includes("WORK SET") &&
   text().includes("100 LB · 8 / 4 / 2 REPS");
 await saveStraightSets(["105"], [8]);
@@ -1792,6 +1819,8 @@ await finishLogbookScreen();
 const logbookRuntime =
   logbookWinShown &&
   firstFailureBlocked &&
+  pendingDecisionUndoOffered &&
+  pendingDecisionUndoRestored &&
   mulliganRetryIdempotent &&
   mulliganMarked &&
   replacementRequired &&

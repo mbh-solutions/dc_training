@@ -1102,7 +1102,9 @@ begin
       if evaluation_status = 'win' then
         current_step.verdict := 'win';
         current_step.enforcement_action := null;
-        current_step.resolution := null;
+        if current_step.resolution <> 'replaced' then
+          current_step.resolution := null;
+        end if;
         state_value := null;
       elsif evaluation_status = 'failure' then
         current_step.verdict := 'failure';
@@ -1269,10 +1271,6 @@ begin
   if current_step.last_operation_id <> p_operation_id then
     raise exception 'Only the latest save can be undone';
   end if;
-  if current_step.enforcement_action is not null then
-    raise exception 'Resolve the logbook decision first';
-  end if;
-
   select * into current_workout
   from public.workouts
   where workout_id = current_step.workout_id and user_id = owner_id
