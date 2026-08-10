@@ -2,7 +2,7 @@ schema_version = "1.0"
 
 [behavior]
 intended_behavior = "Authenticated owners can enter cruise from Home without consuming the fixed rotation, reload a read-only Cruise Home with History access, start a new blast at the preserved next slot, establish fresh per-blast exercise baselines, and receive one dismissible seven-week suggestion after workout completion and Home return."
-proof = "tests/blast-cruise.test.mjs verifies fail-closed lifecycle shapes and poisons the authoritative SQL transition boundary for rotation mutation, workout deletion, stale old-blast enforcement, missing owner serialization, missing cruise workout exclusion, missing server-side cruise assignment protection, missing per-blast tagging, missing fresh-baseline separation, missing one-time dismissal, and missing RLS grants. tests/a1-assignment.e2e.mjs mounts src/main.tsx with React and captures manual confirmation/cancel, retry-stable cruise transition after a lost response, Cruise Home, offline mutation exclusion, History access with Rotation disabled, Rotation locked before lifecycle resolution, preserved slot, new blast, same-assignment prior-history guidance with a fresh baseline, completion-gated seven-week suggestion, persistent Not Now dismissal, and unchanged lifecycle rotation. Production rollback-only SQL proof covers before/at/after seven weeks, owner isolation, idempotent transitions, cruise workout and assignment rejection, fresh baselines, history preservation, and exact rotation preservation."
+proof = "tests/blast-cruise.test.mjs verifies fail-closed lifecycle shapes and poisons the authoritative SQL transition boundary for rotation mutation, workout deletion, stale old-blast enforcement, missing owner serialization, missing future-profile lifecycle provisioning, missing cruise workout/assignment/undo protection, missing per-blast tagging, missing fresh-baseline separation, missing one-time dismissal, and missing RLS grants. tests/a1-assignment.e2e.mjs mounts src/main.tsx with React and captures manual confirmation/cancel, retry-stable cruise transition after a lost response, Cruise Home, offline mutation exclusion, History access with Rotation disabled, Rotation locked before lifecycle resolution, preserved slot, new blast, same-assignment prior-history guidance with a fresh baseline, completion-gated seven-week suggestion, persistent Not Now dismissal, and unchanged lifecycle rotation. Production rollback-only SQL proof covers before/at/after seven weeks, owner isolation, idempotent transitions, future-profile bootstrap, cruise workout/assignment/undo rejection, cross-blast undo rejection, fresh baselines, history preservation, and exact rotation preservation."
 
 [characterization]
 captured_behavior = "The qualified auth/offline shell, rotation setup, six-slot workout runtime, logbook enforcement, and history correction remain while blast-cruise-v1 adds the lifecycle seam around the existing fixed rotation."
@@ -41,10 +41,10 @@ does_not_own = "Rotation advancement or reset, assignment changes, prior perform
 
 [incremental_refactor]
 target = "Add only S07 blast and cruise lifecycle around the qualified S06 rotation and workout boundaries."
-completed_step = "Added one owner lifecycle row, an internal idempotency ledger, one lifecycle RPC, narrow insert/status triggers, a blast-aware replacement of the established recalculation function, and small state/presentation extensions; no package or Supportability Gate change."
+completed_step = "Added one owner lifecycle row with future-profile provisioning, an internal idempotency ledger, one lifecycle RPC, narrow phase guards and insert/status triggers, a blast-aware replacement of the established recalculation function, and small state/presentation extensions; no package or Supportability Gate change."
 
 [review_handoff]
-summary = "Review owner locking and RLS, operation-ID replay, no rotation writes in lifecycle transitions, cruise workout and assignment exclusion, stopped blast clock, completion-gated seven-week eligibility, persistent per-blast dismissal, new-blast logbook reset without history deletion, and actual-React runtime evidence."
+summary = "Review owner locking and RLS, operation-ID replay, future-profile lifecycle provisioning, no rotation writes in lifecycle transitions, cruise workout/assignment/undo exclusion, cross-blast undo rejection, stopped blast clock, completion-gated seven-week eligibility, persistent per-blast dismissal, new-blast logbook reset without history deletion, and actual-React runtime evidence."
 remaining_risks = [
     "Offline lifecycle mutations remain explicitly outside S07; phase actions are disabled without connectivity.",
     "Cruise remains deliberately manual with no duration, reason, countdown, scheduling, or cruise workout logging.",
@@ -102,4 +102,4 @@ justification = "Owns the forward-only phase-boundary reset of stale old-blast e
 path = "supabase/migrations/20260810182600_guard_rotation_assignment_during_cruise.sql"
 owner_path = "supabase/migrations/20260810182600_guard_rotation_assignment_during_cruise.sql"
 basis = "responsibility"
-justification = "Owns the forward-only authoritative blast-phase guard for assignment saves under the existing owner serialization lock."
+justification = "Owns forward-only future-profile lifecycle provisioning plus authoritative blast-phase guards for assignment saves and undo under the existing owner serialization lock."

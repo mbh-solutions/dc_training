@@ -36,7 +36,7 @@ const resetMigration = readFileSync(
   ),
   "utf8",
 );
-const rotationGuardMigration = readFileSync(
+const boundaryMigration = readFileSync(
   new URL(
     "../supabase/migrations/20260810182600_guard_rotation_assignment_during_cruise.sql",
     import.meta.url,
@@ -54,8 +54,11 @@ const historySource = readFileSync(
 const transitionFunction = migration.match(
   /create or replace function public\.transition_training_lifecycle[\s\S]*?\n\$\$;/,
 )?.[0];
-const rotationSaveFunction = rotationGuardMigration.match(
+const rotationSaveFunction = boundaryMigration.match(
   /create or replace function public\.save_rotation_assignment[\s\S]*?\n\$\$;/,
+)?.[0];
+const undoFunction = boundaryMigration.match(
+  /create or replace function public\.undo_workout_step[\s\S]*?\n\$\$;/,
 )?.[0];
 
 test("S07 lifecycle states fail closed and preserve the rotation boundary", () => {
@@ -106,7 +109,7 @@ test("S07 lifecycle states fail closed and preserve the rotation boundary", () =
   assert.ok(rotationSaveFunction, "rotation save RPC guard must exist");
   assert.match(
     rotationSaveFunction,
-    /pg_advisory_xact_lock[\s\S]*phase = 'blast'/,
+    /pg_advisory_xact_lock[\s\S]*insert into public\.training_lifecycle_state[\s\S]*phase = 'blast'/,
   );
   assert.match(
     rotationSaveFunction,
@@ -115,6 +118,29 @@ test("S07 lifecycle states fail closed and preserve the rotation boundary", () =
   assert.doesNotMatch(
     rotationSaveFunction,
     /update public\.training_lifecycle_state/,
+  );
+
+  assert.match(
+    boundaryMigration,
+    /insert into public\.training_lifecycle_state \(user_id\)[\s\S]*from public\.foundation_profiles/,
+  );
+  assert.match(
+    boundaryMigration,
+    /after insert on public\.foundation_profiles/,
+  );
+
+  assert.ok(undoFunction, "workout undo lifecycle guard must exist");
+  assert.match(
+    undoFunction,
+    /pg_advisory_xact_lock[\s\S]*current_lifecycle\.phase <> 'blast'/,
+  );
+  assert.match(
+    undoFunction,
+    /current_workout\.blast_id is distinct from current_lifecycle\.blast_id/,
+  );
+  assert.match(
+    undoFunction,
+    /Workout can no longer be undone in this training lifecycle/,
   );
 
   assert.match(

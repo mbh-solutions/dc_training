@@ -51,10 +51,13 @@ const lifecycleContract =
     "enforcement_action = null",
   ]) &&
   hasAll(read(rotationGuard), [
+    "after insert on public.foundation_profiles",
     "create or replace function public.save_rotation_assignment",
+    "create or replace function public.undo_workout_step",
     "pg_advisory_xact_lock",
     "phase = 'blast'",
     "Rotation changes require an active blast",
+    "current_workout.blast_id is distinct from current_lifecycle.blast_id",
   ]) &&
   read("src/HistoryScreen.tsx").includes(
     "rotationDisabled={!onOpenRotation}",
