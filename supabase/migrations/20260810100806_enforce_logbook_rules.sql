@@ -423,6 +423,7 @@ begin
   if p_operation_id is null then raise exception 'Operation ID required'; end if;
   if p_status not in ('completed', 'skipped') then raise exception 'Invalid step status'; end if;
 
+  perform pg_advisory_xact_lock(hashtextextended(owner_id::text, 0));
   perform pg_advisory_xact_lock(hashtextextended(p_operation_id::text, 0));
 
   select * into prior_operation
@@ -458,6 +459,18 @@ begin
     where workout_id = current_workout.workout_id
       and enforcement_action is not null
   ) then raise exception 'Resolve the logbook decision first'; end if;
+  if current_step.assignment_id is not null and (
+    exists (
+      select 1 from public.assignment_logbook_states
+      where assignment_id = current_step.assignment_id
+        and state in ('first_failure_pending', 'replacement_required')
+    )
+    or exists (
+      select 1 from public.workout_steps
+      where assignment_id = current_step.assignment_id
+        and enforcement_action is not null
+    )
+  ) then raise exception 'Resolve the assignment logbook decision first'; end if;
   if exists (
     select 1 from public.workout_steps
     where workout_id = current_workout.workout_id
@@ -787,6 +800,7 @@ begin
     raise exception 'Invalid logbook action';
   end if;
 
+  perform pg_advisory_xact_lock(hashtextextended(owner_id::text, 0));
   perform pg_advisory_xact_lock(hashtextextended(p_operation_id::text, 0));
   select * into prior_operation
   from public.logbook_operations
@@ -896,6 +910,7 @@ begin
   if owner_id is null then raise exception 'Authentication required'; end if;
   if p_operation_id is null then raise exception 'Operation ID required'; end if;
 
+  perform pg_advisory_xact_lock(hashtextextended(owner_id::text, 0));
   perform pg_advisory_xact_lock(hashtextextended(p_operation_id::text, 0));
   select * into prior_operation
   from public.logbook_operations
@@ -995,6 +1010,7 @@ declare
 begin
   if owner_id is null then raise exception 'Authentication required'; end if;
 
+  perform pg_advisory_xact_lock(hashtextextended(owner_id::text, 0));
   perform pg_advisory_xact_lock(
     hashtext(owner_id::text),
     hashtext(p_slot || ':' || p_body_part)
@@ -1245,6 +1261,7 @@ begin
   if owner_id is null then raise exception 'Authentication required'; end if;
   if p_operation_id is null then raise exception 'Operation ID required'; end if;
 
+  perform pg_advisory_xact_lock(hashtextextended(owner_id::text, 0));
   perform pg_advisory_xact_lock(hashtextextended(p_operation_id::text, 0));
   select * into prior_operation
   from public.logbook_operations
