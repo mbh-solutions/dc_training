@@ -29,6 +29,21 @@ const migration = readFileSync(
   ),
   "utf8",
 );
+const resetMigration = readFileSync(
+  new URL(
+    "../supabase/migrations/20260810180700_reset_new_blast_enforcement.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
+const foundationSource = readFileSync(
+  new URL("../src/FoundationHome.tsx", import.meta.url),
+  "utf8",
+);
+const historySource = readFileSync(
+  new URL("../src/HistoryScreen.tsx", import.meta.url),
+  "utf8",
+);
 const transitionFunction = migration.match(
   /create or replace function public\.transition_training_lifecycle[\s\S]*?\n\$\$;/,
 )?.[0];
@@ -69,6 +84,20 @@ test("S07 lifecycle states fail closed and preserve the rotation boundary", () =
   );
   assert.doesNotMatch(transitionFunction, /workout_rotation_state/);
   assert.doesNotMatch(transitionFunction, /delete from public\.workouts/);
+
+  assert.match(resetMigration, /old\.phase = 'cruise'/);
+  assert.match(resetMigration, /new\.phase = 'blast'/);
+  assert.match(resetMigration, /enforcement_action = null/);
+  assert.match(resetMigration, /step\.user_id = new\.user_id/);
+  assert.doesNotMatch(resetMigration, /verdict = null/);
+  assert.doesNotMatch(resetMigration, /delete from public\.workouts/);
+  assert.doesNotMatch(resetMigration, /workout_rotation_state/);
+
+  assert.match(
+    foundationSource,
+    /rotationOutsideCruise\(workout\.lifecycle, openRotation\)/,
+  );
+  assert.match(historySource, /rotationDisabled=\{!onOpenRotation\}/);
 
   assert.match(migration, /new\.blast_id := lifecycle\.blast_id/);
   assert.match(migration, /workout\.blast_id = current_blast_id/);

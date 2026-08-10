@@ -2,7 +2,7 @@ schema_version = "1.0"
 
 [behavior]
 intended_behavior = "Authenticated owners can enter cruise from Home without consuming the fixed rotation, reload a read-only Cruise Home with History access, start a new blast at the preserved next slot, establish fresh per-blast exercise baselines, and receive one dismissible seven-week suggestion after workout completion and Home return."
-proof = "tests/blast-cruise.test.mjs verifies fail-closed lifecycle shapes and poisons the authoritative SQL transition boundary for rotation mutation, workout deletion, missing owner serialization, missing cruise workout exclusion, missing per-blast tagging, missing fresh-baseline separation, missing one-time dismissal, and missing RLS grants. tests/a1-assignment.e2e.mjs mounts src/main.tsx with React and captures manual confirmation/cancel, retry-stable cruise transition after a lost response, Cruise Home, offline mutation exclusion, History access and return, preserved slot, new blast, same-assignment prior-history guidance with a fresh baseline, completion-gated seven-week suggestion, persistent Not Now dismissal, and unchanged lifecycle rotation. Production rollback-only SQL proof covers before/at/after seven weeks, owner isolation, idempotent transitions, cruise workout rejection, fresh baselines, history preservation, and exact rotation preservation."
+proof = "tests/blast-cruise.test.mjs verifies fail-closed lifecycle shapes and poisons the authoritative SQL transition boundary for rotation mutation, workout deletion, stale old-blast enforcement, missing owner serialization, missing cruise workout exclusion, missing per-blast tagging, missing fresh-baseline separation, missing one-time dismissal, and missing RLS grants. tests/a1-assignment.e2e.mjs mounts src/main.tsx with React and captures manual confirmation/cancel, retry-stable cruise transition after a lost response, Cruise Home, offline mutation exclusion, History access with Rotation disabled, preserved slot, new blast, same-assignment prior-history guidance with a fresh baseline, completion-gated seven-week suggestion, persistent Not Now dismissal, and unchanged lifecycle rotation. Production rollback-only SQL proof covers before/at/after seven weeks, owner isolation, idempotent transitions, cruise workout rejection, fresh baselines, history preservation, and exact rotation preservation."
 
 [characterization]
 captured_behavior = "The qualified auth/offline shell, rotation setup, six-slot workout runtime, logbook enforcement, and history correction remain while blast-cruise-v1 adds the lifecycle seam around the existing fixed rotation."
@@ -16,6 +16,7 @@ after = "workout-domain validates lifecycle rows; workout-api alone reads lifecy
 dependency_direction = "FoundationHome composes HomeScreen and the workout hook; HomeScreen receives lifecycle state and callbacks without cloud access; use-workout delegates lifecycle I/O to workout-api; workout-api alone reaches Supabase; the database RPC and triggers remain authoritative for concurrency, ownership, rotation preservation, and fresh-baseline enforcement."
 reviewed_paths = [
     "src/FoundationHome.tsx",
+    "src/HistoryScreen.tsx",
     "src/HomeScreen.tsx",
     "src/WorkoutTracer.tsx",
     "src/hooks/use-workout.ts",
@@ -23,6 +24,7 @@ reviewed_paths = [
     "src/workout-domain.ts",
     "supabase/migrations/20260810163233_add_blast_cruise_lifecycle.sql",
     "supabase/migrations/20260810174144_backfill_migrated_cruise_suggestions.sql",
+    "supabase/migrations/20260810180700_reset_new_blast_enforcement.sql",
     "tests/blast-cruise.test.mjs",
     "tests/a1-assignment.e2e.mjs",
     "tests/characterization/blast-cruise-v1.characterization.mjs",
@@ -51,7 +53,7 @@ remaining_risks = [
 naming = "Start Cruise, Recovery, paused rotation, preserved next workout, Start New Blast, seven weeks, Consider a Cruise, Not Now, and fresh baseline labels match the locked product ledger."
 cohesion = "Presentation, React state, cloud I/O, row validation, and authoritative transactional lifecycle logic remain separate."
 intended_behavior = "The owner controls cruise and new-blast transitions without losing rotation position or history, while the database prevents cruise workouts and old-blast failures from leaking into the new blast."
-reviewability = "Two forward-only migrations, narrow established-boundary extensions, one focused contract test, one additive characterization, and one extended actual-React packet cover S07 only."
+reviewability = "Three forward-only migrations, narrow established-boundary extensions, one focused contract test, one additive characterization, and one extended actual-React packet cover S07 only."
 
 [[module_boundaries]]
 path = "src/HomeScreen.tsx"
@@ -88,3 +90,9 @@ path = "supabase/migrations/20260810174144_backfill_migrated_cruise_suggestions.
 owner_path = "supabase/migrations/20260810174144_backfill_migrated_cruise_suggestions.sql"
 basis = "responsibility"
 justification = "Owns the forward-only eligibility repair for completed workouts migrated into the initial blast without changing dismissal or rotation state."
+
+[[module_boundaries]]
+path = "supabase/migrations/20260810180700_reset_new_blast_enforcement.sql"
+owner_path = "supabase/migrations/20260810180700_reset_new_blast_enforcement.sql"
+basis = "responsibility"
+justification = "Owns the forward-only phase-boundary reset of stale old-blast enforcement without changing performance history, assignments, or rotation state."

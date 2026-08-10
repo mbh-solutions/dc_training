@@ -2632,6 +2632,9 @@ await act(async () => {
 await settleLoading();
 const cruiseHistoryAvailable =
   document.querySelector(".history-header h1")?.textContent === "HISTORY";
+const cruiseRotationUnavailable = [...document.querySelectorAll("button")].some(
+  (button) => button.textContent.includes("ROTATION") && button.disabled,
+);
 await act(async () => {
   [...document.querySelectorAll("button")]
     .find((button) => button.textContent.includes("HOME"))
@@ -2719,6 +2722,7 @@ const blastCruiseRuntime =
   cruiseHomeReadOnly &&
   cruiseOfflineMutationBlocked &&
   cruisePersistsAfterHistory &&
+  cruiseRotationUnavailable &&
   cruiseRetryIdempotent &&
   cruiseSuggestionDismissedForBlast &&
   cruiseSuggestionHiddenUntilHome &&
@@ -2961,6 +2965,7 @@ const blastCruiseDetail = {
   cruiseHomeReadOnly,
   cruiseOfflineMutationBlocked,
   cruisePersistsAfterHistory,
+  cruiseRotationUnavailable,
   cruiseRetryIdempotent,
   cruiseSuggestionDismissedForBlast,
   cruiseSuggestionHiddenUntilHome,

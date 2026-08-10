@@ -4,6 +4,7 @@ import HomeScreen from "./HomeScreen.jsx";
 import RotationSetup from "./RotationSetup.jsx";
 import { WorkoutComplete, WorkoutTracer } from "./WorkoutTracer.jsx";
 import { useWorkout } from "./hooks/use-workout.js";
+import type { TrainingLifecycle } from "./workout-domain.js";
 
 export type FoundationHomeProps = {
   cloudStatus: string;
@@ -19,6 +20,10 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
   const [showRotationSetup, setShowRotationSetup] = useState(false);
   const [showWorkout, setShowWorkout] = useState(false);
   const workout = useWorkout(userId, homeProps.online);
+  const openRotation = () => {
+    setShowHistory(false);
+    setShowRotationSetup(true);
+  };
 
   if (workout.completedWorkout) {
     return (
@@ -85,10 +90,7 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
       <HistoryScreen
         online={homeProps.online}
         onHome={() => setShowHistory(false)}
-        onOpenRotation={() => {
-          setShowHistory(false);
-          setShowRotationSetup(true);
-        }}
+        onOpenRotation={rotationOutsideCruise(workout.lifecycle, openRotation)}
         userId={userId}
       />
     );
@@ -105,7 +107,7 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
       message={workout.message}
       nextSlot={workout.nextSlot}
       onOpenHistory={() => setShowHistory(true)}
-      onOpenRotation={() => setShowRotationSetup(true)}
+      onOpenRotation={openRotation}
       onResumeWorkout={() => setShowWorkout(true)}
       onDismissCruiseSuggestion={workout.dismissCruiseSuggestion}
       onStartCruise={workout.startCruise}
@@ -115,6 +117,14 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
       }}
     />
   );
+}
+
+function rotationOutsideCruise(
+  lifecycle: TrainingLifecycle | null,
+  onOpenRotation: () => void,
+) {
+  if (lifecycle?.phase === "cruise") return undefined;
+  return onOpenRotation;
 }
 
 export default FoundationHome;

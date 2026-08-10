@@ -17,7 +17,7 @@ import { weightMicrograms, type WeightEntry } from "./weight-conversion.js";
 type Props = {
   online: boolean;
   onHome: () => void;
-  onOpenRotation: () => void;
+  onOpenRotation?: () => void;
   userId: string;
 };
 
@@ -204,7 +204,7 @@ function LoadedHistory({
   online: boolean;
   onEditStep: (stepId: string | null) => void;
   onHome: () => void;
-  onOpenRotation: () => void;
+  onOpenRotation?: () => void;
   onSaveCorrection: SaveCorrection;
   onSelectAssignment: (assignmentId: string | null) => void;
   onSelectWorkout: (workoutId: string | null) => void;
@@ -344,7 +344,7 @@ function HistoryShell({
 }: {
   children: React.ReactNode;
   onHome: () => void;
-  onOpenRotation: () => void;
+  onOpenRotation?: () => void;
 }) {
   return (
     <div className="app-shell history-shell">
@@ -354,7 +354,8 @@ function HistoryShell({
         active="history"
         onHistory={() => undefined}
         onHome={onHome}
-        onRotation={onOpenRotation}
+        onRotation={onOpenRotation ?? (() => undefined)}
+        rotationDisabled={!onOpenRotation}
       />
     </div>
   );
