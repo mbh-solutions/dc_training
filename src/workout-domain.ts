@@ -41,7 +41,10 @@ export type PerformanceHistoryEntry = {
   assignment_id: string;
   duration_seconds: number | null;
   performed_at: string;
+  protocol: "rest_pause" | "straight_set" | "timed_hold";
   reps: number[];
+  structure: string;
+  target_sets: { max: number; min: number }[];
   verdict: "failure" | "win" | null;
   weight_entries: WeightEntry[];
 };
@@ -441,11 +444,28 @@ function validHistoryEntry(value: unknown): value is PerformanceHistoryEntry {
   return (
     typeof row.assignment_id === "string" &&
     typeof row.performed_at === "string" &&
+    validHistoryConfiguration(row) &&
     validHistoryWeights(row.weight_entries) &&
     validHistoryReps(row.reps) &&
     validHistoryDuration(row.duration_seconds) &&
     validHistoryVerdict(row.verdict)
   );
+}
+
+function validHistoryConfiguration(row: Record<string, unknown>) {
+  const protocolValid = ["rest_pause", "straight_set", "timed_hold"].includes(
+    row.protocol as string,
+  );
+  if (
+    !protocolValid ||
+    typeof row.structure !== "string" ||
+    !Array.isArray(row.target_sets) ||
+    !row.target_sets.every(validTargetSet)
+  )
+    return false;
+  if (row.protocol === "rest_pause") return row.target_sets.length === 1;
+  if (row.protocol === "timed_hold") return row.target_sets.length === 0;
+  return true;
 }
 
 function validHistoryWeights(value: unknown) {

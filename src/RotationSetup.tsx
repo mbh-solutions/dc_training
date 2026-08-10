@@ -19,6 +19,7 @@ import { useState } from "react";
 type RotationSetupProps = {
   onBack: () => void;
   replacement?: {
+    message: string;
     onSave: (
       step: WorkoutStep,
       exercise: string,
@@ -110,7 +111,7 @@ function RotationSetup({ onBack, replacement, userId }: RotationSetupProps) {
       editAssignment={editAssignment}
       exercise={editor.exercise}
       loadState={loadState}
-      message={message}
+      message={replacement?.message || message}
       onBack={onBack}
       onExerciseBack={replacement ? onBack : flow.onExerciseBack}
       onExerciseContinue={flow.onExerciseContinue}

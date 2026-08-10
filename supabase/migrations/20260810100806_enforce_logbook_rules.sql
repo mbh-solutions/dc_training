@@ -18,20 +18,11 @@ alter table public.assignment_logbook_states enable row level security;
 alter table public.logbook_operations enable row level security;
 
 revoke all on table public.assignment_logbook_states, public.logbook_operations from anon, authenticated;
-grant select, insert, update, delete on table public.assignment_logbook_states to authenticated;
-grant select, insert on table public.logbook_operations to authenticated;
+grant select on table public.assignment_logbook_states, public.logbook_operations to authenticated;
 
-create policy "Users own their assignment logbook states"
-on public.assignment_logbook_states for all to authenticated
+create policy "Users can view their assignment logbook states"
+on public.assignment_logbook_states for select to authenticated
 using (
-  (select auth.uid()) = user_id
-  and exists (
-    select 1 from public.rotation_assignment_versions assignment
-    where assignment.assignment_id = assignment_logbook_states.assignment_id
-      and assignment.user_id = (select auth.uid())
-  )
-)
-with check (
   (select auth.uid()) = user_id
   and exists (
     select 1 from public.rotation_assignment_versions assignment
@@ -40,17 +31,9 @@ with check (
   )
 );
 
-create policy "Users own their logbook operations"
-on public.logbook_operations for all to authenticated
+create policy "Users can view their logbook operations"
+on public.logbook_operations for select to authenticated
 using (
-  (select auth.uid()) = user_id
-  and exists (
-    select 1 from public.workout_steps step
-    where step.step_id = logbook_operations.step_id
-      and step.user_id = (select auth.uid())
-  )
-)
-with check (
   (select auth.uid()) = user_id
   and exists (
     select 1 from public.workout_steps step
@@ -313,6 +296,9 @@ begin
       jsonb_build_object(
         'assignment_id', historical_assignment.assignment_id,
         'performed_at', workout.started_at,
+        'protocol', historical_assignment.protocol,
+        'structure', historical_assignment.structure,
+        'target_sets', historical_assignment.target_sets,
         'weight_entries', step.weight_entries,
         'reps', step.reps,
         'duration_seconds', step.duration_seconds,
@@ -363,7 +349,7 @@ create or replace function public.save_workout_step(
 )
 returns jsonb
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
@@ -727,7 +713,7 @@ create or replace function public.resolve_logbook_action(
 )
 returns jsonb
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
@@ -830,7 +816,7 @@ create or replace function public.replace_failed_assignment(
 )
 returns jsonb
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
@@ -991,7 +977,7 @@ $$;
 create or replace function public.recalculate_assignment_logbook(p_assignment_id uuid)
 returns jsonb
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
@@ -1139,7 +1125,7 @@ create or replace function public.correct_workout_performance(
 )
 returns jsonb
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
@@ -1209,7 +1195,7 @@ create or replace function public.undo_workout_step(
 )
 returns public.workout_steps
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
@@ -1353,7 +1339,7 @@ revoke execute on function public.save_workout_step(uuid, uuid, text, jsonb, int
 revoke execute on function public.resolve_logbook_action(uuid, uuid, text) from public, anon;
 revoke execute on function public.replace_failed_assignment(uuid, uuid, text, text, text, jsonb) from public, anon;
 revoke execute on function public.save_rotation_assignment(text, text, text, text, text, jsonb) from public, anon;
-revoke execute on function public.recalculate_assignment_logbook(uuid) from public, anon;
+revoke execute on function public.recalculate_assignment_logbook(uuid) from public, anon, authenticated;
 revoke execute on function public.correct_workout_performance(uuid, uuid, jsonb, integer[], integer) from public, anon;
 revoke execute on function public.undo_workout_step(uuid, uuid) from public, anon;
 
@@ -1365,6 +1351,5 @@ grant execute on function public.save_workout_step(uuid, uuid, text, jsonb, inte
 grant execute on function public.resolve_logbook_action(uuid, uuid, text) to authenticated;
 grant execute on function public.replace_failed_assignment(uuid, uuid, text, text, text, jsonb) to authenticated;
 grant execute on function public.save_rotation_assignment(text, text, text, text, text, jsonb) to authenticated;
-grant execute on function public.recalculate_assignment_logbook(uuid) to authenticated;
 grant execute on function public.correct_workout_performance(uuid, uuid, jsonb, integer[], integer) to authenticated;
 grant execute on function public.undo_workout_step(uuid, uuid) to authenticated;

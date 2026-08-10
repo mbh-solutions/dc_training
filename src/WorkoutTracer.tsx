@@ -390,10 +390,10 @@ function PreviousPerformance({ step }: { step: WorkoutStep }) {
         <div className="previous-list">
           {retired.weight_entries.map((weight, index) => (
             <output key={index}>
-              <b>{entryLabel(step, index)}</b>
+              <b>{entryLabel(retired.protocol, index)}</b>
               <span>
                 {performanceValue(
-                  step,
+                  retired.protocol,
                   weight,
                   index,
                   retired.reps,
@@ -415,7 +415,7 @@ function PreviousPerformance({ step }: { step: WorkoutStep }) {
         <div className="previous-list">
           {step.previous_weight_entries.map((weight, index) => (
             <output key={index}>
-              <b>{entryLabel(step, index)}</b>
+              <b>{entryLabel(step.protocol, index)}</b>
               <span>{previousValue(step, weight, index)}</span>
             </output>
           ))}
@@ -581,15 +581,15 @@ function workoutProgress(steps: WorkoutStep[], step: WorkoutStep) {
   };
 }
 
-function entryLabel(step: WorkoutStep, index: number) {
-  if (step.protocol === "rest_pause") return "WORK SET";
-  if (step.protocol === "timed_hold") return "TIMED HOLD";
+function entryLabel(protocol: WorkoutStep["protocol"], index: number) {
+  if (protocol === "rest_pause") return "WORK SET";
+  if (protocol === "timed_hold") return "TIMED HOLD";
   return `SET ${index + 1}`;
 }
 
 function previousValue(step: WorkoutStep, weight: WeightEntry, index: number) {
   return performanceValue(
-    step,
+    step.protocol,
     weight,
     index,
     step.previous_reps,
@@ -598,17 +598,15 @@ function previousValue(step: WorkoutStep, weight: WeightEntry, index: number) {
 }
 
 function performanceValue(
-  step: WorkoutStep,
+  protocol: WorkoutStep["protocol"],
   weight: WeightEntry,
   index: number,
   reps: number[],
   durationSeconds: number | null,
 ) {
   const load = `${weight.amount} ${weight.unit.toUpperCase()}`;
-  if (step.protocol === "timed_hold")
-    return `${load} · ${durationSeconds} SECONDS`;
-  if (step.protocol === "rest_pause")
-    return `${load} · ${reps.join(" / ")} REPS`;
+  if (protocol === "timed_hold") return `${load} · ${durationSeconds} SECONDS`;
+  if (protocol === "rest_pause") return `${load} · ${reps.join(" / ")} REPS`;
   return `${load} · ${reps[index]} REPS`;
 }
 
@@ -808,7 +806,7 @@ function ComparisonTable({ step }: { step: WorkoutStep }) {
       </div>
       {step.weight_entries.map((_, index) => (
         <div role="row" key={index}>
-          <b>{entryLabel(step, index)}</b>
+          <b>{entryLabel(step.protocol, index)}</b>
           <span>{comparisonValue(step, true, index)}</span>
           <span>{comparisonValue(step, false, index)}</span>
           <strong>{comparisonVerdict(step, index)}</strong>

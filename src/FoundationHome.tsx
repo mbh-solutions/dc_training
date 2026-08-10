@@ -39,6 +39,7 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
       <RotationSetup
         onBack={() => workout.beginReplacement(null)}
         replacement={{
+          message: workout.message,
           onSave: workout.replaceAssignment,
           slot: workout.activeWorkout.slot,
           step: workout.replacementStep,

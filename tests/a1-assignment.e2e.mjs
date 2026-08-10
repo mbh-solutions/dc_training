@@ -99,6 +99,7 @@ const workoutOperations = new Map();
 const logbookOperations = new Map();
 let logbookScenario = null;
 let logbookWorkoutCount = 0;
+let failNextReplacement = true;
 const rotationOrder = {
   A1: "B1",
   B1: "A2",
@@ -302,12 +303,18 @@ const logbookWorkoutTemplate = (scenario, workout_id) => {
   step.fresh_baseline = scenario === "returned_baseline";
   step.mulligan_used = scenario === "second_failure";
   if (scenario === "returned_baseline") {
+    step.protocol = "straight_set";
+    step.structure = "none";
+    step.target_sets = [];
     step.reference_history = [
       {
         assignment_id: "assignment-retired-chest",
         duration_seconds: null,
         performed_at: "2026-07-01T10:00:00Z",
+        protocol: "rest_pause",
         reps: [8, 4, 2],
+        structure: "11-15",
+        target_sets: [{ min: 11, max: 15 }],
         verdict: "failure",
         weight_entries: [
           { amount: "100", micrograms: "45359237000", unit: "lb" },
@@ -557,6 +564,10 @@ const client = {
       return { data, error: null };
     }
     if (name === "replace_failed_assignment") {
+      if (failNextReplacement) {
+        failNextReplacement = false;
+        return { data: null, error: { message: "REPLACEMENT RPC FAILED" } };
+      }
       if (logbookOperations.has(values.p_operation_id))
         return {
           data: logbookOperations.get(values.p_operation_id),
@@ -1743,6 +1754,13 @@ await act(async () => {
     .click();
   await flush();
 });
+const replacementFailureShown = text().includes("REPLACEMENT RPC FAILED");
+await act(async () => {
+  [...document.querySelectorAll("button")]
+    .find((button) => button.textContent.trim() === "SAVE")
+    .click();
+  await flush();
+});
 const replacementCompleted =
   text().includes("COMPLETE") &&
   hasCall("rpc", (call) => call[1] === "replace_failed_assignment");
@@ -1761,8 +1779,9 @@ await startLogbookScenario("returned_baseline");
 const returnedHistoryShown =
   text().includes("REASSIGNED / FRESH BASELINE") &&
   text().includes("PRIOR HISTORY PRESERVED") &&
+  text().includes("WORK SET") &&
   text().includes("100 LB · 8 / 4 / 2 REPS");
-await saveExercise("105");
+await saveStraightSets(["105"], [8]);
 const returnedBaselineShown =
   text().includes("COMPLETE") &&
   document
@@ -1777,6 +1796,7 @@ const logbookRuntime =
   mulliganMarked &&
   replacementRequired &&
   failedExerciseExcluded &&
+  replacementFailureShown &&
   replacementCompleted &&
   replacementRetryIdempotent &&
   returnedHistoryShown &&
