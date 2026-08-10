@@ -933,8 +933,7 @@ begin
   )
   returning * into saved_assignment;
 
-  update public.assignment_logbook_states
-  set state = 'replacement_required', updated_at = now()
+  delete from public.assignment_logbook_states
   where assignment_id = current_assignment.assignment_id;
 
   update public.workout_steps set
