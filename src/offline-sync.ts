@@ -40,11 +40,15 @@ type AssignmentPayload = {
   structure: string;
   target_sets: TargetSet[];
 };
+type RotationAssignmentPayload = AssignmentPayload & {
+  expected_assignment_id: string | null;
+};
 type AssignmentLogbookState =
   "first_failure_pending" | "mulligan_used" | "replacement_required";
 type StartWorkoutPayload = {
   assignments: Record<string, string>;
   blast_id: string;
+  previous_workout_operation_id: string | null;
   slot: WorkoutSlot;
 };
 type LifecycleTransitionAction =
@@ -83,7 +87,11 @@ export type OfflineOperationInput =
       kind: "replace_failed_assignment";
       payload: AssignmentPayload & StepTarget;
     }
-  | { id: string; kind: "save_rotation_assignment"; payload: AssignmentPayload }
+  | {
+      id: string;
+      kind: "save_rotation_assignment";
+      payload: RotationAssignmentPayload;
+    }
   | {
       id: string;
       kind: "correct_history_performance";
@@ -567,7 +575,15 @@ export function startWorkoutPayload(
       return [position, assignment.assignment_id];
     }),
   );
-  return { assignments, blast_id: blastId, slot };
+  const previousWorkout = sortHistoryWorkouts(state.history.workouts).find(
+    (workout) => workout.status === "completed",
+  );
+  return {
+    assignments,
+    blast_id: blastId,
+    previous_workout_operation_id: previousWorkout?.start_operation_id ?? null,
+    slot,
+  };
 }
 
 export function lifecycleTransitionPayload(
@@ -621,13 +637,7 @@ function startLocalWorkout(
   if (hasPendingLogbookDecision(state))
     throw new Error("RESOLVE THE LOGBOOK DECISION FIRST");
   const intended = startWorkoutPayload(state);
-  if (
-    operation.payload.slot !== intended.slot ||
-    operation.payload.blast_id !== intended.blast_id ||
-    JSON.stringify(operation.payload.assignments) !==
-      JSON.stringify(intended.assignments)
-  )
-    throw new Error("OFFLINE START CONTEXT CHANGED");
+  assertStartContext(operation.payload, intended);
   const slot = intended.slot;
   const assignments = positionsFor(slot).map(
     (position) => state.assignments[assignmentKey(slot, position)],
@@ -661,6 +671,20 @@ function startLocalWorkout(
   state.recentOperation = null;
   state.recentlyCompletedWorkout = null;
   return state;
+}
+
+function assertStartContext(
+  queued: StartWorkoutPayload,
+  current: StartWorkoutPayload,
+) {
+  if (
+    queued.slot !== current.slot ||
+    queued.blast_id !== current.blast_id ||
+    queued.previous_workout_operation_id !==
+      current.previous_workout_operation_id ||
+    JSON.stringify(queued.assignments) !== JSON.stringify(current.assignments)
+  )
+    throw new Error("OFFLINE START CONTEXT CHANGED");
 }
 
 function hasPendingLogbookDecision(state: OfflineAccountState) {
@@ -1113,6 +1137,7 @@ function saveLocalAssignment(
     operation.payload.body_part,
   );
   const current = state.assignments[key];
+  assertAssignmentContext(current, operation.payload.expected_assignment_id);
   if (current && state.logbookStates[current.assignment_id])
     throw new Error("RESOLVE THE ACTIVE LOGBOOK LIFECYCLE FIRST");
   if (sameAssignment(current, operation.payload)) return state;
@@ -1122,6 +1147,14 @@ function saveLocalAssignment(
     );
   saveAssignmentRecord(state, operation, current?.assignment_id ?? null);
   return state;
+}
+
+function assertAssignmentContext(
+  current: Assignment | undefined,
+  expectedAssignmentId: string | null,
+) {
+  if ((current?.assignment_id ?? null) !== expectedAssignmentId)
+    throw new Error("OFFLINE ASSIGNMENT CONTEXT CHANGED");
 }
 
 function sameAssignment(

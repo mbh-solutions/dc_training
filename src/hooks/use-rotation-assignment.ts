@@ -36,6 +36,8 @@ export function useRotationAssignments(
       payload: {
         body_part: bodyPart,
         exercise,
+        expected_assignment_id:
+          accountState?.assignments[key]?.assignment_id ?? null,
         protocol,
         slot,
         structure,

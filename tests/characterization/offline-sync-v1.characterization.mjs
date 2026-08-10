@@ -18,6 +18,8 @@ const lifecycleMigration =
   "supabase/migrations/20260810222500_validate_offline_lifecycle_context.sql";
 const blastReferenceRepair =
   "supabase/migrations/20260810223500_fix_offline_blast_reference_resolution.sql";
+const versionValidationMigration =
+  "supabase/migrations/20260810234000_validate_offline_versions.sql";
 const read = (relativePath) =>
   readFileSync(path.join(target, relativePath), "utf8");
 const hasAll = (source, fragments) =>
@@ -44,6 +46,7 @@ const offlineContract =
   existsSync(path.join(target, convergenceMigration)) &&
   existsSync(path.join(target, lifecycleMigration)) &&
   existsSync(path.join(target, blastReferenceRepair)) &&
+  existsSync(path.join(target, versionValidationMigration)) &&
   hasAll(read(offlineModule), [
     'const databaseName = "dc-training-offline"',
     "[stateStore, operationStore]",
@@ -58,6 +61,8 @@ const offlineContract =
     "preserveActiveWorkoutStepIds",
     "lifecycleTransitionPayload",
     "startWorkoutPayload",
+    "expected_assignment_id",
+    "previous_workout_operation_id",
     "workouts.get(step.workout_id)?.blast_id === currentBlastId",
     "startOperationForWorkout(state, step.workout_id)",
     "historyWorkout.start_operation_id",
@@ -120,6 +125,15 @@ const offlineContract =
     "private.resolve_offline_blast_reference",
     "reference_operation_id",
     "Offline lifecycle blast is not synchronized",
+  ]) &&
+  hasAll(read(versionValidationMigration), [
+    "private.resolve_offline_assignment_reference",
+    "private.assert_offline_assignment_context",
+    "private.assert_offline_rotation_predecessor",
+    "Offline assignment context changed",
+    "Offline start rotation predecessor changed",
+    "perform private.assert_offline_assignment_context(owner_id, p_payload)",
+    "perform private.assert_offline_rotation_predecessor(owner_id, p_payload)",
   ]);
 
 process.stdout.write(
