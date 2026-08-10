@@ -1016,6 +1016,7 @@ function finishLocalWorkout(state: OfflineAccountState, createdAt: number) {
   );
   if (historyWorkout) Object.assign(historyWorkout, completed);
   state.history!.workouts = sortHistoryWorkouts(state.history!.workouts);
+  recalculateLocalCruiseSuggestion(state);
   return state;
 }
 
@@ -1502,7 +1503,25 @@ function undoLocalStep(
     historyWorkout.start_operation_id;
   state.recentOperation = null;
   state.recentlyCompletedWorkout = null;
+  recalculateLocalCruiseSuggestion(state);
   return state;
+}
+
+function recalculateLocalCruiseSuggestion(state: OfflineAccountState) {
+  const lifecycle = state.workout?.lifecycle;
+  if (!lifecycle || !state.history) return;
+  const threshold =
+    Date.parse(lifecycle.blast_started_at ?? "") + 49 * 86_400_000;
+  lifecycle.suggestion_due =
+    lifecycle.phase === "blast" &&
+    lifecycle.suggestion_dismissed === false &&
+    Number.isFinite(threshold) &&
+    state.history.workouts.some(
+      (workout) =>
+        workout.blast_id === lifecycle.blast_id &&
+        workout.status === "completed" &&
+        Date.parse(workout.completed_at ?? "") >= threshold,
+    );
 }
 
 function targetStepIndex(

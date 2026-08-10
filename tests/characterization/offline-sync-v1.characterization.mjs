@@ -54,6 +54,7 @@ const offlineContract =
     "created_at: new Date(operation.createdAt).toISOString()",
     '.from("assignment_logbook_states")',
     "recalculateLocalAssignmentLogbook",
+    "recalculateLocalCruiseSuggestion",
     "preserveActiveWorkoutStepIds",
     "lifecycleTransitionPayload",
     "startWorkoutPayload",
