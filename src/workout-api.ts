@@ -1,9 +1,13 @@
 import type { WorkoutSlot } from "./rotation-config.js";
 import {
   isWorkoutSlot,
+  sortHistoryWorkouts,
+  validHistoryAssignment,
+  validHistoryWorkout,
   validRotationState,
   validWorkout,
   validWorkoutStep,
+  type HistoryData,
   type Workout,
   type WorkoutStep,
 } from "./workout-domain.js";
@@ -11,6 +15,8 @@ import { supabase } from "./lib/supabase.js";
 import type { WeightEntry } from "./weight-conversion.js";
 
 type ApiResult<T> = { data: T | null; error: string };
+const workoutStepColumns =
+  "step_id,workout_id,ordinal,kind,body_part,assignment_id,exercise,protocol,structure,target_sets,status,weight_entries,reps,duration_seconds,previous_weight_entries,previous_reps,previous_duration_seconds,verdict,set_verdicts,enforcement_action,fresh_baseline,mulligan_used,reference_history,resolution,last_operation_id";
 export type SaveResult = {
   completed_now?: boolean;
   next_slot: WorkoutSlot;
@@ -58,9 +64,7 @@ export async function loadWorkoutState(
 
   const stepResult = await supabase!
     .from("workout_steps")
-    .select(
-      "step_id,workout_id,ordinal,kind,body_part,assignment_id,exercise,protocol,structure,target_sets,status,weight_entries,reps,duration_seconds,previous_weight_entries,previous_reps,previous_duration_seconds,verdict,set_verdicts,enforcement_action,fresh_baseline,mulligan_used,reference_history,resolution,last_operation_id",
-    )
+    .select(workoutStepColumns)
     .eq("user_id", userId)
     .eq("workout_id", workout.workout_id)
     .order("ordinal");
@@ -72,6 +76,71 @@ export async function loadWorkoutState(
     steps: stepResult.data,
     workout,
   });
+}
+
+export async function loadHistoryState(
+  userId: string,
+): Promise<ApiResult<HistoryData>> {
+  const [workouts, assignments, steps] = await Promise.all([
+    supabase!
+      .from("workouts")
+      .select("workout_id,slot,status,started_at,completed_at")
+      .eq("user_id", userId)
+      .order("started_at", { ascending: false }),
+    supabase!
+      .from("rotation_assignment_versions")
+      .select(
+        "assignment_id,slot,body_part,exercise,protocol,structure,target_sets,active,created_at",
+      )
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true }),
+    supabase!
+      .from("workout_steps")
+      .select(workoutStepColumns)
+      .eq("user_id", userId)
+      .order("ordinal"),
+  ]);
+  if (
+    workouts.error ||
+    assignments.error ||
+    steps.error ||
+    !Array.isArray(workouts.data) ||
+    !workouts.data.every(validHistoryWorkout) ||
+    !Array.isArray(assignments.data) ||
+    !assignments.data.every(validHistoryAssignment) ||
+    !Array.isArray(steps.data) ||
+    !steps.data.every(validWorkoutStep)
+  )
+    return failure("HISTORY COULD NOT BE LOADED");
+  return success({
+    assignments: assignments.data,
+    steps: steps.data,
+    workouts: sortHistoryWorkouts(workouts.data),
+  });
+}
+
+export async function correctHistoryPerformance(
+  operationId: string,
+  stepId: string,
+  weights: WeightEntry[],
+  reps: number[],
+  durationSeconds: number | null,
+): Promise<ApiResult<WorkoutStep>> {
+  const { data, error } = await supabase!.rpc("correct_workout_performance", {
+    p_duration_seconds: durationSeconds,
+    p_operation_id: operationId,
+    p_reps: reps,
+    p_step_id: stepId,
+    p_weights: weights,
+  });
+  if (error || !data || typeof data !== "object")
+    return failure(error?.message ?? "CORRECTION COULD NOT BE SAVED");
+  const result = data as Record<string, unknown>;
+  return validWorkoutStep(result.step) &&
+    Array.isArray(result.recalculated_steps) &&
+    result.recalculated_steps.every(validWorkoutStep)
+    ? success(result.step)
+    : failure("CORRECTION RESPONSE WAS INVALID");
 }
 
 export async function startWorkout(

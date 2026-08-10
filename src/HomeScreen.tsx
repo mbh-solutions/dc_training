@@ -7,6 +7,7 @@ type HomeScreenProps = Omit<FoundationHomeProps, "userId"> & {
   loadingWorkout: boolean;
   message: string;
   nextSlot: WorkoutSlot;
+  onOpenHistory: () => void;
   onOpenRotation: () => void;
   onResumeWorkout: () => void;
   onStartWorkout: () => Promise<void>;
@@ -30,6 +31,7 @@ function HomeScreen({
   message,
   nextSlot,
   online,
+  onOpenHistory,
   onOpenRotation,
   onResumeWorkout,
   onSignOut,
@@ -98,6 +100,12 @@ function HomeScreen({
           {email?.toUpperCase()}
         </p>
       </main>
+      <BottomNavigation
+        active="home"
+        onHome={() => undefined}
+        onHistory={onOpenHistory}
+        onRotation={onOpenRotation}
+      />
     </div>
   );
 }
@@ -181,5 +189,51 @@ function NetworkStatus({
         : "ONLINE";
   return <div className="status-strip status-strip--quiet">{label}</div>;
 }
+
+export function BottomNavigation({
+  active,
+  onHistory,
+  onHome,
+  onRotation,
+}: {
+  active: "history" | "home" | "rotation";
+  onHistory: () => void;
+  onHome: () => void;
+  onRotation: () => void;
+}) {
+  return (
+    <nav aria-label="Primary" className="bottom-navigation">
+      <style>{bottomNavigationStyles}</style>
+      <button
+        aria-current={active === "home" ? "page" : undefined}
+        onClick={onHome}
+        type="button"
+      >
+        <span>⌂</span>HOME
+      </button>
+      <button
+        aria-current={active === "history" ? "page" : undefined}
+        onClick={onHistory}
+        type="button"
+      >
+        <span>◷</span>HISTORY
+      </button>
+      <button
+        aria-current={active === "rotation" ? "page" : undefined}
+        onClick={onRotation}
+        type="button"
+      >
+        <span>⟳</span>ROTATION
+      </button>
+    </nav>
+  );
+}
+
+const bottomNavigationStyles = `
+.bottom-navigation { position: sticky; z-index: 5; bottom: 0; display: grid; grid-template-columns: repeat(3, 1fr); margin: 36px -22px calc(-28px - env(safe-area-inset-bottom)); border-top: 1px solid var(--line); padding: 10px 10px max(12px, env(safe-area-inset-bottom)); background: rgba(7,7,7,.96); backdrop-filter: blur(16px); }
+.bottom-navigation button { min-height: 58px; display: grid; place-items: center; gap: 2px; border: 0; color: var(--gray); background: transparent; font-size: .82rem; cursor: pointer; }
+.bottom-navigation button span { font-family: sans-serif; font-size: 1.8rem; line-height: 1; }
+.bottom-navigation button[aria-current="page"] { color: var(--red); }
+`;
 
 export default HomeScreen;

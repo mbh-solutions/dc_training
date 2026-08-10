@@ -8,6 +8,28 @@ export type Workout = {
   workout_id: string;
 };
 
+export type HistoryWorkout = Workout & {
+  started_at: string;
+};
+
+export type HistoryAssignment = {
+  active: boolean;
+  assignment_id: string;
+  body_part: string;
+  created_at: string;
+  exercise: string;
+  protocol: "rest_pause" | "straight_set" | "timed_hold";
+  slot: WorkoutSlot;
+  structure: string;
+  target_sets: { max: number; min: number }[];
+};
+
+export type HistoryData = {
+  assignments: HistoryAssignment[];
+  steps: WorkoutStep[];
+  workouts: HistoryWorkout[];
+};
+
 export type WorkoutStep = {
   assignment_id: string | null;
   body_part: string;
@@ -184,6 +206,78 @@ const stretchBodyParts = new Set([
   "quadriceps",
 ]);
 
+export const HISTORY_BODY_PARTS = [
+  "chest",
+  "shoulders",
+  "triceps",
+  "back_width",
+  "back_thickness",
+  "biceps",
+  "forearms",
+  "calves",
+  "hamstrings",
+  "quadriceps",
+  "abs_1",
+  "abs_2",
+] as const;
+
+export function sortHistoryWorkouts(workouts: HistoryWorkout[]) {
+  return [...workouts].sort(
+    (left, right) =>
+      Number(right.status === "in_progress") -
+        Number(left.status === "in_progress") ||
+      Date.parse(right.started_at) - Date.parse(left.started_at),
+  );
+}
+
+export function currentHistoryGroups(assignments: HistoryAssignment[]) {
+  return HISTORY_BODY_PARTS.map((bodyPart) => ({
+    assignments: assignments
+      .filter(
+        (assignment) => assignment.active && assignment.body_part === bodyPart,
+      )
+      .sort((left, right) =>
+        left.slot.localeCompare(right.slot, "en", { numeric: true }),
+      ),
+    bodyPart,
+  })).filter((group) => group.assignments.length > 0);
+}
+
+export function retiredHistoryAssignments(assignments: HistoryAssignment[]) {
+  const active = new Set(
+    assignments
+      .filter((assignment) => assignment.active)
+      .map(historyAssignmentKey),
+  );
+  const retired = new Map<string, HistoryAssignment>();
+  for (const assignment of assignments) {
+    const key = historyAssignmentKey(assignment);
+    const previous = retired.get(key);
+    if (
+      !assignment.active &&
+      !active.has(key) &&
+      (!previous ||
+        Date.parse(assignment.created_at) > Date.parse(previous.created_at))
+    )
+      retired.set(key, assignment);
+  }
+  return [...retired.values()].sort(
+    (left, right) =>
+      HISTORY_BODY_PARTS.indexOf(
+        left.body_part as (typeof HISTORY_BODY_PARTS)[number],
+      ) -
+        HISTORY_BODY_PARTS.indexOf(
+          right.body_part as (typeof HISTORY_BODY_PARTS)[number],
+        ) || left.slot.localeCompare(right.slot, "en", { numeric: true }),
+  );
+}
+
+export function historyAssignmentKey(
+  assignment: Pick<HistoryAssignment, "body_part" | "exercise">,
+) {
+  return `${assignment.body_part}:${assignment.exercise}`;
+}
+
 export type WorkoutEntryShape = {
   metric: "reps" | "seconds";
   valueCount: number;
@@ -228,6 +322,43 @@ export function validWorkout(value: unknown): value is Workout {
       ? row.completed_at === null
       : typeof row.completed_at === "string")
   );
+}
+
+export function validHistoryWorkout(value: unknown): value is HistoryWorkout {
+  return (
+    validWorkout(value) &&
+    typeof (value as Record<string, unknown>).started_at === "string"
+  );
+}
+
+export function validHistoryAssignment(
+  value: unknown,
+): value is HistoryAssignment {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Record<string, unknown>;
+  return (
+    validHistoryAssignmentIdentity(row) &&
+    validHistoryAssignmentProtocol(row) &&
+    validHistoryConfiguration(row)
+  );
+}
+
+function validHistoryAssignmentIdentity(row: Record<string, unknown>) {
+  return (
+    typeof row.active === "boolean" &&
+    typeof row.assignment_id === "string" &&
+    exerciseBodyParts.has(row.body_part as string) &&
+    typeof row.created_at === "string" &&
+    typeof row.exercise === "string" &&
+    isWorkoutSlot(row.slot) &&
+    typeof row.structure === "string"
+  );
+}
+
+function validHistoryAssignmentProtocol(row: Record<string, unknown>) {
+  if (row.body_part === "abs_1" || row.body_part === "abs_2")
+    return row.protocol === "straight_set" || row.protocol === "timed_hold";
+  return row.protocol === "rest_pause" || row.protocol === "straight_set";
 }
 
 export function validWorkoutStep(value: unknown): value is WorkoutStep {

@@ -35,6 +35,7 @@
     },
     {
       "covers": [
+        "src/HistoryScreen.tsx",
         "src/WorkoutTracer.tsx",
         "src/hooks/use-workout.ts",
         "src/weight-conversion.ts",

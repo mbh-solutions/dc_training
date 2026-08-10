@@ -89,10 +89,16 @@ const surfaceContract = workoutTracerExists
       ["export", "function", "WorkoutTracer", "("],
       ["export", "function", "WorkoutComplete", "("],
     ]) &&
+    sourceHasSequences("src/HistoryScreen.tsx", [
+      ["export", "default", "function", "HistoryScreen", "("],
+      ["role", "=", '"tab"'],
+      ["<", "svg"],
+    ]) &&
     sourceHasSequences("src/workout-api.ts", [
       [".", "rpc", "(", '"start_a1_workout"'],
       [".", "rpc", "(", '"save_a1_workout_step"'],
       [".", "rpc", "(", '"undo_a1_workout_step"'],
+      [".", "rpc", "(", '"correct_workout_performance"'],
     ]) &&
     sourceHasSequences("src/weight-conversion.ts", [
       ["226796185n"],

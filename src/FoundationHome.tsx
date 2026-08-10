@@ -1,4 +1,5 @@
 import { useState } from "react";
+import HistoryScreen from "./HistoryScreen.jsx";
 import HomeScreen from "./HomeScreen.jsx";
 import RotationSetup from "./RotationSetup.jsx";
 import { WorkoutComplete, WorkoutTracer } from "./WorkoutTracer.jsx";
@@ -14,6 +15,7 @@ export type FoundationHomeProps = {
 };
 
 function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
+  const [showHistory, setShowHistory] = useState(false);
   const [showRotationSetup, setShowRotationSetup] = useState(false);
   const [showWorkout, setShowWorkout] = useState(false);
   const workout = useWorkout(userId, homeProps.online);
@@ -78,6 +80,20 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
     );
   }
 
+  if (showHistory) {
+    return (
+      <HistoryScreen
+        online={homeProps.online}
+        onHome={() => setShowHistory(false)}
+        onOpenRotation={() => {
+          setShowHistory(false);
+          setShowRotationSetup(true);
+        }}
+        userId={userId}
+      />
+    );
+  }
+
   return (
     <HomeScreen
       {...homeProps}
@@ -86,6 +102,7 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
       loadingWorkout={workout.loading}
       message={workout.message}
       nextSlot={workout.nextSlot}
+      onOpenHistory={() => setShowHistory(true)}
       onOpenRotation={() => setShowRotationSetup(true)}
       onResumeWorkout={() => setShowWorkout(true)}
       onStartWorkout={async () => {
