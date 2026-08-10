@@ -73,7 +73,8 @@
         "src/hooks/use-workout.ts",
         "src/offline-sync.ts",
         "src/rotation-assignment.ts",
-        "supabase/migrations/20260810192528_offline_operation_queue.sql"
+        "supabase/migrations/20260810192528_offline_operation_queue.sql",
+        "supabase/migrations/20260810211000_preserve_offline_event_time.sql"
       ],
       "id": "offline-sync-v1",
       "kind": "regression"

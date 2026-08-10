@@ -39,6 +39,8 @@ type AssignmentPayload = {
   structure: string;
   target_sets: TargetSet[];
 };
+type AssignmentLogbookState =
+  "first_failure_pending" | "mulligan_used" | "replacement_required";
 export type OfflineOperationInput =
   | { id: string; kind: "start_workout"; payload: Record<string, never> }
   | {
@@ -96,6 +98,7 @@ export type OfflineAccountState = {
   activeWorkoutStartOperationId: string | null;
   assignments: Record<string, Assignment>;
   history: HistoryData | null;
+  logbookStates: Record<string, AssignmentLogbookState>;
   queueSequence: number;
   recentOperation: {
     id: string;
@@ -131,6 +134,7 @@ function emptyState(userId: string): OfflineAccountState {
     activeWorkoutStartOperationId: null,
     assignments: {},
     history: null,
+    logbookStates: {},
     queueSequence: 0,
     recentOperation: null,
     recentlyCompletedWorkout: null,
@@ -244,7 +248,10 @@ export async function synchronizeOfflineState(userId: string) {
       const { error } = await supabase.rpc("apply_offline_operation", {
         p_kind: operation.kind,
         p_operation_id: operation.id,
-        p_payload: operation.payload,
+        p_payload: {
+          ...operation.payload,
+          created_at: new Date(operation.createdAt).toISOString(),
+        },
       });
       if (error) throw new Error(error.message);
       await deleteOfflineOperation(operation.id);
@@ -258,12 +265,13 @@ export async function synchronizeOfflineState(userId: string) {
 }
 
 async function loadCloudState(userId: string): Promise<OfflineAccountState> {
-  const [workout, history, assignments] = await Promise.all([
+  const [workout, history, assignments, logbookStates] = await Promise.all([
     loadWorkoutState(userId),
     loadHistoryState(userId),
     loadCloudAssignments(userId),
+    loadCloudLogbookStates(userId),
   ]);
-  if (!workout.data || !history.data || !assignments)
+  if (!workout.data || !history.data || !assignments || !logbookStates)
     throw new Error(
       workout.error || history.error || "OWNER DATA COULD NOT BE LOADED",
     );
@@ -271,6 +279,7 @@ async function loadCloudState(userId: string): Promise<OfflineAccountState> {
     ...emptyState(userId),
     assignments,
     history: history.data,
+    logbookStates,
     updatedAt: new Date().toISOString(),
     workout: workout.data,
   };
@@ -288,6 +297,29 @@ async function loadCloudAssignments(userId: string) {
     return null;
   return Object.fromEntries(
     data.map((row) => [assignmentKey(row.slot, row.body_part), row]),
+  );
+}
+
+async function loadCloudLogbookStates(userId: string) {
+  const { data, error } = await supabase!
+    .from("assignment_logbook_states")
+    .select("assignment_id,state")
+    .eq("user_id", userId);
+  if (error || !Array.isArray(data) || data.some(invalidLogbookState))
+    return null;
+  return Object.fromEntries(
+    data.map((row) => [row.assignment_id, row.state as AssignmentLogbookState]),
+  );
+}
+
+function invalidLogbookState(row: Record<string, unknown>) {
+  return (
+    typeof row.assignment_id !== "string" ||
+    ![
+      "first_failure_pending",
+      "mulligan_used",
+      "replacement_required",
+    ].includes(row.state as string)
   );
 }
 
@@ -332,10 +364,19 @@ function preserveLocalFeedback(
 ) {
   return {
     ...cloud,
+    activeWorkoutStartOperationId: preservedStartOperation(cloud, local),
     queueSequence: local?.queueSequence ?? 0,
     recentOperation: local?.recentOperation ?? null,
     recentlyCompletedWorkout: local?.recentlyCompletedWorkout ?? null,
   };
+}
+
+function preservedStartOperation(
+  cloud: OfflineAccountState,
+  local: OfflineAccountState | undefined,
+) {
+  if (!cloud.workout?.workout) return null;
+  return local?.activeWorkoutStartOperationId ?? null;
 }
 
 async function listOfflineOperations(userId: string) {
@@ -446,6 +487,8 @@ function startLocalWorkout(
   if (state.workout.lifecycle.phase !== "blast")
     throw new Error("WORKOUTS REQUIRE AN ACTIVE BLAST");
   if (state.workout.workout) throw new Error("WORKOUT IS ALREADY IN PROGRESS");
+  if (hasPendingLogbookDecision(state))
+    throw new Error("RESOLVE THE LOGBOOK DECISION FIRST");
   const slot = state.workout.nextSlot;
   const assignments = positionsFor(slot).map(
     (position) => state.assignments[assignmentKey(slot, position)],
@@ -477,6 +520,12 @@ function startLocalWorkout(
   state.recentOperation = null;
   state.recentlyCompletedWorkout = null;
   return state;
+}
+
+function hasPendingLogbookDecision(state: OfflineAccountState) {
+  return Object.values(state.logbookStates).some(
+    (value) => value !== "mulligan_used",
+  );
 }
 
 const stepOrder: Record<"A" | "B", [string, "exercise" | "stretch", number][]> =
@@ -599,6 +648,8 @@ function localAssignmentFields(
     assignment_id: assignment.assignment_id,
     exercise: assignment.exercise,
     fresh_baseline: previous.currentBlast === null,
+    mulligan_used:
+      state.logbookStates[assignment.assignment_id] === "mulligan_used",
     ...localPreviousFields(previous.currentBlast),
     protocol: assignment.protocol,
     reference_history: previous.reference,
@@ -611,21 +662,16 @@ function localPreviousFields(
   previous: HistoryData["steps"][number] | null,
 ): Pick<
   LocalAssignmentFields,
-  | "mulligan_used"
-  | "previous_duration_seconds"
-  | "previous_reps"
-  | "previous_weight_entries"
+  "previous_duration_seconds" | "previous_reps" | "previous_weight_entries"
 > {
   if (!previous) {
     return {
-      mulligan_used: false,
       previous_duration_seconds: null,
       previous_reps: [],
       previous_weight_entries: [],
     };
   }
   return {
-    mulligan_used: previous.mulligan_used,
     previous_duration_seconds: previous.duration_seconds,
     previous_reps: previous.reps,
     previous_weight_entries: previous.weight_entries,
@@ -718,7 +764,7 @@ function saveLocalStep(
 ) {
   if (!state.workout?.workout || !state.history)
     throw new Error("WORKOUT IS NOT IN PROGRESS");
-  const index = targetStepIndex(state.workout.steps, operation.payload);
+  const index = targetStepIndex(state, state.workout.steps, operation.payload);
   const step = state.workout.steps[index];
   if (!step || step.status !== "pending")
     throw new Error("WORKOUT STEP IS NOT AVAILABLE");
@@ -733,6 +779,7 @@ function saveLocalStep(
   const next = applyStepPerformance(step, operation);
   state.workout.steps[index] = next;
   replaceHistoryStep(state.history, next);
+  applyLocalStepLogbookState(state, next);
   state.recentOperation = {
     id: operation.id,
     status: operationStatus(next),
@@ -777,6 +824,21 @@ function applyStepPerformance(
         : null;
   next.enforcement_action = localEnforcement(next, comparison.verdict);
   return next;
+}
+
+function applyLocalStepLogbookState(
+  state: OfflineAccountState,
+  step: WorkoutStep,
+) {
+  if (!step.assignment_id || step.status !== "completed") return;
+  if (step.verdict === "win" || step.fresh_baseline) {
+    delete state.logbookStates[step.assignment_id];
+    return;
+  }
+  if (step.enforcement_action === "first_failure")
+    state.logbookStates[step.assignment_id] = "first_failure_pending";
+  if (step.enforcement_action === "replacement_required")
+    state.logbookStates[step.assignment_id] = "replacement_required";
 }
 
 function normalizeWeight(weight: WeightEntry) {
@@ -826,11 +888,12 @@ function resolveLocalLogbook(
 ) {
   if (!state.workout?.workout || !state.history)
     throw new Error("WORKOUT IS NOT IN PROGRESS");
-  const index = targetStepIndex(state.workout.steps, operation.payload);
+  const index = targetStepIndex(state, state.workout.steps, operation.payload);
   const step = state.workout.steps[index];
   if (!step?.enforcement_action)
     throw new Error("LOGBOOK DECISION IS NOT PENDING");
   applyLocalLogbookAction(step, operation.payload.action);
+  applyResolvedLogbookState(state, step, operation.payload.action);
   step.resolution = operation.payload.action;
   step.last_operation_id = step.enforcement_action
     ? step.last_operation_id
@@ -856,13 +919,32 @@ function applyLocalLogbookAction(
   else step.mulligan_used = true;
 }
 
+function applyResolvedLogbookState(
+  state: OfflineAccountState,
+  step: WorkoutStep,
+  action: "count_failure" | "count_win" | "use_mulligan",
+) {
+  if (!step.assignment_id) return;
+  if (action === "count_win") {
+    delete state.logbookStates[step.assignment_id];
+    return;
+  }
+  if (action === "use_mulligan") {
+    state.logbookStates[step.assignment_id] = "mulligan_used";
+    return;
+  }
+  state.logbookStates[step.assignment_id] = step.mulligan_used
+    ? "replacement_required"
+    : "first_failure_pending";
+}
+
 function replaceLocalAssignment(
   state: OfflineAccountState,
   operation: Extract<OfflineOperation, { kind: "replace_failed_assignment" }>,
 ) {
   if (!state.workout?.workout || !state.history)
     throw new Error("WORKOUT IS NOT IN PROGRESS");
-  const index = targetStepIndex(state.workout.steps, operation.payload);
+  const index = targetStepIndex(state, state.workout.steps, operation.payload);
   const step = state.workout.steps[index];
   if (
     !step ||
@@ -893,6 +975,8 @@ function saveLocalAssignment(
     operation.payload.body_part,
   );
   const current = state.assignments[key];
+  if (current && state.logbookStates[current.assignment_id])
+    throw new Error("RESOLVE THE ACTIVE LOGBOOK LIFECYCLE FIRST");
   if (sameAssignment(current, operation.payload)) return state;
   if (assignmentInWorkout(state.workout, current))
     throw new Error(
@@ -939,6 +1023,7 @@ function saveAssignmentRecord(
   );
   const current = state.assignments[key];
   if (current) {
+    delete state.logbookStates[current.assignment_id];
     const historyCurrent = state.history!.assignments.find(
       (item) => item.assignment_id === current.assignment_id,
     );
@@ -968,20 +1053,195 @@ function correctLocalHistory(
 ) {
   if (!state.history)
     throw new Error("HISTORY IS NOT AVAILABLE ON THIS DEVICE");
-  const index = targetStepIndex(state.history.steps, operation.payload);
+  const index = targetStepIndex(state, state.history.steps, operation.payload);
   const step = state.history.steps[index];
   if (!step || step.kind !== "exercise" || step.status !== "completed")
     throw new Error("COMPLETED PERFORMANCE WAS NOT FOUND");
+  if (
+    state.workout?.workout &&
+    state.workout.steps.some(
+      (activeStep) => activeStep.assignment_id === step.assignment_id,
+    )
+  )
+    throw new Error("FINISH ACTIVE WORKOUT BEFORE CORRECTING THIS EXERCISE");
   step.weight_entries = operation.payload.weights.map(normalizeWeight);
   step.reps = operation.payload.reps;
   step.duration_seconds = operation.payload.duration_seconds;
-  step.last_operation_id = operation.id;
-  const activeIndex = state.workout?.steps.findIndex(
+  step.resolution = step.resolution === "replaced" ? "replaced" : null;
+  step.last_operation_id = null;
+  recalculateLocalAssignmentLogbook(state, step.assignment_id!);
+  return state;
+}
+
+type RecalculationCursor = {
+  deferred: boolean;
+  first: boolean;
+  logbook: AssignmentLogbookState | null;
+  previous: WorkoutStep | null;
+};
+
+function recalculateLocalAssignmentLogbook(
+  state: OfflineAccountState,
+  assignmentId: string,
+) {
+  const history = state.history!;
+  const active =
+    history.assignments.find((item) => item.assignment_id === assignmentId)
+      ?.active ?? false;
+  const workouts = new Map(
+    history.workouts.map((item) => [item.workout_id, item]),
+  );
+  const steps = history.steps
+    .filter(
+      (step) =>
+        step.assignment_id === assignmentId && step.status === "completed",
+    )
+    .sort(
+      (left, right) =>
+        Date.parse(workouts.get(left.workout_id)?.started_at ?? "") -
+          Date.parse(workouts.get(right.workout_id)?.started_at ?? "") ||
+        left.ordinal - right.ordinal,
+    );
+  let cursor: RecalculationCursor = {
+    deferred: false,
+    first: true,
+    logbook: null,
+    previous: null,
+  };
+  delete state.logbookStates[assignmentId];
+  for (const step of steps) {
+    const result = recalculateLocalStep(step, cursor, active);
+    cursor = result.cursor;
+    replaceHistoryStep(history, result.step);
+    replaceActiveStep(state, result.step);
+  }
+  if (active && cursor.logbook)
+    state.logbookStates[assignmentId] = cursor.logbook;
+}
+
+function recalculateLocalStep(
+  step: WorkoutStep,
+  cursor: RecalculationCursor,
+  active: boolean,
+) {
+  const next = { ...step };
+  const resolutionBefore = next.resolution;
+  const stateBefore = cursor.logbook;
+  next.mulligan_used = cursor.logbook === "mulligan_used";
+  next.enforcement_action = null;
+  next.set_verdicts = [];
+  let logbook = cursor.first
+    ? resetLocalBaseline(next)
+    : evaluateRecalculatedPerformance(next, cursor.previous!, cursor.logbook);
+  if (cursor.deferred) {
+    logbook = stateBefore;
+    next.enforcement_action = null;
+    next.resolution = resolutionBefore;
+  }
+  if (!active) {
+    logbook = null;
+    next.enforcement_action = null;
+  }
+  return {
+    cursor: {
+      deferred: cursor.deferred || (active && next.enforcement_action !== null),
+      first: false,
+      logbook,
+      previous: next,
+    },
+    step: next,
+  };
+}
+
+function resetLocalBaseline(step: WorkoutStep) {
+  step.fresh_baseline = true;
+  step.verdict = null;
+  step.resolution = null;
+  return null;
+}
+
+function evaluateRecalculatedPerformance(
+  step: WorkoutStep,
+  previous: WorkoutStep,
+  logbook: AssignmentLogbookState | null,
+) {
+  step.fresh_baseline = false;
+  step.previous_weight_entries = previous.weight_entries;
+  step.previous_reps = previous.reps;
+  step.previous_duration_seconds = previous.duration_seconds;
+  const comparison = compareLogbookPerformance({
+    bodyPart: step.body_part,
+    current: {
+      durationSeconds: step.duration_seconds,
+      reps: step.reps,
+      weights: step.weight_entries,
+    },
+    previous: {
+      durationSeconds: previous.duration_seconds,
+      reps: previous.reps,
+      weights: previous.weight_entries,
+    },
+    protocol: step.protocol!,
+    targetSets: step.target_sets,
+  });
+  step.set_verdicts = comparison.setVerdicts;
+  const verdict = resolvedRecalculatedVerdict(
+    comparison.verdict,
+    step.resolution,
+  );
+  if (verdict === "ambiguous") {
+    step.verdict = null;
+    step.enforcement_action = "abs_choice";
+    return logbook;
+  }
+  if (verdict === "win") {
+    step.verdict = "win";
+    if (step.resolution !== "replaced" && comparison.verdict !== "ambiguous")
+      step.resolution = null;
+    return null;
+  }
+  if (verdict === "baseline") {
+    step.verdict = null;
+    return null;
+  }
+  return applyRecalculatedFailure(step, logbook);
+}
+
+function resolvedRecalculatedVerdict(
+  verdict: "ambiguous" | "baseline" | "failure" | "win",
+  resolution: WorkoutStep["resolution"],
+) {
+  if (verdict !== "ambiguous") return verdict;
+  if (resolution === "count_win") return "win" as const;
+  if (["count_failure", "use_mulligan", "replaced"].includes(resolution ?? ""))
+    return "failure" as const;
+  return "ambiguous" as const;
+}
+
+function applyRecalculatedFailure(
+  step: WorkoutStep,
+  logbook: AssignmentLogbookState | null,
+): AssignmentLogbookState | null {
+  step.verdict = "failure";
+  if (step.resolution === "count_win") step.resolution = null;
+  if (step.resolution === "replaced") {
+    step.enforcement_action = null;
+    return null;
+  }
+  if (logbook) {
+    step.enforcement_action = "replacement_required";
+    return "replacement_required";
+  }
+  if (step.resolution === "use_mulligan") return "mulligan_used";
+  step.enforcement_action = "first_failure";
+  return "first_failure_pending";
+}
+
+function replaceActiveStep(state: OfflineAccountState, step: WorkoutStep) {
+  const index = state.workout?.steps.findIndex(
     (item) => item.step_id === step.step_id,
   );
-  if (activeIndex !== undefined && activeIndex >= 0)
-    state.workout!.steps[activeIndex] = step;
-  return state;
+  if (index !== undefined && index >= 0) state.workout!.steps[index] = step;
 }
 
 function transitionLocalLifecycle(
@@ -1018,6 +1278,7 @@ function transitionLocalLifecycle(
       suggestion_dismissed: false,
       suggestion_due: false,
     };
+    resetLocalLogbookForNewBlast(state);
   } else {
     if (current.phase !== "blast" || !current.suggestion_due)
       throw new Error("CRUISE SUGGESTION IS NOT ACTIVE");
@@ -1028,6 +1289,11 @@ function transitionLocalLifecycle(
     };
   }
   return state;
+}
+
+function resetLocalLogbookForNewBlast(state: OfflineAccountState) {
+  state.logbookStates = {};
+  for (const step of state.history?.steps ?? []) step.enforcement_action = null;
 }
 
 function undoLocalStep(
@@ -1052,6 +1318,8 @@ function undoLocalStep(
     verdict: null,
     weight_entries: [],
   });
+  if (step.assignment_id)
+    recalculateLocalAssignmentLogbook(state, step.assignment_id);
   const historyWorkout = state.history.workouts.find(
     (item) => item.workout_id === step.workout_id,
   );
@@ -1075,13 +1343,34 @@ function undoLocalStep(
   return state;
 }
 
-function targetStepIndex(steps: WorkoutStep[], target: StepTarget) {
+function targetStepIndex(
+  state: OfflineAccountState,
+  steps: WorkoutStep[],
+  target: StepTarget,
+) {
   if (target.step_id)
     return steps.findIndex((step) => step.step_id === target.step_id);
   return steps.findIndex(
     (step) =>
       step.ordinal === target.ordinal &&
-      localStartOperation(step.workout_id) === target.workout_operation_id,
+      stepMatchesWorkoutOperation(
+        state,
+        step.workout_id,
+        target.workout_operation_id,
+      ),
+  );
+}
+
+function stepMatchesWorkoutOperation(
+  state: OfflineAccountState,
+  workoutId: string,
+  operationId: string | undefined,
+) {
+  const localOperationId = localStartOperation(workoutId);
+  if (localOperationId) return localOperationId === operationId;
+  return (
+    state.activeWorkoutStartOperationId === operationId &&
+    state.workout?.workout?.workout_id === workoutId
   );
 }
 

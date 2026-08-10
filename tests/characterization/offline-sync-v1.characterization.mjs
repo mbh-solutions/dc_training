@@ -7,6 +7,8 @@ const offlineModule = "src/offline-sync.ts";
 const syncHook = "src/hooks/use-offline-sync.ts";
 const migration =
   "supabase/migrations/20260810192528_offline_operation_queue.sql";
+const eventTimeMigration =
+  "supabase/migrations/20260810211000_preserve_offline_event_time.sql";
 const read = (relativePath) =>
   readFileSync(path.join(target, relativePath), "utf8");
 const hasAll = (source, fragments) =>
@@ -26,6 +28,7 @@ const offlineContract =
   existsSync(path.join(target, offlineModule)) &&
   existsSync(path.join(target, syncHook)) &&
   existsSync(path.join(target, migration)) &&
+  existsSync(path.join(target, eventTimeMigration)) &&
   hasAll(read(offlineModule), [
     'const databaseName = "dc-training-offline"',
     "[stateStore, operationStore]",
@@ -33,6 +36,9 @@ const offlineContract =
     'kind: "correct_history_performance"',
     'kind: "transition_training_lifecycle"',
     'supabase.rpc("apply_offline_operation"',
+    "created_at: new Date(operation.createdAt).toISOString()",
+    '.from("assignment_logbook_states")',
+    "recalculateLocalAssignmentLogbook",
     'operations.index("userId")',
   ]) &&
   hasAll(read(syncHook), [
@@ -53,6 +59,13 @@ const offlineContract =
     "pg_advisory_xact_lock",
     "revoke execute on function public.apply_offline_operation",
     "grant execute on function public.apply_offline_operation",
+  ]) &&
+  hasAll(read(eventTimeMigration), [
+    "private.offline_workout_result_at",
+    "set started_at = event_at",
+    "set completed_at = p_event_at",
+    "set blast_ended_at = event_at",
+    "set blast_started_at = event_at",
   ]);
 
 process.stdout.write(
