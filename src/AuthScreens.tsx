@@ -255,7 +255,6 @@ export function DeletionRecoveryScreen({
 }) {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const expired = Date.parse(finalizeAt) <= Date.now();
   const cancel = async () => {
     setSubmitting(true);
     setMessage("");
@@ -272,9 +271,8 @@ export function DeletionRecoveryScreen({
           <p>30-DAY RECOVERY WINDOW</p>
         </header>
         <p className="foundation-copy">
-          {expired
-            ? "Recovery window ended. Final deletion is being completed."
-            : `Cancel before ${new Date(finalizeAt).toLocaleString()} to restore cloud access.`}
+          Cancel before {new Date(finalizeAt).toLocaleString()} to restore cloud
+          access. The server confirms whether recovery is still available.
         </p>
         {cleanupFailed && (
           <p className="form-message" role="status">
@@ -287,16 +285,14 @@ export function DeletionRecoveryScreen({
             {message}
           </p>
         )}
-        {!expired && (
-          <button
-            className="primary-action"
-            disabled={submitting}
-            onClick={() => void cancel()}
-            type="button"
-          >
-            {submitting ? "RESTORING…" : "CANCEL DELETION"}
-          </button>
-        )}
+        <button
+          className="primary-action"
+          disabled={submitting}
+          onClick={() => void cancel()}
+          type="button"
+        >
+          {submitting ? "RESTORING…" : "CANCEL DELETION"}
+        </button>
         <button
           className="text-action"
           disabled={submitting}

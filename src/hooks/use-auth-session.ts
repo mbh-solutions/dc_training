@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { startedFromPasswordRecovery } from "../lib/auth-callback.js";
+import { signOutOwner } from "../lib/auth-actions.js";
 import { supabase } from "../lib/supabase.js";
 
 export function useAuthSession() {
@@ -35,7 +36,7 @@ export function useAuthSession() {
     setRecoveringPassword(false);
   }, []);
   const signOut = useCallback(async () => {
-    await supabase?.auth.signOut();
+    await signOutOwner();
   }, []);
 
   return {

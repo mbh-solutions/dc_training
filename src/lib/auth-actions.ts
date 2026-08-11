@@ -55,7 +55,7 @@ export async function requestOwnerAccountDeletion(
   });
   if (error) return false;
   const purged = await purgeLocalAccountData(userId);
-  return (await signOutOwnerEverywhere()) && purged;
+  return (await signOutOwner()) && purged;
 }
 
 export async function cancelOwnerAccountDeletion() {
@@ -82,7 +82,7 @@ async function purgeLocalAccountData(userId: string) {
   }
 }
 
-async function signOutOwnerEverywhere() {
+export async function signOutOwner() {
   if (!supabase) return false;
   const { error } = await supabase.auth.signOut();
   if (!error) return true;
