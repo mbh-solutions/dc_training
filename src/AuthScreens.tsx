@@ -243,10 +243,12 @@ export function AccountStatusErrorScreen({
 }
 
 export function DeletionRecoveryScreen({
+  cleanupFailed,
   finalizeAt,
   onCancel,
   onSignOut,
 }: {
+  cleanupFailed?: boolean;
   finalizeAt: string;
   onCancel: () => Promise<boolean>;
   onSignOut: () => Promise<void>;
@@ -274,6 +276,12 @@ export function DeletionRecoveryScreen({
             ? "Recovery window ended. Final deletion is being completed."
             : `Cancel before ${new Date(finalizeAt).toLocaleString()} to restore cloud access.`}
         </p>
+        {cleanupFailed && (
+          <p className="form-message" role="status">
+            Local cleanup could not finish. Close other DC Training tabs, then
+            reload this screen to retry.
+          </p>
+        )}
         {message && (
           <p className="form-message" role="status">
             {message}

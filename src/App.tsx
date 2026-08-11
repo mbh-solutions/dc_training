@@ -63,6 +63,7 @@ function App() {
   if (deletion.status) {
     return (
       <DeletionRecoveryScreen
+        cleanupFailed={deletion.status.cleanupFailed}
         finalizeAt={deletion.status.finalize_at}
         onCancel={deletion.cancel}
         onSignOut={signOut}
