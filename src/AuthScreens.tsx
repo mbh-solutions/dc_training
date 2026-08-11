@@ -198,6 +198,110 @@ export function LoadingScreen() {
   );
 }
 
+export function AccountStatusErrorScreen({
+  onRetry,
+  onSignOut,
+}: {
+  onRetry: () => Promise<boolean>;
+  onSignOut: () => Promise<void>;
+}) {
+  const [retrying, setRetrying] = useState(false);
+  const retry = async () => {
+    setRetrying(true);
+    await onRetry();
+    setRetrying(false);
+  };
+  return (
+    <div className="auth-shell">
+      <div className="auth-panel">
+        <header className="auth-header">
+          <p className="eyebrow">ACCOUNT STATUS UNAVAILABLE</p>
+          <h1>STAY CONNECTED</h1>
+        </header>
+        <p className="foundation-copy">
+          Account data stays locked until deletion status is confirmed.
+        </p>
+        <button
+          className="primary-action"
+          disabled={retrying}
+          onClick={() => void retry()}
+          type="button"
+        >
+          {retrying ? "CHECKING…" : "RETRY"}
+        </button>
+        <button
+          className="text-action"
+          disabled={retrying}
+          onClick={() => void onSignOut()}
+          type="button"
+        >
+          SIGN OUT
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function DeletionRecoveryScreen({
+  finalizeAt,
+  onCancel,
+  onSignOut,
+}: {
+  finalizeAt: string;
+  onCancel: () => Promise<boolean>;
+  onSignOut: () => Promise<void>;
+}) {
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const expired = Date.parse(finalizeAt) <= Date.now();
+  const cancel = async () => {
+    setSubmitting(true);
+    setMessage("");
+    if (!(await onCancel())) setMessage("Deletion could not be cancelled.");
+    setSubmitting(false);
+  };
+
+  return (
+    <div className="auth-shell">
+      <div className="auth-panel">
+        <header className="auth-header">
+          <p className="eyebrow">ACCOUNT UNAVAILABLE</p>
+          <h1>DELETION PENDING</h1>
+          <p>30-DAY RECOVERY WINDOW</p>
+        </header>
+        <p className="foundation-copy">
+          {expired
+            ? "Recovery window ended. Final deletion is being completed."
+            : `Cancel before ${new Date(finalizeAt).toLocaleString()} to restore cloud access.`}
+        </p>
+        {message && (
+          <p className="form-message" role="status">
+            {message}
+          </p>
+        )}
+        {!expired && (
+          <button
+            className="primary-action"
+            disabled={submitting}
+            onClick={() => void cancel()}
+            type="button"
+          >
+            {submitting ? "RESTORING…" : "CANCEL DELETION"}
+          </button>
+        )}
+        <button
+          className="text-action"
+          disabled={submitting}
+          onClick={() => void onSignOut()}
+          type="button"
+        >
+          SIGN OUT
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function SetupScreen() {
   return (
     <div className="center-screen">

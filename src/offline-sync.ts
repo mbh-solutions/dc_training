@@ -45,7 +45,9 @@ type RotationAssignmentPayload = AssignmentPayload & {
   expected_assignment_id: string | null;
 };
 type AssignmentLogbookState =
-  "first_failure_pending" | "mulligan_used" | "replacement_required";
+  | "first_failure_pending"
+  | "mulligan_used"
+  | "replacement_required";
 export type PerformanceSnapshot = {
   duration_seconds: number | null;
   reps: number[];
@@ -58,7 +60,9 @@ type StartWorkoutPayload = {
   slot: WorkoutSlot;
 };
 type LifecycleTransitionAction =
-  "dismiss_suggestion" | "start_cruise" | "start_new_blast";
+  | "dismiss_suggestion"
+  | "start_cruise"
+  | "start_new_blast";
 type LifecycleTransitionPayload = {
   action: LifecycleTransitionAction;
   blast_id: string;
@@ -296,7 +300,8 @@ export async function commitOfflineOperation(
   const states = transaction.objectStore(stateStore);
   const operations = transaction.objectStore(operationStore);
   const prior = (await request(operations.get(input.id))) as
-    OfflineOperation | undefined;
+    | OfflineOperation
+    | undefined;
   if (prior) {
     if (prior.userId !== userId || !sameOperation(prior, input))
       throw new Error("OPERATION ID MISMATCH");
@@ -370,6 +375,39 @@ export async function pendingOfflineOperationCount(userId: string) {
 export async function discardOfflineOperations(userId: string) {
   for (const operation of await listOfflineOperations(userId))
     await deleteOfflineOperation(operation.id);
+}
+
+export async function deleteLocalAccountData(userId: string) {
+  memoryStates.delete(userId);
+  for (const [operationId, operation] of memoryOperations)
+    if (operation.userId === userId) memoryOperations.delete(operationId);
+
+  if (typeof indexedDB !== "undefined") {
+    const database = databasePromise ? await databasePromise : null;
+    database?.close();
+    databasePromise = null;
+    await new Promise<void>((resolve, reject) => {
+      const deleting = indexedDB.deleteDatabase(databaseName);
+      deleting.onerror = () => reject(deleting.error);
+      deleting.onblocked = () => reject(new Error("DEVICE DATA IS IN USE"));
+      deleting.onsuccess = () => resolve();
+    });
+  }
+
+  try {
+    localStorage.removeItem(deviceIdStorageKey);
+    localStorage.removeItem(`dc-training-editing-access:${userId}`);
+  } catch {
+    // IndexedDB and in-memory owner data are already gone.
+  }
+  try {
+    document.cookie = `${deviceIdStorageKey}=; Max-Age=0; Path=/; SameSite=Lax`;
+    document.cookie = `dc-training-editing-access-${userId}=; Max-Age=0; Path=/; SameSite=Lax`;
+  } catch {
+    // Cookie storage may be unavailable.
+  }
+  memoryDeviceId = "";
+  memoryDeviceIdDurable = false;
 }
 
 async function editingDeviceAuthority(
@@ -502,7 +540,8 @@ async function replaceStateWhenQueueEmpty(state: OfflineAccountState) {
     return false;
   }
   const current = (await request(states.get(state.userId))) as
-    OfflineAccountState | undefined;
+    | OfflineAccountState
+    | undefined;
   states.put(preserveLocalFeedback(state, current));
   await transactionDone(transaction);
   return true;
@@ -747,7 +786,8 @@ export async function clearRecentCompletion(userId: string) {
     const transaction = database.transaction(stateStore, "readwrite");
     const states = transaction.objectStore(stateStore);
     const state = (await request(states.get(userId))) as
-      OfflineAccountState | undefined;
+      | OfflineAccountState
+      | undefined;
     if (state) states.put(withoutRecentCompletion(state));
     await transactionDone(transaction);
   }

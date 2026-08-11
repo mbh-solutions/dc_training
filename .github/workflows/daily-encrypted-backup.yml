@@ -1,0 +1,93 @@
+name: Daily encrypted Supabase backup
+
+on:
+  schedule:
+    - cron: "17 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-encrypted-supabase-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Encrypted logical backup
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      PGCONNECT_TIMEOUT: "15"
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - name: Validate backup credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${SUPABASE_DB_URL}" ]]; then
+            echo "::error::SUPABASE_DB_URL is not configured"
+            exit 1
+          fi
+          if [[ -z "${BACKUP_PASSPHRASE}" ]]; then
+            echo "::error::BACKUP_PASSPHRASE is not configured"
+            exit 1
+          fi
+
+      - name: Create, encrypt, and verify logical backup
+        id: backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          dump="${RUNNER_TEMP}/dc-training.dump"
+          verification="${RUNNER_TEMP}/dc-training.verify.dump"
+          artifact="${RUNNER_TEMP}/dc-training-${GITHUB_RUN_ID}.dump.gpg"
+          trap 'rm -f "${dump}" "${verification}"' EXIT
+
+          pg_dump --version
+          pg_dump \
+            --dbname="${SUPABASE_DB_URL}" \
+            --format=custom \
+            --no-owner \
+            --no-privileges \
+            --schema=auth \
+            --schema=private \
+            --schema=public \
+            --file="${dump}"
+
+          printf '%s' "${BACKUP_PASSPHRASE}" | gpg \
+            --batch \
+            --yes \
+            --pinentry-mode loopback \
+            --passphrase-fd 0 \
+            --symmetric \
+            --cipher-algo AES256 \
+            --output "${artifact}" \
+            "${dump}"
+
+          printf '%s' "${BACKUP_PASSPHRASE}" | gpg \
+            --batch \
+            --yes \
+            --pinentry-mode loopback \
+            --passphrase-fd 0 \
+            --decrypt \
+            --output "${verification}" \
+            "${artifact}"
+          pg_restore --list "${verification}" > /dev/null
+
+          echo "artifact=${artifact}" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload encrypted backup
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dc-training-backup-${{ github.run_id }}
+          path: ${{ steps.backup.outputs.artifact }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Remove runner copy
+        if: always()
+        shell: bash
+        run: rm -f "${RUNNER_TEMP}"/dc-training-*.dump "${RUNNER_TEMP}"/dc-training-*.dump.gpg

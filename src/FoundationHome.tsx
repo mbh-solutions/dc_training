@@ -146,6 +146,7 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
       onOpenHistory={() => setShowHistory(true)}
       onOpenRotation={openRotation}
       onOpenWorkout={() => setShowWorkout(true)}
+      userId={userId}
       workout={workout}
     />
   );
@@ -157,6 +158,7 @@ function FoundationDashboard({
   onOpenHistory,
   onOpenRotation,
   onOpenWorkout,
+  userId,
   workout,
 }: {
   homeProps: Omit<FoundationHomeProps, "userId">;
@@ -164,6 +166,7 @@ function FoundationDashboard({
   onOpenHistory: () => void;
   onOpenRotation: () => void;
   onOpenWorkout: () => void;
+  userId: string;
   workout: ReturnType<typeof useWorkout>;
 }) {
   return (
@@ -198,6 +201,7 @@ function FoundationDashboard({
         if (await workout.start()) onOpenWorkout();
       }}
       syncState={offline.syncState}
+      userId={userId}
     />
   );
 }

@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import type { FoundationHomeProps } from "./FoundationHome.js";
 import type { OfflineSyncState } from "./hooks/use-offline-sync.js";
 import type { EditingDeviceAccess } from "./offline-sync.js";
 import { WORKOUT_SLOTS, type WorkoutSlot } from "./rotation-config.js";
 import type { TrainingLifecycle } from "./workout-domain.js";
+import { requestOwnerAccountDeletion } from "./lib/auth-actions.js";
 
 type HomeScreenProps = Omit<FoundationHomeProps, "userId"> & {
   activeSlot: WorkoutSlot | null;
@@ -25,6 +26,7 @@ type HomeScreenProps = Omit<FoundationHomeProps, "userId"> & {
   onStartWorkout: () => Promise<void>;
   onDismissCruiseSuggestion: () => Promise<boolean>;
   syncState: OfflineSyncState;
+  userId: string;
 };
 
 const summaries: Record<WorkoutSlot, string> = {
@@ -60,6 +62,7 @@ function HomeScreen({
   onStartWorkout,
   onDismissCruiseSuggestion,
   syncState,
+  userId,
 }: HomeScreenProps) {
   const [cruiseConfirmationOpen, setCruiseConfirmationOpen] = useState(false);
   useEffect(() => {
@@ -81,6 +84,7 @@ function HomeScreen({
         onStartNewBlast={onStartNewBlast}
         onTransferDevice={onTransferDevice}
         syncState={syncState}
+        userId={userId}
       />
     );
 
@@ -132,12 +136,14 @@ function HomeScreen({
 
         <AccountControls
           cloudStatus={cloudStatus}
+          deviceAccess={deviceAccess}
           email={email}
           message={message}
           online={online}
           onOpenRotation={onOpenRotation}
           onSignOut={onSignOut}
           syncState={syncState}
+          userId={userId}
         />
       </main>
       <BottomNavigation
@@ -165,21 +171,25 @@ function HomeScreen({
 
 function AccountControls({
   cloudStatus,
+  deviceAccess,
   email,
   message,
   online,
   onOpenRotation,
   onSignOut,
   syncState,
+  userId,
 }: Pick<
   HomeScreenProps,
   | "cloudStatus"
+  | "deviceAccess"
   | "email"
   | "message"
   | "online"
   | "onOpenRotation"
   | "onSignOut"
   | "syncState"
+  | "userId"
 >) {
   return (
     <>
@@ -205,6 +215,13 @@ function AccountControls({
       {online && syncState !== "synced" && (
         <p className="quiet-note">SYNC BEFORE SIGNING OUT</p>
       )}
+      <AccountDeletionControl
+        deviceAccess={deviceAccess}
+        email={email}
+        online={online}
+        syncState={syncState}
+        userId={userId}
+      />
       <p className="quiet-note">
         APP FOUNDATION · AUTHENTICATED · {cloudStatus} · {email?.toUpperCase()}
       </p>
@@ -232,6 +249,10 @@ const homeStyles = [
   ".cruise-rules ul { display: grid; gap: 18px; margin: 18px 0 0; padding: 0; list-style: none; }",
   ".cruise-rules li { display: flex; align-items: center; gap: 12px; color: var(--gray); font-family: Impact, sans-serif; letter-spacing: .05em; }",
   ".cruise-rules li::before { content: '✓'; display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; border: 1px solid var(--gray); border-radius: 50%; }",
+  ".deletion-control { margin-top: 28px; border-top: 1px solid var(--line); padding-top: 20px; }",
+  ".deletion-warning { color: var(--white); line-height: 1.5; }",
+  ".deletion-confirmation { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0; color: var(--gray); line-height: 1.4; }",
+  ".deletion-confirmation input { margin-top: 3px; }",
 ].join("\n");
 
 function CruiseHome({
@@ -247,6 +268,7 @@ function CruiseHome({
   onStartNewBlast,
   onTransferDevice,
   syncState,
+  userId,
 }: {
   actionSaving: boolean;
   deviceAccess: EditingDeviceAccess;
@@ -260,6 +282,7 @@ function CruiseHome({
   onStartNewBlast: () => Promise<boolean>;
   onTransferDevice: () => Promise<boolean>;
   syncState: OfflineSyncState;
+  userId: string;
 }) {
   return (
     <div className="app-shell">
@@ -323,6 +346,13 @@ function CruiseHome({
         {online && syncState !== "synced" && (
           <p className="quiet-note">SYNC BEFORE SIGNING OUT</p>
         )}
+        <AccountDeletionControl
+          deviceAccess={deviceAccess}
+          email={email}
+          online={online}
+          syncState={syncState}
+          userId={userId}
+        />
       </main>
       <BottomNavigation
         active="home"
@@ -332,6 +362,98 @@ function CruiseHome({
         rotationDisabled
       />
     </div>
+  );
+}
+
+function AccountDeletionControl({
+  deviceAccess,
+  email,
+  online,
+  syncState,
+  userId,
+}: Pick<
+  HomeScreenProps,
+  "deviceAccess" | "email" | "online" | "syncState" | "userId"
+>) {
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const available =
+    online && syncState === "synced" && deviceAccess === "active" && email;
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!available || !confirmed || submitting) return;
+    setSubmitting(true);
+    setMessage("");
+    if (!(await requestOwnerAccountDeletion(email, password, userId))) {
+      setMessage("Deletion request failed. Check your password and try again.");
+      setSubmitting(false);
+    }
+  };
+
+  if (!open)
+    return (
+      <div className="deletion-control">
+        <button
+          className="text-action"
+          disabled={!available}
+          onClick={() => setOpen(true)}
+          type="button"
+        >
+          DELETE ACCOUNT
+        </button>
+      </div>
+    );
+
+  return (
+    <form className="auth-form deletion-control" onSubmit={submit}>
+      <h2>DELETE ACCOUNT</h2>
+      <p className="deletion-warning">
+        Your account and all cloud data become unavailable now. You have 30 days
+        to cancel. After that, deletion is permanent.
+      </p>
+      <label htmlFor="delete-account-password">RE-ENTER PASSWORD</label>
+      <input
+        autoComplete="current-password"
+        id="delete-account-password"
+        onChange={(event) => setPassword(event.target.value)}
+        required
+        type="password"
+        value={password}
+      />
+      <label className="deletion-confirmation">
+        <input
+          checked={confirmed}
+          onChange={(event) => setConfirmed(event.target.checked)}
+          required
+          type="checkbox"
+        />
+        I understand final deletion permanently removes my account, cloud
+        history, and device data.
+      </label>
+      {message && (
+        <p className="form-message" role="status">
+          {message}
+        </p>
+      )}
+      <button
+        className="primary-action"
+        disabled={!confirmed || submitting}
+        type="submit"
+      >
+        {submitting ? "DELETING…" : "BEGIN 30-DAY DELETION"}
+      </button>
+      <button
+        className="text-action"
+        disabled={submitting}
+        onClick={() => setOpen(false)}
+        type="button"
+      >
+        KEEP ACCOUNT
+      </button>
+    </form>
   );
 }
 
