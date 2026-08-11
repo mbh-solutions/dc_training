@@ -88,13 +88,11 @@ test("foundation modules load without browser secrets", async () => {
 });
 
 test("background account check locks without remounting the owner app", async () => {
-  const { AccountStatusRefreshLock, accountDeletionCheckState } = await import(
-    "../src/App.tsx"
+  const { AccountStatusRefreshLock, accountDeletionCheckState } =
+    await import("../src/App.tsx");
+  const [{ act, createElement, useEffect }, { createRoot }] = await Promise.all(
+    [import("react"), import("react-dom/client")],
   );
-  const [{ act, createElement, useEffect }, { createRoot }] = await Promise.all([
-    import("react"),
-    import("react-dom/client"),
-  ]);
   let mounts = 0;
   let unmounts = 0;
   function OwnerApp() {
@@ -111,13 +109,10 @@ test("background account check locks without remounting the owner app", async ()
     checking: true,
     refreshing: false,
   });
-  assert.deepEqual(
-    accountDeletionCheckState("owner", true, "owner", "owner"),
-    {
-      checking: false,
-      refreshing: true,
-    },
-  );
+  assert.deepEqual(accountDeletionCheckState("owner", true, "owner", "owner"), {
+    checking: false,
+    refreshing: true,
+  });
 
   document.body.innerHTML = '<div id="refresh-root"></div>';
   const root = createRoot(document.getElementById("refresh-root"));
