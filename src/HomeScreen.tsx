@@ -596,6 +596,16 @@ export function NetworkStatus({
   onTransferDevice: () => Promise<boolean>;
   syncState: OfflineSyncState;
 }) {
+  if (online && syncState === "failed" && deviceAccess !== "readonly")
+    return (
+      <div className="status-strip status-strip--failed">
+        <span>SYNC FAILED · SAVED ON DEVICE</span>
+        <button onClick={() => void onRetrySync()} type="button">
+          TRY AGAIN
+        </button>
+      </div>
+    );
+
   if (deviceAccess === "checking")
     return (
       <div className="status-strip status-strip--quiet">
@@ -633,16 +643,6 @@ export function NetworkStatus({
 
   if (!online)
     return <div className="status-strip">OFFLINE · SAVED ON DEVICE</div>;
-
-  if (syncState === "failed")
-    return (
-      <div className="status-strip status-strip--failed">
-        <span>SYNC FAILED · SAVED ON DEVICE</span>
-        <button onClick={() => void onRetrySync()} type="button">
-          TRY AGAIN
-        </button>
-      </div>
-    );
 
   const label = syncState === "syncing" ? "SYNCING" : "SYNCED";
   return <div className="status-strip status-strip--quiet">{label}</div>;

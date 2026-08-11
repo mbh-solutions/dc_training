@@ -43,8 +43,13 @@ export function useOfflineSync(userId: string, online: boolean) {
   const [syncState, setSyncState] = useState<OfflineSyncState>("syncing");
   const syncPromise = useRef<Promise<boolean> | null>(null);
   const syncRequested = useRef(false);
+  const verifiedDeviceAccess = useRef<Exclude<
+    EditingDeviceAccess,
+    "checking"
+  > | null>(null);
 
   useLayoutEffect(() => {
+    verifiedDeviceAccess.current = null;
     setDeviceAccess(
       initialDeviceAccess(deviceAuthorityRequired, online, userId, deviceId),
     );
@@ -62,7 +67,8 @@ export function useOfflineSync(userId: string, online: boolean) {
       syncRequested.current = true;
       return syncPromise.current;
     }
-    if (deviceAuthorityRequired) setDeviceAccess("checking");
+    if (deviceAuthorityRequired)
+      setDeviceAccess(verifiedDeviceAccess.current ?? "checking");
     setSyncState("syncing");
     setLoadError("");
     const work = (async () => {
@@ -72,6 +78,7 @@ export function useOfflineSync(userId: string, online: boolean) {
           const access = deviceAuthorityRequired
             ? await registerEditingDevice(deviceId)
             : "active";
+          verifiedDeviceAccess.current = access;
           setDeviceAccess(access);
           cacheDeviceAccess(userId, deviceId, access);
           await synchronizeOfflineState(userId, deviceId, access);
@@ -80,6 +87,7 @@ export function useOfflineSync(userId: string, online: boolean) {
         setSyncState("synced");
         return true;
       } catch (error) {
+        setDeviceAccess(verifiedDeviceAccess.current ?? "checking");
         setSyncState("failed");
         setLoadError(error instanceof Error ? error.message : "SYNC FAILED");
         return false;
@@ -176,6 +184,7 @@ export function useOfflineSync(userId: string, online: boolean) {
         return false;
       }
       const access = await transferEditingDevice(deviceId);
+      verifiedDeviceAccess.current = access;
       setDeviceAccess(access);
       cacheDeviceAccess(userId, deviceId, access);
       await synchronizeOfflineState(userId, deviceId, access);
