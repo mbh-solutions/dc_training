@@ -119,16 +119,22 @@ function useAccountDeletion(session: Session | null, online: boolean) {
     setError(null);
     try {
       const status = await ownerAccountDeletionStatus(session.user.id);
-      setResult({ status, userId: session.user.id });
+      commitLatestDeletionCheck(checkGeneration.current, generation, () =>
+        setResult({ status, userId: session.user.id }),
+      );
       return true;
     } catch {
-      setError({
-        message: "ACCOUNT STATUS CHECK FAILED · CONNECT AND RETRY",
-        userId: session.user.id,
-      });
+      commitLatestDeletionCheck(checkGeneration.current, generation, () =>
+        setError({
+          message: "ACCOUNT STATUS CHECK FAILED · CONNECT AND RETRY",
+          userId: session.user.id,
+        }),
+      );
       return false;
     } finally {
-      if (checkGeneration.current === generation) setCheckingUserId("");
+      commitLatestDeletionCheck(checkGeneration.current, generation, () =>
+        setCheckingUserId(""),
+      );
     }
   }, [online, session]);
 
@@ -185,6 +191,14 @@ function accountDeletionCheckPending(
     online &&
     (checkingUserId === session.user.id || checkedUserId !== session.user.id),
   );
+}
+
+function commitLatestDeletionCheck(
+  currentGeneration: number,
+  generation: number,
+  update: () => void,
+) {
+  if (currentGeneration === generation) update();
 }
 
 export default App;

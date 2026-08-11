@@ -377,32 +377,34 @@ export async function deleteLocalAccountData(userId: string) {
   for (const [operationId, operation] of memoryOperations)
     if (operation.userId === userId) memoryOperations.delete(operationId);
 
-  if (typeof indexedDB !== "undefined") {
-    const database = databasePromise ? await databasePromise : null;
-    database?.close();
+  try {
+    if (typeof indexedDB !== "undefined") {
+      const database = databasePromise ? await databasePromise : null;
+      database?.close();
+      await new Promise<void>((resolve, reject) => {
+        const deleting = indexedDB.deleteDatabase(databaseName);
+        deleting.onerror = () => reject(deleting.error);
+        deleting.onblocked = () => resolve();
+        deleting.onsuccess = () => resolve();
+      });
+    }
+  } finally {
     databasePromise = null;
-    await new Promise<void>((resolve, reject) => {
-      const deleting = indexedDB.deleteDatabase(databaseName);
-      deleting.onerror = () => reject(deleting.error);
-      deleting.onblocked = () => resolve();
-      deleting.onsuccess = () => resolve();
-    });
+    try {
+      localStorage.removeItem(deviceIdStorageKey);
+      localStorage.removeItem(`dc-training-editing-access:${userId}`);
+    } catch {
+      // IndexedDB and in-memory owner data are already gone.
+    }
+    try {
+      document.cookie = `${deviceIdStorageKey}=; Max-Age=0; Path=/; SameSite=Lax`;
+      document.cookie = `dc-training-editing-access-${userId}=; Max-Age=0; Path=/; SameSite=Lax`;
+    } catch {
+      // Cookie storage may be unavailable.
+    }
+    memoryDeviceId = "";
+    memoryDeviceIdDurable = false;
   }
-
-  try {
-    localStorage.removeItem(deviceIdStorageKey);
-    localStorage.removeItem(`dc-training-editing-access:${userId}`);
-  } catch {
-    // IndexedDB and in-memory owner data are already gone.
-  }
-  try {
-    document.cookie = `${deviceIdStorageKey}=; Max-Age=0; Path=/; SameSite=Lax`;
-    document.cookie = `dc-training-editing-access-${userId}=; Max-Age=0; Path=/; SameSite=Lax`;
-  } catch {
-    // Cookie storage may be unavailable.
-  }
-  memoryDeviceId = "";
-  memoryDeviceIdDurable = false;
 }
 
 async function editingDeviceAuthority(
