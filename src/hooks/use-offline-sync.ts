@@ -1,24 +1,64 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   commitOfflineOperation,
+  discardOfflineOperations,
+  editingDeviceId,
+  hasDurableEditingDeviceId,
+  isCloudOwnerId,
   listenOfflineState,
+  pendingOfflineOperationCount,
   readOfflineState,
+  registerEditingDevice,
   synchronizeOfflineState,
+  transferEditingDevice,
+  type EditingDeviceAccess,
   type OfflineAccountState,
   type OfflineOperationInput,
 } from "../offline-sync.js";
 
 export type OfflineSyncState = "failed" | "synced" | "syncing";
 
+const memoryDeviceAccess = new Map<
+  string,
+  { access: Exclude<EditingDeviceAccess, "checking">; deviceId: string }
+>();
+
 export function useOfflineSync(userId: string, online: boolean) {
+  const deviceId = useRef(editingDeviceId()).current;
+  const deviceAuthorityRequired = isCloudOwnerId(userId);
   const [accountState, setAccountState] = useState<OfflineAccountState | null>(
     null,
+  );
+  const [deviceAccess, setDeviceAccess] = useState<EditingDeviceAccess>(() =>
+    initialDeviceAccess(deviceAuthorityRequired, online, userId, deviceId),
   );
   const [loadError, setLoadError] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [syncState, setSyncState] = useState<OfflineSyncState>("syncing");
   const syncPromise = useRef<Promise<boolean> | null>(null);
   const syncRequested = useRef(false);
+  const verifiedDeviceAccess = useRef<Exclude<
+    EditingDeviceAccess,
+    "checking"
+  > | null>(null);
+
+  useLayoutEffect(() => {
+    if (!deviceAuthorityRequired) {
+      verifiedDeviceAccess.current = "active";
+      setDeviceAccess("active");
+      return;
+    }
+    verifiedDeviceAccess.current = null;
+    setDeviceAccess(
+      initialDeviceAccess(deviceAuthorityRequired, online, userId, deviceId),
+    );
+  }, [deviceAuthorityRequired, deviceId, online, userId]);
 
   const reload = useCallback(async () => {
     const current = await readOfflineState(userId);
@@ -32,18 +72,31 @@ export function useOfflineSync(userId: string, online: boolean) {
       syncRequested.current = true;
       return syncPromise.current;
     }
+    if (deviceAuthorityRequired)
+      setDeviceAccess(verifiedDeviceAccess.current ?? "checking");
     setSyncState("syncing");
     setLoadError("");
     const work = (async () => {
       try {
         do {
           syncRequested.current = false;
-          await synchronizeOfflineState(userId);
+          const access = deviceAuthorityRequired
+            ? await registerEditingDevice(deviceId)
+            : "active";
+          verifiedDeviceAccess.current = access;
+          setDeviceAccess(access);
+          cacheDeviceAccess(userId, deviceId, access);
+          await synchronizeOfflineState(userId, deviceId, access);
           await reload();
         } while (syncRequested.current);
         setSyncState("synced");
         return true;
       } catch (error) {
+        if (readOnlyReplay(error)) {
+          verifiedDeviceAccess.current = "readonly";
+          cacheDeviceAccess(userId, deviceId, "readonly");
+        }
+        setDeviceAccess(verifiedDeviceAccess.current ?? "checking");
         setSyncState("failed");
         setLoadError(error instanceof Error ? error.message : "SYNC FAILED");
         return false;
@@ -53,7 +106,7 @@ export function useOfflineSync(userId: string, online: boolean) {
     })();
     syncPromise.current = work;
     return work;
-  }, [online, reload, userId]);
+  }, [deviceAuthorityRequired, deviceId, online, reload, userId]);
 
   useEffect(() => {
     setAccountState(null);
@@ -82,7 +135,7 @@ export function useOfflineSync(userId: string, online: boolean) {
       active = false;
       stopListening();
     };
-  }, [reload, userId]);
+  }, [deviceAuthorityRequired, deviceId, reload, userId]);
 
   useEffect(() => {
     if (!online) return;
@@ -95,12 +148,21 @@ export function useOfflineSync(userId: string, online: boolean) {
       if (document.visibilityState === "visible") void synchronize();
     };
     document.addEventListener("visibilitychange", onForeground);
-    return () => document.removeEventListener("visibilitychange", onForeground);
+    window.addEventListener("focus", onForeground);
+    return () => {
+      document.removeEventListener("visibilitychange", onForeground);
+      window.removeEventListener("focus", onForeground);
+    };
   }, [online, synchronize]);
 
   const commitOperation = useCallback(
     async (operation: OfflineOperationInput) => {
       setLoadError("");
+      if (deviceAccess !== "active") {
+        const message = "THIS DEVICE IS READ ONLY";
+        setLoadError(message);
+        return { data: null, error: message };
+      }
       try {
         const next = await commitOfflineOperation(userId, operation);
         setAccountState(next);
@@ -113,15 +175,135 @@ export function useOfflineSync(userId: string, online: boolean) {
         return { data: null, error: message };
       }
     },
-    [online, synchronize, userId],
+    [deviceAccess, online, synchronize, userId],
   );
+
+  const transfer = useCallback(async () => {
+    if (!online) {
+      setLoadError("CONNECT TO TRANSFER EDIT ACCESS");
+      return false;
+    }
+    setSyncState("syncing");
+    try {
+      await prepareReadOnlyTransfer(userId, deviceAccess);
+      if (!(await synchronize())) return false;
+      if ((await pendingOfflineOperationCount(userId)) > 0) {
+        setLoadError("SYNC THIS DEVICE BEFORE TRANSFERRING EDIT ACCESS");
+        setSyncState("failed");
+        return false;
+      }
+      const access = await transferEditingDevice(deviceId);
+      verifiedDeviceAccess.current = access;
+      setDeviceAccess(access);
+      cacheDeviceAccess(userId, deviceId, access);
+      await synchronizeOfflineState(userId, deviceId, access);
+      await reload();
+      setLoadError("");
+      setSyncState("synced");
+      return true;
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "TRANSFER FAILED");
+      setSyncState("failed");
+      return false;
+    }
+  }, [deviceAccess, deviceId, online, reload, synchronize, userId]);
 
   return {
     accountState,
     commitOperation,
+    deviceAccess,
     loadError,
     loaded,
     retry: synchronize,
     syncState,
+    transfer,
   };
+}
+
+function initialDeviceAccess(
+  required: boolean,
+  online: boolean,
+  userId: string,
+  deviceId: string,
+): EditingDeviceAccess {
+  if (!required) return "active";
+  if (online) return "checking";
+  return cachedDeviceAccess(userId, deviceId);
+}
+
+async function prepareReadOnlyTransfer(
+  userId: string,
+  access: EditingDeviceAccess,
+) {
+  if (access !== "readonly") return;
+  if ((await pendingOfflineOperationCount(userId)) === 0) return;
+  if (!hasDurableEditingDeviceId())
+    throw new Error(
+      "DEVICE ID COULD NOT BE RECOVERED · UNSYNCED CHANGES PRESERVED",
+    );
+  await discardOfflineOperations(userId);
+}
+
+function cachedDeviceAccess(userId: string, deviceId: string) {
+  const memory = memoryDeviceAccess.get(userId);
+  if (memory?.deviceId === deviceId) return memory.access;
+  try {
+    const cached = JSON.parse(
+      localStorage.getItem(`dc-training-editing-access:${userId}`) ?? "null",
+    ) as { access?: EditingDeviceAccess; deviceId?: string } | null;
+    if (
+      cached?.deviceId === deviceId &&
+      (cached.access === "active" || cached.access === "readonly")
+    )
+      return cached.access;
+  } catch {
+    // Online verification will replace an unavailable or corrupt cache.
+  }
+  const cookieAccess = cachedCookieDeviceAccess(userId, deviceId);
+  if (cookieAccess) return cookieAccess;
+  return "checking";
+}
+
+function cacheDeviceAccess(
+  userId: string,
+  deviceId: string,
+  access: Exclude<EditingDeviceAccess, "checking">,
+) {
+  memoryDeviceAccess.set(userId, { access, deviceId });
+  try {
+    localStorage.setItem(
+      `dc-training-editing-access:${userId}`,
+      JSON.stringify({ access, deviceId }),
+    );
+  } catch {
+    // Access still applies for this mounted session.
+  }
+  try {
+    document.cookie = `${deviceAccessCookieKey(userId)}=${deviceId}.${access}; Max-Age=315360000; Path=/; SameSite=Lax`;
+  } catch {
+    // Memory and local storage remain available when cookies are blocked.
+  }
+}
+
+function cachedCookieDeviceAccess(userId: string, deviceId: string) {
+  try {
+    const prefix = `${deviceAccessCookieKey(userId)}=${deviceId}.`;
+    const access = document.cookie
+      .split(";")
+      .map((item) => item.trim())
+      .find((item) => item.startsWith(prefix))
+      ?.slice(prefix.length);
+    if (access === "active" || access === "readonly") return access;
+  } catch {
+    // Online verification will replace an unavailable cookie cache.
+  }
+  return null;
+}
+
+function deviceAccessCookieKey(userId: string) {
+  return `dc-training-editing-access-${userId}`;
+}
+
+function readOnlyReplay(error: unknown) {
+  return error instanceof Error && error.message === "This device is read only";
 }

@@ -24,6 +24,8 @@ type Props = {
   commitOperation: CommitOperation;
   onHome: () => void;
   onOpenRotation?: () => void;
+  preserveCorrectionDraft?: boolean;
+  readOnly?: boolean;
 };
 
 type Performance = {
@@ -63,6 +65,8 @@ export default function HistoryScreen({
   commitOperation,
   onHome,
   onOpenRotation,
+  preserveCorrectionDraft = false,
+  readOnly = false,
 }: Props) {
   const data = accountState?.history ?? null;
   const [editingStep, setEditingStep] = useState<HistoryStepIdentity | null>(
@@ -147,10 +151,12 @@ export default function HistoryScreen({
       onSaveCorrection={correctHistoryPerformance}
       onSelectAssignment={setSelectedAssignment}
       onSelectWorkout={setSelectedWorkout}
+      preserveCorrectionDraft={preserveCorrectionDraft}
       saving={saving}
       search={search}
       selectedAssignment={selectedAssignment}
       selectedWorkout={selectedWorkout}
+      readOnly={readOnly}
       setExpanded={setExpanded}
       setMessage={setMessage}
       setSearch={setSearch}
@@ -176,10 +182,12 @@ function LoadedHistory({
   onSaveCorrection,
   onSelectAssignment,
   onSelectWorkout,
+  preserveCorrectionDraft,
   saving,
   search,
   selectedAssignment: selectedAssignmentIdentity,
   selectedWorkout: selectedWorkoutIdentity,
+  readOnly,
   setExpanded,
   setMessage,
   setSearch,
@@ -197,10 +205,12 @@ function LoadedHistory({
   onSaveCorrection: SaveCorrection;
   onSelectAssignment: (assignment: HistoryAssignmentIdentity | null) => void;
   onSelectWorkout: (workout: HistoryWorkoutIdentity | null) => void;
+  preserveCorrectionDraft: boolean;
   saving: boolean;
   search: string;
   selectedAssignment: HistoryAssignmentIdentity | null;
   selectedWorkout: HistoryWorkoutIdentity | null;
+  readOnly: boolean;
   setExpanded: (bodyPart: string | null) => void;
   setMessage: (message: string) => void;
   setSearch: (search: string) => void;
@@ -212,7 +222,10 @@ function LoadedHistory({
     selectedAssignmentIdentity,
   );
   const editingStep = historyStepByIdentity(data, editingStepIdentity);
+  const correctionStep =
+    !readOnly || preserveCorrectionDraft ? editingStep : null;
   const activeAssignmentIds = activeWorkoutAssignmentIds(data);
+  const onEdit = historyCorrectionEditor(readOnly, data, onEditStep);
   if (selectedAssignment) {
     const performances = performancesFor(data, selectedAssignment);
     return (
@@ -226,16 +239,17 @@ function LoadedHistory({
             setMessage("");
             onSelectAssignment(null);
           }}
-          onEdit={(step) => onEditStep(historyStepIdentity(data, step))}
+          onEdit={onEdit}
           performances={performances}
         />
-        {editingStep && (
+        {correctionStep && (
           <CorrectionEditor
             message={message}
             onCancel={() => onEditStep(null)}
             onSave={onSaveCorrection}
+            saveDisabled={readOnly}
             saving={saving}
-            step={editingStep}
+            step={correctionStep}
           />
         )}
       </HistoryShell>
@@ -257,19 +271,20 @@ function LoadedHistory({
             setMessage("");
             onSelectWorkout(null);
           }}
-          onEdit={(step) => onEditStep(historyStepIdentity(data, step))}
+          onEdit={onEdit}
           steps={data.steps.filter(
             (step) => step.workout_id === selectedWorkout.workout_id,
           )}
           workout={selectedWorkout}
         />
-        {editingStep && (
+        {correctionStep && (
           <CorrectionEditor
             message={message}
             onCancel={() => onEditStep(null)}
             onSave={onSaveCorrection}
+            saveDisabled={readOnly}
             saving={saving}
-            step={editingStep}
+            step={correctionStep}
           />
         )}
       </HistoryShell>
@@ -337,6 +352,15 @@ function historyStepIdentity(
     ordinal: step.ordinal,
     startOperationId: workout.start_operation_id,
   };
+}
+
+function historyCorrectionEditor(
+  readOnly: boolean,
+  data: HistoryData,
+  onEditStep: (step: HistoryStepIdentity | null) => void,
+) {
+  if (readOnly) return undefined;
+  return (step: WorkoutStep) => onEditStep(historyStepIdentity(data, step));
 }
 
 function historyAssignmentByIdentity(
@@ -633,7 +657,7 @@ function WorkoutDetail({
   activeAssignmentIds: ReadonlySet<string>;
   message: string;
   onBack: () => void;
-  onEdit: (step: WorkoutStep) => void;
+  onEdit?: (step: WorkoutStep) => void;
   steps: WorkoutStep[];
   workout: HistoryWorkout;
 }) {
@@ -651,12 +675,13 @@ function WorkoutDetail({
           .map((step) => (
             <button
               disabled={
+                !onEdit ||
                 step.kind !== "exercise" ||
                 step.status !== "completed" ||
                 correctionLocked(activeAssignmentIds, step)
               }
               key={step.step_id}
-              onClick={() => onEdit(step)}
+              onClick={() => onEdit?.(step)}
               type="button"
             >
               <span>{step.ordinal}</span>
@@ -664,9 +689,11 @@ function WorkoutDetail({
                 {step.exercise ?? `${displayBodyPart(step.body_part)} STRETCH`}
               </strong>
               <em>
-                {correctionLocked(activeAssignmentIds, step)
-                  ? "FINISH ACTIVE WORKOUT TO CORRECT"
-                  : stepStatus(step)}
+                {!onEdit
+                  ? "READ ONLY DEVICE"
+                  : correctionLocked(activeAssignmentIds, step)
+                    ? "FINISH ACTIVE WORKOUT TO CORRECT"
+                    : stepStatus(step)}
               </em>
               <b>
                 {step.status === "completed" && step.kind === "exercise"
@@ -693,7 +720,7 @@ function ExercisePerformance({
   assignment: HistoryAssignment;
   message: string;
   onBack: () => void;
-  onEdit: (step: WorkoutStep) => void;
+  onEdit?: (step: WorkoutStep) => void;
   performances: Performance[];
 }) {
   const segments = performanceSegments(performances);
@@ -731,19 +758,23 @@ function ExercisePerformance({
       <div className="performance-rows">
         {[...performances].reverse().map((performance) => (
           <button
-            disabled={correctionLocked(activeAssignmentIds, performance.step)}
+            disabled={
+              !onEdit || correctionLocked(activeAssignmentIds, performance.step)
+            }
             key={performance.step.step_id}
-            onClick={() => onEdit(performance.step)}
+            onClick={() => onEdit?.(performance.step)}
             type="button"
           >
             <span>{shortDate(performance.workout.started_at)}</span>
             <strong>{performanceSummary(performance.step)}</strong>
             <em className={performance.step.verdict === "win" ? "red" : ""}>
-              {correctionLocked(activeAssignmentIds, performance.step)
-                ? "FINISH ACTIVE WORKOUT TO CORRECT"
-                : verdictLabel(performance.step)}
+              {!onEdit
+                ? "READ ONLY DEVICE"
+                : correctionLocked(activeAssignmentIds, performance.step)
+                  ? "FINISH ACTIVE WORKOUT TO CORRECT"
+                  : verdictLabel(performance.step)}
             </em>
-            <b>›</b>
+            <b>{onEdit ? "›" : ""}</b>
           </button>
         ))}
       </div>
@@ -928,6 +959,7 @@ function CorrectionEditor({
   message,
   onCancel,
   onSave,
+  saveDisabled,
   saving,
   step,
 }: {
@@ -940,6 +972,7 @@ function CorrectionEditor({
     duration: number | null,
     expectedPerformance: PerformanceSnapshot,
   ) => Promise<void>;
+  saveDisabled: boolean;
   saving: boolean;
   step: WorkoutStep;
 }) {
@@ -959,6 +992,7 @@ function CorrectionEditor({
   const [shape] = useState(() => workoutEntryShape(step));
 
   const submit = async () => {
+    if (saveDisabled) return;
     const weights = expectedPerformance.weights.map((weight, index) => ({
       amount: amounts[index],
       micrograms: weightMicrograms({
@@ -1054,7 +1088,11 @@ function CorrectionEditor({
         {(localError || message) && (
           <p className="form-message">{localError || message}</p>
         )}
-        <button className="primary-action" disabled={saving} type="submit">
+        <button
+          className="primary-action"
+          disabled={saving || saveDisabled}
+          type="submit"
+        >
           {saving ? "SAVING" : "SAVE CORRECTION"}
         </button>
         <button
