@@ -177,10 +177,7 @@ function AccountControls({
   onOpenRotation,
 }: Pick<
   HomeScreenProps,
-  | "cloudStatus"
-  | "email"
-  | "message"
-  | "onOpenRotation"
+  "cloudStatus" | "email" | "message" | "onOpenRotation"
 >) {
   return (
     <>
@@ -323,10 +320,7 @@ function AccountDeletionControl({
   online,
   syncState,
   userId,
-}: Pick<
-  HomeScreenProps,
-  "editingEnabled" | "online" | "syncState"
-> &
+}: Pick<HomeScreenProps, "editingEnabled" | "online" | "syncState"> &
   Pick<FoundationHomeProps, "email" | "userId">) {
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
