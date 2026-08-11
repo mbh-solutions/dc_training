@@ -36,8 +36,12 @@ function App() {
     signOut,
   } = useAuthSession();
   const deletion = useAccountDeletion(session, online);
-  const activeSession =
-    recoveringPassword || deletion.checking || deletion.status ? null : session;
+  const activeSession = activeOwnerSession(
+    session,
+    recoveringPassword,
+    deletion.checking,
+    deletion.status,
+  );
   const { cloudStatus, profileState } = useFoundationProfile(
     activeSession,
     online,
@@ -83,6 +87,17 @@ function App() {
       userId={session.user.id}
     />
   );
+}
+
+function activeOwnerSession(
+  session: Session | null,
+  recoveringPassword: boolean,
+  checkingDeletion: boolean,
+  deletionStatus: AccountDeletionStatus | null,
+) {
+  return recoveringPassword || checkingDeletion || deletionStatus
+    ? null
+    : session;
 }
 
 function useAccountDeletion(session: Session | null, online: boolean) {

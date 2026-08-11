@@ -45,9 +45,7 @@ type RotationAssignmentPayload = AssignmentPayload & {
   expected_assignment_id: string | null;
 };
 type AssignmentLogbookState =
-  | "first_failure_pending"
-  | "mulligan_used"
-  | "replacement_required";
+  "first_failure_pending" | "mulligan_used" | "replacement_required";
 export type PerformanceSnapshot = {
   duration_seconds: number | null;
   reps: number[];
@@ -60,9 +58,7 @@ type StartWorkoutPayload = {
   slot: WorkoutSlot;
 };
 type LifecycleTransitionAction =
-  | "dismiss_suggestion"
-  | "start_cruise"
-  | "start_new_blast";
+  "dismiss_suggestion" | "start_cruise" | "start_new_blast";
 type LifecycleTransitionPayload = {
   action: LifecycleTransitionAction;
   blast_id: string;
@@ -300,8 +296,7 @@ export async function commitOfflineOperation(
   const states = transaction.objectStore(stateStore);
   const operations = transaction.objectStore(operationStore);
   const prior = (await request(operations.get(input.id))) as
-    | OfflineOperation
-    | undefined;
+    OfflineOperation | undefined;
   if (prior) {
     if (prior.userId !== userId || !sameOperation(prior, input))
       throw new Error("OPERATION ID MISMATCH");
@@ -540,8 +535,7 @@ async function replaceStateWhenQueueEmpty(state: OfflineAccountState) {
     return false;
   }
   const current = (await request(states.get(state.userId))) as
-    | OfflineAccountState
-    | undefined;
+    OfflineAccountState | undefined;
   states.put(preserveLocalFeedback(state, current));
   await transactionDone(transaction);
   return true;
@@ -786,8 +780,7 @@ export async function clearRecentCompletion(userId: string) {
     const transaction = database.transaction(stateStore, "readwrite");
     const states = transaction.objectStore(stateStore);
     const state = (await request(states.get(userId))) as
-      | OfflineAccountState
-      | undefined;
+      OfflineAccountState | undefined;
     if (state) states.put(withoutRecentCompletion(state));
     await transactionDone(transaction);
   }
