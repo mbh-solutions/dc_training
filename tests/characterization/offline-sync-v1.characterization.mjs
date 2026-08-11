@@ -9,23 +9,23 @@ const syncHook = "src/hooks/use-offline-sync.ts";
 const workoutHook = "src/hooks/use-workout.ts";
 const historyScreen = "src/HistoryScreen.tsx";
 const migration =
-  "supabase/migrations/20260810192528_offline_operation_queue.sql";
+  "supabase/migrations/20260810193129_offline_operation_queue.sql";
 const eventTimeMigration =
-  "supabase/migrations/20260810211000_preserve_offline_event_time.sql";
+  "supabase/migrations/20260810211509_preserve_offline_event_time.sql";
 const convergenceMigration =
-  "supabase/migrations/20260810214500_validate_offline_replay_context.sql";
+  "supabase/migrations/20260810215003_validate_offline_replay_context.sql";
 const lifecycleMigration =
-  "supabase/migrations/20260810222500_validate_offline_lifecycle_context.sql";
+  "supabase/migrations/20260810222541_validate_offline_lifecycle_context.sql";
 const blastReferenceRepair =
-  "supabase/migrations/20260810223500_fix_offline_blast_reference_resolution.sql";
+  "supabase/migrations/20260810223010_fix_offline_blast_reference_resolution.sql";
 const versionValidationMigration =
-  "supabase/migrations/20260810234000_validate_offline_versions.sql";
+  "supabase/migrations/20260810233920_validate_offline_versions.sql";
 const progressionValidationMigration =
-  "supabase/migrations/20260811000500_protect_offline_progression_and_corrections.sql";
+  "supabase/migrations/20260811000605_protect_offline_progression_and_corrections.sql";
 const performanceContextRepair =
-  "supabase/migrations/20260811002000_fix_offline_performance_context.sql";
+  "supabase/migrations/20260811000810_fix_offline_performance_context.sql";
 const progressionUndoRepair =
-  "supabase/migrations/20260811003500_use_progression_order_for_undo.sql";
+  "supabase/migrations/20260811002730_use_progression_order_for_undo.sql";
 const read = (relativePath) =>
   readFileSync(path.join(target, relativePath), "utf8");
 const hasAll = (source, fragments) =>

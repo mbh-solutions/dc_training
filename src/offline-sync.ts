@@ -1710,10 +1710,14 @@ function replaceHistoryStep(history: HistoryData, step: WorkoutStep) {
 
 function latestCompletedSlot(history: HistoryData, excludedWorkoutId: string) {
   return (
-    history.workouts.find(
-      (item) =>
-        item.workout_id !== excludedWorkoutId && item.status === "completed",
-    )?.slot ?? null
+    history.workouts
+      .filter(
+        (item) =>
+          item.workout_id !== excludedWorkoutId && item.status === "completed",
+      )
+      .sort(
+        (left, right) => progressionOrder(right) - progressionOrder(left),
+      )[0]?.slot ?? null
   );
 }
 
