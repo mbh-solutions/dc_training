@@ -1,8 +1,8 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "A read-only mobile device transfers edit access after one in-app confirmation. The warning no longer opens a native browser dialog that foregrounds and remounts the app; the transfer also waits for any synchronization already in progress, then atomically claims authority and reloads cloud state. A second confirmation is not required."
-proof = "A focused hook race probe starts a failing read-only foreground synchronization before transfer, clears the stale local queue, and proves the first transfer call still claims authority once and finishes active. A focused rendered-UI probe proves the in-app warning calls transfer once without invoking the native confirmation API. The directly relevant foundation test and changed-file oxlint pass once."
+intended_behavior = "A deployed service-worker update replaces every open browser or installed-PWA client instead of leaving old JavaScript running behind a newly activated worker. Foregrounding the app also checks for a newer worker, so the one-confirm edit-access repair reaches mobile and desktop clients."
+proof = "Production network capture on the current bundle sent exactly one transfer_editing_device request, received HTTP 200, and became SYNCED after the first confirmation. The reported native confirmation can only come from the superseded bundle. The production build imports the activation reload script, precaches it, and contains the foreground update check."
 
 [characterization]
 captured_behavior = "The qualified auth shell, rotation setup, workout runtime, logbook, history, blast/cruise, offline working copy, and active-device transfer remain. S10 adds an account-status gate, deletion/recovery controls, local purge, authoritative cloud lifecycle, and encrypted operational backup without changing any training rule."
@@ -17,6 +17,7 @@ dependency_direction = "HomeScreen opens SettingsScreen through FoundationHome. 
 reviewed_paths = [
     ".github/workflows/daily-encrypted-backup.yml",
     "src/App.tsx",
+    "src/main.tsx",
     "src/AuthScreens.tsx",
     "src/FoundationHome.tsx",
     "src/HistoryScreen.tsx",
@@ -34,6 +35,8 @@ reviewed_paths = [
     "src/workout-api.ts",
     "src/workout-domain.ts",
     "src/weight-conversion.ts",
+    "vite.config.ts",
+    "public/sw-activate.js",
     "supabase/migrations/20260810193129_offline_operation_queue.sql",
     "supabase/migrations/20260810211509_preserve_offline_event_time.sql",
     "supabase/migrations/20260810215003_validate_offline_replay_context.sql",
@@ -63,11 +66,11 @@ owns = "Authoritative request time, 30-day deadline, pending-account data denial
 does_not_own = "Password UI, local browser storage, GitHub artifact encryption, authentication email delivery, or Supportability Gate behavior."
 
 [incremental_refactor]
-target = "Repair the repeatable two-confirm mobile edit-access transfer exposed during final owner-iPhone qualification."
-completed_step = "Replaced the native confirmation with the same in-app warning, serialized transfer against any foreground synchronization already running, and removed the redundant pre-transfer sync. No database, package, training rule, or Supportability Gate change was made."
+target = "Deliver the already-merged one-confirm edit-access repair to open browser and installed-PWA clients."
+completed_step = "Reload open clients once when a new worker activates and check for a worker update whenever the app returns to the foreground. No transfer, database, package, or training-rule change was made."
 
 [review_handoff]
-summary = "Review the mobile confirm/focus race: the warning is rendered in-app without foregrounding or unmounting the app, foreground synchronization is suppressed while transfer owns the boundary, any synchronization already started is awaited, stale local operations are discarded under the existing warning, and authority is transferred once."
+summary = "Review update delivery: generated Workbox still owns caching and skip-waiting; the imported activation script claims and reloads open windows once, while main requests an update only when visible. The transfer path is unchanged."
 remaining_risks = [
     "A device that remains permanently offline cannot receive a remote deletion signal; the requesting active device is purged immediately, and cloud data is unavailable to every device while pending.",
     "The built-in authentication email path remains acceptable only if the pre-authorized owner proves delivery during final production qualification.",
@@ -77,8 +80,14 @@ remaining_risks = [
 [human_review]
 naming = "DELETE ACCOUNT, BEGIN 30-DAY DELETION, ACCOUNT UNAVAILABLE, DELETION PENDING, and CANCEL DELETION state the lifecycle directly; the permanent warning names account, cloud history, and device data."
 cohesion = "Presentation, auth orchestration, local erasure, authoritative database lifecycle, encrypted backup, and operator documentation remain separate."
-intended_behavior = "The owner opens the transfer warning and confirms once on mobile; the same invocation completes the transfer without a native-dialog focus remount."
-reviewability = "ReadOnlyDeviceStatus owns the in-app warning. The existing offline-sync hook owns foreground/transfer serialization, awaits a pre-existing sync, and removes the redundant pre-transfer sync. Database, packages, and Gate remain untouched."
+intended_behavior = "An open or installed client reloads into the current bundle when its service worker updates, then the owner confirms edit-access transfer once."
+reviewability = "public/sw-activate.js owns activation-time client reload; main.tsx owns foreground update checks; VitePWA remains the only worker/cache generator. Transfer code, database, packages, and Gate remain untouched."
+
+[[module_boundaries]]
+path = "public/sw-activate.js"
+owner_path = "public/sw-activate.js"
+basis = "responsibility"
+justification = "Owns the one activation-time claim and reload of open app windows; it has no cache, auth, transfer, or training responsibility."
 
 [[module_boundaries]]
 path = "src/hooks/use-offline-sync.ts"
