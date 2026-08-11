@@ -26,7 +26,7 @@ export type OfflineSyncState = "failed" | "synced" | "syncing";
 
 const memoryDeviceAccess = new Map<
   string,
-  { access: EditingDeviceAccess; deviceId: string }
+  { access: Exclude<EditingDeviceAccess, "checking">; deviceId: string }
 >();
 
 export function useOfflineSync(userId: string, online: boolean) {
@@ -92,6 +92,10 @@ export function useOfflineSync(userId: string, online: boolean) {
         setSyncState("synced");
         return true;
       } catch (error) {
+        if (readOnlyReplay(error)) {
+          verifiedDeviceAccess.current = "readonly";
+          cacheDeviceAccess(userId, deviceId, "readonly");
+        }
         setDeviceAccess(verifiedDeviceAccess.current ?? "checking");
         setSyncState("failed");
         setLoadError(error instanceof Error ? error.message : "SYNC FAILED");
@@ -255,13 +259,15 @@ function cachedDeviceAccess(userId: string, deviceId: string) {
   } catch {
     // Online verification will replace an unavailable or corrupt cache.
   }
+  const cookieAccess = cachedCookieDeviceAccess(userId, deviceId);
+  if (cookieAccess) return cookieAccess;
   return "checking";
 }
 
 function cacheDeviceAccess(
   userId: string,
   deviceId: string,
-  access: EditingDeviceAccess,
+  access: Exclude<EditingDeviceAccess, "checking">,
 ) {
   memoryDeviceAccess.set(userId, { access, deviceId });
   try {
@@ -272,4 +278,32 @@ function cacheDeviceAccess(
   } catch {
     // Access still applies for this mounted session.
   }
+  try {
+    document.cookie = `${deviceAccessCookieKey(userId)}=${deviceId}.${access}; Max-Age=315360000; Path=/; SameSite=Lax`;
+  } catch {
+    // Memory and local storage remain available when cookies are blocked.
+  }
+}
+
+function cachedCookieDeviceAccess(userId: string, deviceId: string) {
+  try {
+    const prefix = `${deviceAccessCookieKey(userId)}=${deviceId}.`;
+    const access = document.cookie
+      .split(";")
+      .map((item) => item.trim())
+      .find((item) => item.startsWith(prefix))
+      ?.slice(prefix.length);
+    if (access === "active" || access === "readonly") return access;
+  } catch {
+    // Online verification will replace an unavailable cookie cache.
+  }
+  return null;
+}
+
+function deviceAccessCookieKey(userId: string) {
+  return `dc-training-editing-access-${userId}`;
+}
+
+function readOnlyReplay(error: unknown) {
+  return error instanceof Error && error.message === "This device is read only";
 }
