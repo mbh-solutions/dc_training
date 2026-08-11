@@ -5,6 +5,7 @@ import {
 } from "./workout-api.js";
 import {
   compareLogbookPerformance,
+  progressionOrder,
   sortHistoryWorkouts,
   type HistoryData,
   type HistoryWorkout,
@@ -45,6 +46,11 @@ type RotationAssignmentPayload = AssignmentPayload & {
 };
 type AssignmentLogbookState =
   "first_failure_pending" | "mulligan_used" | "replacement_required";
+type PerformanceSnapshot = {
+  duration_seconds: number | null;
+  reps: number[];
+  weights: WeightEntry[];
+};
 type StartWorkoutPayload = {
   assignments: Record<string, string>;
   blast_id: string;
@@ -95,11 +101,10 @@ export type OfflineOperationInput =
   | {
       id: string;
       kind: "correct_history_performance";
-      payload: StepTarget & {
-        duration_seconds: number | null;
-        reps: number[];
-        weights: WeightEntry[];
-      };
+      payload: PerformanceSnapshot &
+        StepTarget & {
+          expected_performance: PerformanceSnapshot;
+        };
     }
   | {
       id: string;
@@ -575,9 +580,9 @@ export function startWorkoutPayload(
       return [position, assignment.assignment_id];
     }),
   );
-  const previousWorkout = sortHistoryWorkouts(state.history.workouts).find(
-    (workout) => workout.status === "completed",
-  );
+  const previousWorkout = [...state.history.workouts]
+    .filter((workout) => workout.status === "completed")
+    .sort((left, right) => progressionOrder(right) - progressionOrder(left))[0];
   return {
     assignments,
     blast_id: blastId,
@@ -648,6 +653,7 @@ function startLocalWorkout(
   const workout: HistoryWorkout = {
     blast_id: intended.blast_id,
     completed_at: null,
+    progression_order: nextLocalProgressionOrder(state),
     slot,
     start_operation_id: operation.id,
     started_at: startedAt,
@@ -671,6 +677,10 @@ function startLocalWorkout(
   state.recentOperation = null;
   state.recentlyCompletedWorkout = null;
   return state;
+}
+
+function nextLocalProgressionOrder(state: OfflineAccountState) {
+  return Math.max(0, ...state.history!.workouts.map(progressionOrder)) + 1;
 }
 
 function assertStartContext(
@@ -859,8 +869,8 @@ function previousPerformance(
     )
     .sort(
       (left, right) =>
-        Date.parse(workouts.get(left.workout_id)?.started_at ?? "") -
-          Date.parse(workouts.get(right.workout_id)?.started_at ?? "") ||
+        progressionOrder(workouts.get(left.workout_id)!) -
+          progressionOrder(workouts.get(right.workout_id)!) ||
         left.ordinal - right.ordinal,
     );
   const currentBlastId = state.workout!.lifecycle.blast_id;
@@ -1235,6 +1245,7 @@ function correctLocalHistory(
     )
   )
     throw new Error("FINISH ACTIVE WORKOUT BEFORE CORRECTING THIS EXERCISE");
+  assertPerformanceContext(step, operation.payload.expected_performance);
   step.weight_entries = operation.payload.weights.map(normalizeWeight);
   step.reps = operation.payload.reps;
   step.duration_seconds = operation.payload.duration_seconds;
@@ -1242,6 +1253,18 @@ function correctLocalHistory(
   step.last_operation_id = null;
   recalculateLocalAssignmentLogbook(state, step.assignment_id!);
   return state;
+}
+
+function assertPerformanceContext(
+  step: WorkoutStep,
+  expected: PerformanceSnapshot,
+) {
+  if (
+    step.duration_seconds !== expected.duration_seconds ||
+    JSON.stringify(step.reps) !== JSON.stringify(expected.reps) ||
+    JSON.stringify(step.weight_entries) !== JSON.stringify(expected.weights)
+  )
+    throw new Error("OFFLINE PERFORMANCE CONTEXT CHANGED");
 }
 
 type RecalculationCursor = {
@@ -1269,8 +1292,8 @@ function recalculateLocalAssignmentLogbook(
     )
     .sort(
       (left, right) =>
-        Date.parse(workouts.get(left.workout_id)?.started_at ?? "") -
-          Date.parse(workouts.get(right.workout_id)?.started_at ?? "") ||
+        progressionOrder(workouts.get(left.workout_id)!) -
+          progressionOrder(workouts.get(right.workout_id)!) ||
         left.ordinal - right.ordinal,
     );
   let cursor: RecalculationCursor = {

@@ -78,7 +78,9 @@
         "supabase/migrations/20260810214500_validate_offline_replay_context.sql",
         "supabase/migrations/20260810222500_validate_offline_lifecycle_context.sql",
         "supabase/migrations/20260810223500_fix_offline_blast_reference_resolution.sql",
-        "supabase/migrations/20260810234000_validate_offline_versions.sql"
+        "supabase/migrations/20260810234000_validate_offline_versions.sql",
+        "supabase/migrations/20260811000500_protect_offline_progression_and_corrections.sql",
+        "supabase/migrations/20260811002000_fix_offline_performance_context.sql"
       ],
       "id": "offline-sync-v1",
       "kind": "regression"

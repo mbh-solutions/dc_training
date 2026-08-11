@@ -122,7 +122,7 @@ export async function loadHistoryState(
   const [workouts, assignments, steps] = await Promise.all([
     loadAllHistoryRows(
       "workouts",
-      "workout_id,blast_id,start_operation_id,slot,status,started_at,completed_at",
+      "workout_id,blast_id,progression_order,start_operation_id,slot,status,started_at,completed_at",
       userId,
       [{ ascending: false, column: "started_at" }, { column: "workout_id" }],
     ),

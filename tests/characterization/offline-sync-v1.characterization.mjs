@@ -20,6 +20,10 @@ const blastReferenceRepair =
   "supabase/migrations/20260810223500_fix_offline_blast_reference_resolution.sql";
 const versionValidationMigration =
   "supabase/migrations/20260810234000_validate_offline_versions.sql";
+const progressionValidationMigration =
+  "supabase/migrations/20260811000500_protect_offline_progression_and_corrections.sql";
+const performanceContextRepair =
+  "supabase/migrations/20260811002000_fix_offline_performance_context.sql";
 const read = (relativePath) =>
   readFileSync(path.join(target, relativePath), "utf8");
 const hasAll = (source, fragments) =>
@@ -47,6 +51,8 @@ const offlineContract =
   existsSync(path.join(target, lifecycleMigration)) &&
   existsSync(path.join(target, blastReferenceRepair)) &&
   existsSync(path.join(target, versionValidationMigration)) &&
+  existsSync(path.join(target, progressionValidationMigration)) &&
+  existsSync(path.join(target, performanceContextRepair)) &&
   hasAll(read(offlineModule), [
     'const databaseName = "dc-training-offline"',
     "[stateStore, operationStore]",
@@ -62,7 +68,9 @@ const offlineContract =
     "lifecycleTransitionPayload",
     "startWorkoutPayload",
     "expected_assignment_id",
+    "expected_performance",
     "previous_workout_operation_id",
+    "progressionOrder",
     "workouts.get(step.workout_id)?.blast_id === currentBlastId",
     "startOperationForWorkout(state, step.workout_id)",
     "historyWorkout.start_operation_id",
@@ -134,6 +142,18 @@ const offlineContract =
     "Offline start rotation predecessor changed",
     "perform private.assert_offline_assignment_context(owner_id, p_payload)",
     "perform private.assert_offline_rotation_predecessor(owner_id, p_payload)",
+  ]) &&
+  hasAll(read(progressionValidationMigration), [
+    "progression_order",
+    "private.assert_offline_performance_context",
+    "Offline performance context changed",
+    "workout.progression_order desc",
+    "perform private.assert_offline_performance_context(owner_id, p_payload)",
+  ]) &&
+  hasAll(read(performanceContextRepair), [
+    "resolved_step_id",
+    "private.assert_offline_performance_context",
+    "Offline performance context changed",
   ]);
 
 process.stdout.write(

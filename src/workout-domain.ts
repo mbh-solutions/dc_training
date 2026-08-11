@@ -10,6 +10,7 @@ export type Workout = {
 
 export type HistoryWorkout = Workout & {
   blast_id: string;
+  progression_order?: number;
   start_operation_id: string;
   started_at: string;
 };
@@ -252,6 +253,10 @@ export function sortHistoryWorkouts(workouts: HistoryWorkout[]) {
   );
 }
 
+export function progressionOrder(workout: HistoryWorkout) {
+  return workout.progression_order ?? Date.parse(workout.started_at);
+}
+
 export function currentHistoryGroups(assignments: HistoryAssignment[]) {
   return HISTORY_BODY_PARTS.map((bodyPart) => ({
     assignments: assignments
@@ -397,6 +402,12 @@ export function validHistoryWorkout(value: unknown): value is HistoryWorkout {
   return (
     validWorkout(value) &&
     typeof (value as Record<string, unknown>).blast_id === "string" &&
+    ((value as Record<string, unknown>).progression_order === undefined ||
+      (typeof (value as Record<string, unknown>).progression_order ===
+        "number" &&
+        Number.isSafeInteger(
+          (value as Record<string, unknown>).progression_order,
+        ))) &&
     typeof (value as Record<string, unknown>).start_operation_id === "string" &&
     typeof (value as Record<string, unknown>).started_at === "string"
   );

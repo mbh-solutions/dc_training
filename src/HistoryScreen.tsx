@@ -113,6 +113,11 @@ export default function HistoryScreen({
       payload: {
         ...stepTarget(accountState, step),
         duration_seconds: duration,
+        expected_performance: {
+          duration_seconds: step.duration_seconds,
+          reps: step.reps,
+          weights: step.weight_entries,
+        },
         reps,
         weights,
       },
