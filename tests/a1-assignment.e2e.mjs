@@ -978,6 +978,10 @@ const assignmentCard = (workout, position) => {
     (button) => button.querySelector("span")?.textContent === position,
   );
 };
+const workoutToggle = (workout) =>
+  [...document.querySelectorAll("button.workout-toggle")].find((button) =>
+    button.textContent.includes(`${workout} WORKOUT`),
+  );
 
 Object.defineProperty(window.navigator, "onLine", {
   configurable: true,
@@ -1194,6 +1198,17 @@ await act(async () => {
 await act(settleLoading);
 const emptyA1 =
   text().includes("A1 WORKOUT") && text().includes("CHOOSE EXERCISE");
+const accordionStartsAtA1 =
+  workoutToggle("A1").getAttribute("aria-expanded") === "true" &&
+  workoutToggle("B1").getAttribute("aria-expanded") === "false";
+await act(async () => workoutToggle("B1").click());
+const accordionKeepsOneWorkoutOpen =
+  workoutToggle("A1").getAttribute("aria-expanded") === "false" &&
+  workoutToggle("B1").getAttribute("aria-expanded") === "true" &&
+  window.getComputedStyle(
+    document.getElementById("workout-a1-assignments"),
+  ).display === "none";
+await act(async () => workoutToggle("A1").click());
 
 await act(async () => {
   [...document.querySelectorAll("button")]
@@ -1292,6 +1307,7 @@ const restoredAfterRemount =
   text().includes("Incline barbell press") &&
   text().includes("11–15");
 
+await act(async () => workoutToggle("B1").click());
 await act(async () => assignmentCard("B1", "FOREARMS").click());
 const bPoolMatched =
   document.querySelectorAll('input[name="exercise"]').length === 11;
@@ -1466,6 +1482,8 @@ if (
 ) {
   const a1AssignmentRoundTrip =
     emptyA1 &&
+    accordionStartsAtA1 &&
+    accordionKeepsOneWorkoutOpen &&
     approvedChestPool &&
     exerciseContinueDisabled &&
     protocolInitiallyEmpty &&
@@ -2851,6 +2869,8 @@ const behavior = {
     hasCall("select", (call) => call[1] === "status") &&
     hasCall("eq", (call) => call[1] === "user_id" && call[2] === "owner-1") &&
     signedOutReadBlocked,
+  rotation_setup_accordion:
+    accordionStartsAtA1 && accordionKeepsOneWorkoutOpen,
   rotation_assignment_boundary:
     hasCall("from", (call) => call[1] === "rotation_assignment_versions") &&
     hasCall(
@@ -2921,6 +2941,8 @@ const behavior = {
 
 const a1Detail = {
   a1WorkoutCompletion,
+  accordionKeepsOneWorkoutOpen,
+  accordionStartsAtA1,
   completionShown,
   approvedChestPool,
   backPreserved,
