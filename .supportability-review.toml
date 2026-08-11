@@ -22,7 +22,6 @@ reviewed_paths = [
     "src/HistoryScreen.tsx",
     "src/HomeScreen.tsx",
     "src/RotationSetup.tsx",
-    "src/SettingsScreen.tsx",
     "src/hooks/use-offline-sync.ts",
     "src/hooks/use-foundation-profile.ts",
     "src/hooks/use-owner-access.ts",
@@ -200,12 +199,6 @@ path = ".github/workflows/daily-encrypted-backup.yml"
 owner_path = ".github/workflows/daily-encrypted-backup.yml"
 basis = "responsibility"
 justification = "Owns native logical dump creation, symmetric encryption, parse verification, ciphertext-only artifact upload, visible job failure, and 30-day retention."
-
-[[module_boundaries]]
-path = "src/SettingsScreen.tsx"
-owner_path = "src/SettingsScreen.tsx"
-basis = "responsibility"
-justification = "Owns the approved Settings presentation and delegates persistence and sign-out through existing callbacks."
 
 [[module_boundaries]]
 path = "src/weight-conversion.ts"

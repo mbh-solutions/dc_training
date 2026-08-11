@@ -1,8 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import HistoryScreen from "./HistoryScreen.jsx";
-import HomeScreen, { NetworkStatus } from "./HomeScreen.jsx";
+import HomeScreen, { NetworkStatus, SettingsScreen } from "./HomeScreen.jsx";
 import RotationSetup from "./RotationSetup.jsx";
-import SettingsScreen from "./SettingsScreen.jsx";
 import { WorkoutComplete, WorkoutTracer } from "./WorkoutTracer.jsx";
 import { useOfflineSync } from "./hooks/use-offline-sync.js";
 import { useWorkout } from "./hooks/use-workout.js";

@@ -452,16 +452,17 @@ async function replayOfflineOperation(
   userId: string,
   deviceId: string,
 ) {
+  if (!supabase) throw new Error("Cloud service unavailable");
   if (operation.kind === "set_weight_unit") {
     if (!isCloudOwnerId(userId)) return;
-    const { error } = await supabase!.rpc("save_weight_unit", {
+    const { error } = await supabase.rpc("save_weight_unit", {
       p_device_id: deviceId,
       p_unit: operation.payload.unit,
     });
     if (error) throw new Error(error.message);
     return;
   }
-  const { error } = await supabase!.rpc("apply_offline_operation", {
+  const { error } = await supabase.rpc("apply_offline_operation", {
     ...(isCloudOwnerId(userId) ? { p_device_id: deviceId } : {}),
     p_kind: operation.kind,
     p_operation_id: operation.id,
