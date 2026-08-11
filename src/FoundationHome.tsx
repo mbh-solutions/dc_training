@@ -230,6 +230,7 @@ function FoundationDashboard({ ...props }: DashboardProps) {
       />,
       <SettingsScreen
         editingEnabled={props.editingEnabled}
+        email={homeProps.email}
         online={homeProps.online}
         onBack={() => setShowSettings(false)}
         onChangeUnit={async (unit) =>
@@ -246,6 +247,7 @@ function FoundationDashboard({ ...props }: DashboardProps) {
         onSignOut={homeProps.onSignOut}
         syncState={offline.syncState}
         unit={accountWeightUnit(offline.accountState)}
+        userId={props.userId}
       />,
     );
   }
@@ -276,7 +278,6 @@ function FoundationDashboardHome({
   onOpenRotation,
   onOpenSettings,
   onOpenWorkout,
-  userId,
   workout,
 }: DashboardProps & {
   onOpenSettings: () => void;
@@ -313,7 +314,6 @@ function FoundationDashboardHome({
         if (await workout.start()) onOpenWorkout();
       }}
       syncState={offline.syncState}
-      userId={userId}
     />
   );
 }

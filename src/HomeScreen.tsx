@@ -6,7 +6,7 @@ import type { TrainingLifecycle } from "./workout-domain.js";
 import { requestOwnerAccountDeletion } from "./lib/auth-actions.js";
 import type { WeightUnit } from "./weight-conversion.js";
 
-type HomeScreenProps = Omit<FoundationHomeProps, "userId"> & {
+type HomeScreenProps = Omit<FoundationHomeProps, "onSignOut" | "userId"> & {
   activeSlot: WorkoutSlot | null;
   actionSaving: boolean;
   conflictDeferred: boolean;
@@ -28,7 +28,6 @@ type HomeScreenProps = Omit<FoundationHomeProps, "userId"> & {
   onStartWorkout: () => Promise<void>;
   onDismissCruiseSuggestion: () => Promise<boolean>;
   syncState: OfflineSyncState;
-  userId: string;
 };
 
 const summaries: Record<WorkoutSlot, string> = {
@@ -60,13 +59,11 @@ function HomeScreen({
   onReviewConflict,
   onRetrySync,
   onResumeWorkout,
-  onSignOut,
   onStartCruise,
   onStartNewBlast,
   onStartWorkout,
   onDismissCruiseSuggestion,
   syncState,
-  userId,
 }: HomeScreenProps) {
   const [cruiseConfirmationOpen, setCruiseConfirmationOpen] = useState(false);
   useEffect(() => {
@@ -79,7 +76,6 @@ function HomeScreen({
         actionSaving={actionSaving}
         conflictDeferred={conflictDeferred}
         editingEnabled={editingEnabled}
-        email={email}
         message={message}
         nextSlot={nextSlot}
         online={online}
@@ -87,10 +83,8 @@ function HomeScreen({
         onOpenSettings={onOpenSettings}
         onReviewConflict={onReviewConflict}
         onRetrySync={onRetrySync}
-        onSignOut={onSignOut}
         onStartNewBlast={onStartNewBlast}
         syncState={syncState}
-        userId={userId}
       />
     );
 
@@ -148,14 +142,9 @@ function HomeScreen({
 
         <AccountControls
           cloudStatus={cloudStatus}
-          editingEnabled={editingEnabled}
           email={email}
           message={message}
-          online={online}
           onOpenRotation={onOpenRotation}
-          onSignOut={onSignOut}
-          syncState={syncState}
-          userId={userId}
         />
       </main>
       <BottomNavigation
@@ -183,25 +172,15 @@ function HomeScreen({
 
 function AccountControls({
   cloudStatus,
-  editingEnabled,
   email,
   message,
-  online,
   onOpenRotation,
-  onSignOut,
-  syncState,
-  userId,
 }: Pick<
   HomeScreenProps,
   | "cloudStatus"
-  | "editingEnabled"
   | "email"
   | "message"
-  | "online"
   | "onOpenRotation"
-  | "onSignOut"
-  | "syncState"
-  | "userId"
 >) {
   return (
     <>
@@ -215,25 +194,6 @@ function AccountControls({
       >
         ROTATION SETUP
       </button>
-      <button
-        className="secondary-action"
-        disabled={!online || syncState !== "synced"}
-        onClick={() => void onSignOut()}
-        type="button"
-      >
-        SIGN OUT
-      </button>
-      {!online && <p className="quiet-note">CONNECT TO SIGN OUT</p>}
-      {online && syncState !== "synced" && (
-        <p className="quiet-note">SYNC BEFORE SIGNING OUT</p>
-      )}
-      <AccountDeletionControl
-        editingEnabled={editingEnabled}
-        email={email}
-        online={online}
-        syncState={syncState}
-        userId={userId}
-      />
       <p className="quiet-note">
         APP FOUNDATION · AUTHENTICATED · {cloudStatus} · {email?.toUpperCase()}
       </p>
@@ -261,17 +221,12 @@ const homeStyles = [
   ".cruise-rules ul { display: grid; gap: 18px; margin: 18px 0 0; padding: 0; list-style: none; }",
   ".cruise-rules li { display: flex; align-items: center; gap: 12px; color: var(--gray); font-family: Impact, sans-serif; letter-spacing: .05em; }",
   ".cruise-rules li::before { content: '✓'; display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; border: 1px solid var(--gray); border-radius: 50%; }",
-  ".deletion-control { margin-top: 28px; border-top: 1px solid var(--line); padding-top: 20px; }",
-  ".deletion-warning { color: var(--white); line-height: 1.5; }",
-  ".deletion-confirmation { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0; color: var(--gray); line-height: 1.4; }",
-  ".deletion-confirmation input { margin-top: 3px; }",
 ].join("\n");
 
 function CruiseHome({
   actionSaving,
   conflictDeferred,
   editingEnabled,
-  email,
   message,
   nextSlot,
   online,
@@ -279,15 +234,12 @@ function CruiseHome({
   onOpenSettings,
   onReviewConflict,
   onRetrySync,
-  onSignOut,
   onStartNewBlast,
   syncState,
-  userId,
 }: {
   actionSaving: boolean;
   conflictDeferred: boolean;
   editingEnabled: boolean;
-  email?: string;
   message: string;
   nextSlot: WorkoutSlot;
   online: boolean;
@@ -295,10 +247,8 @@ function CruiseHome({
   onOpenSettings: () => void;
   onReviewConflict: () => void;
   onRetrySync: () => Promise<boolean>;
-  onSignOut: () => Promise<void>;
   onStartNewBlast: () => Promise<boolean>;
   syncState: OfflineSyncState;
-  userId: string;
 }) {
   return (
     <div className="app-shell">
@@ -355,26 +305,6 @@ function CruiseHome({
           Continue with {nextSlot} when you are ready.
         </p>
         {message && <p className="form-message">{message}</p>}
-        <p className="account-email">SIGNED IN AS {email?.toUpperCase()}</p>
-        <button
-          className="secondary-action"
-          disabled={!online || syncState !== "synced"}
-          onClick={() => void onSignOut()}
-          type="button"
-        >
-          SIGN OUT
-        </button>
-        {!online && <p className="quiet-note">CONNECT TO SIGN OUT</p>}
-        {online && syncState !== "synced" && (
-          <p className="quiet-note">SYNC BEFORE SIGNING OUT</p>
-        )}
-        <AccountDeletionControl
-          editingEnabled={editingEnabled}
-          email={email}
-          online={online}
-          syncState={syncState}
-          userId={userId}
-        />
       </main>
       <BottomNavigation
         active="home"
@@ -395,8 +325,9 @@ function AccountDeletionControl({
   userId,
 }: Pick<
   HomeScreenProps,
-  "editingEnabled" | "email" | "online" | "syncState" | "userId"
->) {
+  "editingEnabled" | "online" | "syncState"
+> &
+  Pick<FoundationHomeProps, "email" | "userId">) {
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmed, setConfirmed] = useState(false);
@@ -849,20 +780,24 @@ const bottomNavigationStyles = `
 
 export function SettingsScreen({
   editingEnabled,
+  email,
   online,
   onBack,
   onChangeUnit,
   onSignOut,
   syncState,
   unit,
+  userId,
 }: {
   editingEnabled: boolean;
+  email?: string;
   online: boolean;
   onBack: () => void;
   onChangeUnit: (unit: WeightUnit) => Promise<boolean>;
   onSignOut: () => Promise<void>;
   syncState: OfflineSyncState;
   unit: WeightUnit;
+  userId: string;
 }) {
   const [saving, setSaving] = useState(false);
   const changeUnit = async (next: WeightUnit) => {
@@ -919,6 +854,13 @@ export function SettingsScreen({
         {online && syncState !== "synced" && (
           <p className="quiet-note">SYNC BEFORE SIGNING OUT</p>
         )}
+        <AccountDeletionControl
+          editingEnabled={editingEnabled}
+          email={email}
+          online={online}
+          syncState={syncState}
+          userId={userId}
+        />
       </main>
       <footer>DC TRAINING</footer>
     </div>
@@ -940,6 +882,10 @@ const settingsStyles = `
 .unit-control button:disabled { cursor: not-allowed; }
 .settings-card > p { margin: 24px 0 0; color: var(--gray); font-size: 1.05rem; line-height: 1.5; }
 .settings-sign-out { margin-top: 44px; }
+.deletion-control { margin-top: 28px; border-top: 1px solid var(--line); padding-top: 20px; }
+.deletion-warning { color: var(--white); line-height: 1.5; }
+.deletion-confirmation { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0; color: var(--gray); line-height: 1.4; }
+.deletion-confirmation input { margin-top: 3px; }
 .settings-screen footer { padding: 48px 0 max(12px, env(safe-area-inset-bottom)); color: var(--gray); font-family: Impact, sans-serif; letter-spacing: .08em; text-align: center; }
 `;
 
