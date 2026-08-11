@@ -457,6 +457,7 @@ async function replayOfflineOperation(
     if (!isCloudOwnerId(userId)) return;
     const { error } = await supabase.rpc("save_weight_unit", {
       p_device_id: deviceId,
+      p_operation_id: operation.id,
       p_unit: operation.payload.unit,
     });
     if (error) throw new Error(error.message);
