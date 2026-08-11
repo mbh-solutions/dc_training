@@ -182,12 +182,25 @@ export type EditingDeviceAccess = "active" | "checking" | "upgrade_required";
 type EditingDeviceStatus = {
   active: boolean;
   device_id: string;
+  mode: "legacy_single" | "revision_multi";
+  revision: number;
   transferred_at: string;
 };
 
 const databaseName = "dc-training-offline";
 const stateStore = "accounts";
 const operationStore = "operations";
+const offlineOperationKinds = new Set<OfflineOperation["kind"]>([
+  "start_workout",
+  "save_workout_step",
+  "undo_workout_step",
+  "resolve_logbook_action",
+  "replace_failed_assignment",
+  "save_rotation_assignment",
+  "correct_history_performance",
+  "transition_training_lifecycle",
+  "set_weight_unit",
+]);
 const deviceIdStorageKey = "dc-training-editing-device";
 const memoryStates = new Map<string, OfflineAccountState>();
 const memoryOperations = new Map<string, OfflineOperation>();
@@ -263,7 +276,7 @@ export async function registerEditingDevice(deviceId: string) {
   if (error) throw new Error(error.message);
   if (!validEditingDeviceStatus(data))
     throw new Error("DEVICE ACCESS COULD NOT BE VERIFIED");
-  return data.active ? ("active" as const) : ("upgrade_required" as const);
+  return data;
 }
 
 function validEditingDeviceStatus(
@@ -275,6 +288,8 @@ function validEditingDeviceStatus(
     typeof status.active === "boolean" &&
     typeof status.device_id === "string" &&
     validUuid(status.device_id) &&
+    (status.mode === "legacy_single" || status.mode === "revision_multi") &&
+    validRevision(status.revision) &&
     typeof status.transferred_at === "string"
   );
 }
@@ -592,7 +607,7 @@ export async function synchronizeOfflineState(
   if (existingConflict)
     return { conflict: existingConflict, status: "conflict" };
   if (status.mode === "legacy_single")
-    return synchronizeLegacyState(userId, deviceId, status.revision);
+    return synchronizeLegacyState(userId, deviceId);
   return synchronizeRevisionState(userId, deviceId, status.revision);
 }
 
@@ -639,13 +654,18 @@ async function synchronizeFixtureState(userId: string, deviceId: string) {
 async function synchronizeLegacyState(
   userId: string,
   deviceId: string,
-  revision: number,
 ): Promise<OfflineSynchronizationResult> {
-  if ((await registerEditingDevice(deviceId)) === "upgrade_required")
+  const registration = await registerEditingDevice(deviceId);
+  if (registration.mode === "revision_multi")
+    return synchronizeRevisionState(userId, deviceId, registration.revision);
+  if (!registration.active)
     return { status: "upgrade_required" };
+  const revision = registration.revision;
 
   for (;;) {
     const operations = await listOfflineOperations(userId);
+    if (operations.some((operation) => !validStoredOperation(operation, userId)))
+      return invalidLocalQueueResult(userId, revision);
     for (const operation of operations) {
       try {
         await replayLegacyOperation(operation, userId, deviceId);
@@ -695,6 +715,8 @@ async function synchronizeRevisionState(
       };
 
     const operations = await listOfflineOperations(userId);
+    if (operations.some((operation) => !validStoredOperation(operation, userId)))
+      return invalidLocalQueueResult(userId, currentRevision);
     if (operations.length === 0 && state?.pendingBatch?.status !== "sealed") {
       const cloud = await loadStableCloudState(userId);
       if (await replaceStateWhenQueueEmpty(cloud)) {
@@ -722,6 +744,17 @@ async function submitSealedBatch(
   currentRevision: number,
 ): Promise<OfflineSynchronizationResult> {
   const operations = await listOfflineOperations(userId);
+  if (operations.some((operation) => !validStoredOperation(operation, userId)))
+    return invalidLocalQueueResult(userId, currentRevision);
+  if (operations.length === 0) {
+    const state = await readOfflineState(userId);
+    if (state?.pendingBatch === null) return { status: "synced" };
+    if (
+      state?.pendingBatch?.id !== batch.id ||
+      state.pendingBatch.status !== "sealed"
+    )
+      throw new Error("LOCAL SYNC BATCH CHANGED");
+  }
   const legacyQueue = operations.some((item) => item.baseRevision === null);
   const changedQueue = operations.some(
     (item) =>
@@ -981,6 +1014,7 @@ function invalidLogbookState(row: Record<string, unknown>) {
 async function reviewLegacyQueueForUpgrade(
   userId: string,
   revision: number,
+  invalidQueue = false,
 ) {
   if (typeof indexedDB === "undefined") {
     const work = memoryWrite.then(() => {
@@ -993,7 +1027,7 @@ async function reviewLegacyQueueForUpgrade(
         [...memoryOperations.values()].filter((item) => item.userId === userId),
       );
       if (queued.length === 0) return null;
-      const batch = legacyUpgradeConflict(state, queued, revision);
+      const batch = legacyUpgradeConflict(state, queued, revision, invalidQueue);
       memoryStates.set(userId, { ...state, pendingBatch: batch });
       return batch;
     });
@@ -1030,6 +1064,7 @@ async function reviewLegacyQueueForUpgrade(
     state,
     normalizedOperations(queued),
     revision,
+    invalidQueue,
   );
   states.put({ ...state, pendingBatch: batch });
   await transactionDone(transaction);
@@ -1041,19 +1076,42 @@ function legacyUpgradeConflict(
   state: OfflineAccountState,
   operations: OfflineOperation[],
   currentRevision: number,
+  invalidQueue = false,
 ) {
+  const safeSequence = Math.max(
+    Number.isSafeInteger(state.queueSequence) && state.queueSequence >= 0
+      ? state.queueSequence
+      : 0,
+    ...operations
+      .map((operation) => operation.sequence)
+      .filter(
+        (sequence) => Number.isSafeInteger(sequence) && sequence >= 0,
+      ),
+  );
   return conflictBatch(
     state.pendingBatch?.id ?? crypto.randomUUID(),
     state.pendingBatch?.baseRevision ?? currentRevision,
-    Math.max(...operations.map((operation) => operation.sequence)),
+    safeSequence,
     {
-      code: "LEGACY_QUEUE_REQUIRES_REVIEW",
+      code: invalidQueue
+        ? "LOCAL_QUEUE_REQUIRES_REVIEW"
+        : "LEGACY_QUEUE_REQUIRES_REVIEW",
       currentRevision,
-      message:
-        "PRE-UPGRADE DEVICE CHANGES NEED REVIEW BEFORE CLOUD DATA CAN REPLACE THEM",
+      message: invalidQueue
+        ? "SAVED DEVICE CHANGES NEED REVIEW BEFORE CLOUD DATA CAN REPLACE THEM"
+        : "PRE-UPGRADE DEVICE CHANGES NEED REVIEW BEFORE CLOUD DATA CAN REPLACE THEM",
       status: "rejected",
     },
   );
+}
+
+async function invalidLocalQueueResult(userId: string, revision: number) {
+  const batch = await reviewLegacyQueueForUpgrade(userId, revision, true);
+  if (!batch) throw new Error("SAVED DEVICE CHANGES COULD NOT BE REVIEWED");
+  return {
+    conflict: await requiredConflictReview(userId),
+    status: "conflict" as const,
+  };
 }
 
 async function sealPendingBatch(userId: string, currentRevision: number) {
@@ -1409,6 +1467,7 @@ export async function useCloudOfflineConflict(
 function localOnlyConflict(code: string) {
   return (
     code === "LEGACY_QUEUE_REQUIRES_REVIEW" ||
+    code === "LOCAL_QUEUE_REQUIRES_REVIEW" ||
     code === "BATCH_BASE_REVISION_MISMATCH" ||
     code === "SEALED_BATCH_CHANGED"
   );
@@ -1491,9 +1550,36 @@ function operationSummary(
     createdAt: operation.createdAt,
     id: operation.id,
     kind: operation.kind,
-    label: operationSummaryLabel(operation),
+    label: safeOperationSummaryLabel(operation),
     sequence: operation.sequence,
   };
+}
+
+function safeOperationSummaryLabel(operation: OfflineOperation) {
+  try {
+    return operationSummaryLabel(operation) || "SAVED DEVICE CHANGE";
+  } catch {
+    return "SAVED DEVICE CHANGE";
+  }
+}
+
+function validStoredOperation(operation: unknown, userId: string) {
+  if (!operation || typeof operation !== "object" || Array.isArray(operation))
+    return false;
+  const value = operation as Partial<OfflineOperation>;
+  return (
+    validUuid(value.id ?? "") &&
+    value.userId === userId &&
+    typeof value.createdAt === "number" &&
+    Number.isFinite(value.createdAt) &&
+    !Number.isNaN(new Date(value.createdAt).getTime()) &&
+    Number.isSafeInteger(value.sequence) &&
+    Number(value.sequence) > 0 &&
+    offlineOperationKinds.has(value.kind as OfflineOperation["kind"]) &&
+    value.payload !== null &&
+    typeof value.payload === "object" &&
+    !Array.isArray(value.payload)
+  );
 }
 
 function operationSummaryLabel(operation: OfflineOperation) {
