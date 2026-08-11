@@ -1,21 +1,23 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Exactly one durable browser device ID per owner account holds edit authority. A connected device stays fail-closed while authority is verified; offline startup alone may use cached authority. A second signed-in device restores cloud-synced data read-only. Connected transfer drains an active device queue before moving authority; after an explicit cloud-only warning, a read-only device with a durable identity discards its now-unauthorized stale queue and refreshes before transfer. If both durable browser stores reject identity persistence, transfer fails with the unsynced queue preserved."
-proof = "The immutable offline-sync-v1 and foundation-shell-v2 scenarios reproduce their qualified S08 behavior at exact head. Production lint and build passed once. Rollback-only live-schema proof applied the candidate migration, proved active, secondary, transfer, repeated-transfer, stale-rejection, rollout-session claim/rejection/upgrade, and privilege-removal behavior, then returned zero residue. The server boundary serializes register, transfer, and replay on the same per-owner advisory transaction lock, stores one primary-keyed authority row per owner, rejects any replay whose authority differs, lets an already-open S08 client drain only while its server-derived auth session is bound to that row, preserves that binding when the same session registers its durable S09 device ID first, rotates both bindings on transfer, removes authenticated direct writes on every owner-mutable training table, and revokes every bypass-capable legacy mutation RPC."
+intended_behavior = "The active editing device can request owner-account deletion only after password re-entry and an explicit permanent-deletion acknowledgement. A successful request clears the current device, globally signs out, and makes owner data unavailable for exactly 30 days; authenticated recovery exposes only status, cancellation, password recovery, and sign-out. Expired requests are finalized by a database scheduler that deletes auth.users and relies on established cascading owner foreign keys. A daily GitHub Actions workflow uploads only a GPG-encrypted logical Supabase dump, verifies it before upload, surfaces failures, and expires every artifact after 30 days."
+proof = "The existing foundation-shell-v2 characterization reproduces the qualified auth, PWA, offline, and training shell unchanged. Production oxlint and tsc/Vite PWA build passed once. Rollback-only production-schema compilation created the backup role, request table, guards, restrictive RLS policies, finalizer, pg_cron job, and deletion RPCs successfully, then proved the role, table, RPC, extension, and cron schema had zero residue. The request boundary checks a most-recent password AMR timestamp and matching session no older than five minutes plus the S09 active device; server triggers and restrictive RLS fail closed while pending; cancellation refuses an expired deadline; finalization deletes the auth owner so every existing ON DELETE CASCADE owner record follows. The backup workflow uses native pg_dump, GPG AES-256, pg_restore parsing, a pinned upload action, ciphertext-only upload, and 30-day retention."
 
 [characterization]
-captured_behavior = "The qualified auth shell, rotation setup, workout runtime, logbook, history, blast/cruise, and S08 offline working copy remain. S09 adds authority verification before hydration or replay, a fail-closed mutation seam, and an explicit connected transfer without changing exercise or training rules."
-proof = "Existing characterization definitions and goldens remain byte-identical to main, and exact-head CI reproduces every golden. The rollback-only S09 cloud poison supplies additive device-authority proof without changing the established drivers."
+captured_behavior = "The qualified auth shell, rotation setup, workout runtime, logbook, history, blast/cruise, offline working copy, and active-device transfer remain. S10 adds an account-status gate, deletion/recovery controls, local purge, authoritative cloud lifecycle, and encrypted operational backup without changing any training rule."
+proof = "Existing characterization definitions and goldens remain byte-identical to main, and foundation-shell-v2 reproduced its exact golden locally. The rollback-only S10 production-schema compile supplies additive lifecycle proof without changing the established driver."
 
 [separation_of_concerns]
-before = "S08 had one durable offline mutation seam but no device identity or active-editor authority; every signed-in device could call it."
-after = "offline-sync owns the durable browser device ID with local-storage and cookie persistence plus device-aware transport; use-offline-sync owns fail-closed online authority verification, cached temporary-offline access, foreground checks, and transfer sequencing; HomeScreen owns read-only status and owner warning; the new migration alone owns durable authority, serialization, and cloud rejection before established offline dispatch."
+before = "S09 qualified authentication recovery, cloud persistence, temporary offline use, and one active editing device, but it had no owner deletion lifecycle or operational backup."
+after = "auth-actions owns the reauthentication/status/cancel client boundary; App owns the fail-closed recovery-only route; HomeScreen owns explicit owner confirmation; offline-sync owns device purge; the migration alone owns deadlines, data guards, and final deletion; the workflow and runbook own backup operations."
 
 [architecture]
-dependency_direction = "FoundationHome composes use-offline-sync; feature hooks still submit only typed local operations; offline-sync registers one durable device ID and includes it on the current cloud mutation boundary; both rollout and current wrappers lock the owner, check the same private authority row, then delegate to the unchanged private S08 dispatcher. The rollout wrapper derives its bound auth-session ID from the signed JWT, register does not disclose another device ID, and transfer rotates both bindings server-side, so UI state cannot grant cloud authority without matching a private binding."
+dependency_direction = "App reads deletion state through auth-actions before it mounts FoundationHome. HomeScreen calls one request action; the action reauthenticates, passes the existing durable device ID to the RPC, purges local state, and asks Supabase Auth for global sign-out. All client trust terminates at security-definer RPCs; those RPCs read auth.uid, JWT session ID, auth.sessions, and the private active-device row. The cron finalizer is private and not executable by browser roles. The independent backup job receives its database URL and passphrase only from Actions secrets and uploads only ciphertext."
 reviewed_paths = [
+    ".github/workflows/daily-encrypted-backup.yml",
     "src/App.tsx",
+    "src/AuthScreens.tsx",
     "src/FoundationHome.tsx",
     "src/HistoryScreen.tsx",
     "src/HomeScreen.tsx",
@@ -27,6 +29,7 @@ reviewed_paths = [
     "src/hooks/use-rotation-editor.ts",
     "src/hooks/use-workout.ts",
     "src/offline-sync.ts",
+    "src/lib/auth-actions.ts",
     "src/rotation-assignment.ts",
     "src/workout-api.ts",
     "src/workout-domain.ts",
@@ -40,6 +43,10 @@ reviewed_paths = [
     "supabase/migrations/20260811000810_fix_offline_performance_context.sql",
     "supabase/migrations/20260811002730_use_progression_order_for_undo.sql",
     "supabase/migrations/20260811021935_active_editing_device.sql",
+    "supabase/migrations/20260811054903_account_deletion_lifecycle.sql",
+    "supabase/migrations/20260811063245_narrow_backup_role.sql",
+    "supabase/migrations/20260811064630_require_password_amr.sql",
+    "docs/operations/ACCOUNT_LIFECYCLE_AND_BACKUPS.md",
     "tests/a1-assignment.e2e.mjs",
     "tests/history.test.mjs",
     "tests/characterization/foundation-shell.characterization.mjs",
@@ -49,27 +56,27 @@ reviewed_paths = [
 ]
 
 [responsibility_boundary]
-path = "src/offline-sync.ts"
-owns = "Account-keyed durable working state, durable browser device identity, ordered operation records, device-aware replay and registration, and cloud refresh."
-does_not_own = "Authentication, PWA shell caching, database authority, simultaneous merge policy, lost-device recovery, or Supportability Gate behavior."
+path = "supabase/migrations/20260811054903_account_deletion_lifecycle.sql"
+owns = "Authoritative request time, 30-day deadline, pending-account data denial, cancellation, scheduled auth-owner deletion, and browser-role privilege boundaries."
+does_not_own = "Password UI, local browser storage, GitHub artifact encryption, authentication email delivery, or Supportability Gate behavior."
 
 [incremental_refactor]
-target = "Add only S09 one-active-editing-device enforcement and connected transfer to the qualified S08 app."
-completed_step = "Extended the existing offline transport and hook, added one read-only/transfer panel, and added one forward migration wrapping the established dispatcher with atomic server authority. No package, training-rule, merge-policy, lost-data recovery, or Supportability Gate change."
+target = "Add only S10 account deletion/recovery, encrypted backup, and release operations to the qualified S09 app."
+completed_step = "Added one auth-status gate, one deletion control, one recovery screen, one local purge function, three forward migrations, one native backup workflow, and one runbook. No package, training rule, hosting platform, public-user surface, paid service, or Supportability Gate change was made."
 
 [review_handoff]
-summary = "Review device-ID durability and volatile-fallback queue preservation, connected-start checking, transfer queue drain, focus/foreground re-verification, owner advisory locking, rollout-session claim and upgrade, wrapper-before-dispatch rejection, and revocation of legacy write bypasses."
+summary = "Review recent password-AMR enforcement, active-device binding, exact 30-day timestamps, restrictive RLS plus trigger coverage, expired cancellation, auth-user cascade finalization, foreground fail-closed App routing, cross-device local purge before global sign-out, ciphertext-only upload, and 30-day artifact retention."
 remaining_risks = [
-    "A prior device that stays offline can still edit its local S08 working copy until connectivity returns; cloud rejects those stale writes and the UI then marks it read-only.",
-    "Never-synced changes on another or lost device remain intentionally unrecoverable; the transfer UI states this explicitly.",
-    "If both local storage and cookies reject the device ID, the mounted session can view data but transfer fails without deleting its unsynced queue.",
+    "A device that remains permanently offline cannot receive a remote deletion signal; the requesting active device is purged immediately, and cloud data is unavailable to every device while pending.",
+    "The built-in authentication email path remains acceptable only if the pre-authorized owner proves delivery during final production qualification.",
+    "Backup and restore production evidence requires the protected Actions database URL, retained encryption passphrase, and an isolated owner-approved restore target; none may be browser exposed.",
 ]
 
 [human_review]
-naming = "READ ONLY DEVICE, CHECKING EDIT ACCESS, and TRANSFER EDIT ACCESS state authority directly; the warning says the prior device becomes read-only and only cloud-synced data restores."
-cohesion = "Presentation, authority scheduling, durable local state, transport, and authoritative database enforcement remain separate."
-intended_behavior = "One signed-in device edits while secondary devices restore/view; connected transfer reverses authority without split writes."
-reviewability = "Five narrow client edits, one forward migration, immutable existing characterization evidence, and one rollback-only S09 cloud poison implement S09; no package or new test was added."
+naming = "DELETE ACCOUNT, BEGIN 30-DAY DELETION, ACCOUNT UNAVAILABLE, DELETION PENDING, and CANCEL DELETION state the lifecycle directly; the permanent warning names account, cloud history, and device data."
+cohesion = "Presentation, auth orchestration, local erasure, authoritative database lifecycle, encrypted backup, and operator documentation remain separate."
+intended_behavior = "The owner deliberately requests deletion from the active device, loses ordinary access immediately, can cancel for 30 days, and then loses live data permanently while encrypted backups age out within 30 more days."
+reviewability = "Six narrow client edits, three forward migrations, one workflow, one runbook, immutable existing characterization evidence, and rollback-only schema compilation implement S10; no package or new test was added."
 
 [[module_boundaries]]
 path = "src/hooks/use-offline-sync.ts"
@@ -160,3 +167,33 @@ path = "supabase/migrations/20260811021935_active_editing_device.sql"
 owner_path = "supabase/migrations/20260811021935_active_editing_device.sql"
 basis = "responsibility"
 justification = "Owns the private one-row-per-owner authority record, atomic register/transfer/replay serialization, stale-device rejection, and authenticated mutation-bypass removal."
+
+[[module_boundaries]]
+path = "src/lib/auth-actions.ts"
+owner_path = "src/lib/auth-actions.ts"
+basis = "responsibility"
+justification = "Owns Supabase Auth reauthentication and the narrow account-status, deletion-request, cancellation, local-purge, and global-sign-out orchestration boundary."
+
+[[module_boundaries]]
+path = "supabase/migrations/20260811054903_account_deletion_lifecycle.sql"
+owner_path = "supabase/migrations/20260811054903_account_deletion_lifecycle.sql"
+basis = "responsibility"
+justification = "Owns the least-privilege backup role, pending-account denial, exact recovery deadline, browser RPC grants, and scheduled cascading final deletion."
+
+[[module_boundaries]]
+path = "supabase/migrations/20260811063245_narrow_backup_role.sql"
+owner_path = "supabase/migrations/20260811063245_narrow_backup_role.sql"
+basis = "responsibility"
+justification = "Removes ineffective managed-Auth grants so the logical-backup role can read only the app-owned private and public schemas."
+
+[[module_boundaries]]
+path = "supabase/migrations/20260811064630_require_password_amr.sql"
+owner_path = "supabase/migrations/20260811064630_require_password_amr.sql"
+basis = "responsibility"
+justification = "Hardens deletion reauthentication by requiring the current JWT's most recent authentication method to be a password no older than five minutes."
+
+[[module_boundaries]]
+path = ".github/workflows/daily-encrypted-backup.yml"
+owner_path = ".github/workflows/daily-encrypted-backup.yml"
+basis = "responsibility"
+justification = "Owns native logical dump creation, symmetric encryption, parse verification, ciphertext-only artifact upload, visible job failure, and 30-day retention."
