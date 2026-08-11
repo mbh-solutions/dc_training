@@ -133,6 +133,7 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
             ? rotationDuringBlast(workout.lifecycle, openRotation)
             : undefined
         }
+        preserveCorrectionDraft={canEdit}
         readOnly={offline.deviceAccess !== "active"}
       />,
     );

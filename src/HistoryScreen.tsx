@@ -24,6 +24,7 @@ type Props = {
   commitOperation: CommitOperation;
   onHome: () => void;
   onOpenRotation?: () => void;
+  preserveCorrectionDraft?: boolean;
   readOnly?: boolean;
 };
 
@@ -64,6 +65,7 @@ export default function HistoryScreen({
   commitOperation,
   onHome,
   onOpenRotation,
+  preserveCorrectionDraft = false,
   readOnly = false,
 }: Props) {
   const data = accountState?.history ?? null;
@@ -149,6 +151,7 @@ export default function HistoryScreen({
       onSaveCorrection={correctHistoryPerformance}
       onSelectAssignment={setSelectedAssignment}
       onSelectWorkout={setSelectedWorkout}
+      preserveCorrectionDraft={preserveCorrectionDraft}
       saving={saving}
       search={search}
       selectedAssignment={selectedAssignment}
@@ -179,6 +182,7 @@ function LoadedHistory({
   onSaveCorrection,
   onSelectAssignment,
   onSelectWorkout,
+  preserveCorrectionDraft,
   saving,
   search,
   selectedAssignment: selectedAssignmentIdentity,
@@ -201,6 +205,7 @@ function LoadedHistory({
   onSaveCorrection: SaveCorrection;
   onSelectAssignment: (assignment: HistoryAssignmentIdentity | null) => void;
   onSelectWorkout: (workout: HistoryWorkoutIdentity | null) => void;
+  preserveCorrectionDraft: boolean;
   saving: boolean;
   search: string;
   selectedAssignment: HistoryAssignmentIdentity | null;
@@ -217,6 +222,8 @@ function LoadedHistory({
     selectedAssignmentIdentity,
   );
   const editingStep = historyStepByIdentity(data, editingStepIdentity);
+  const correctionStep =
+    !readOnly || preserveCorrectionDraft ? editingStep : null;
   const activeAssignmentIds = activeWorkoutAssignmentIds(data);
   const onEdit = historyCorrectionEditor(readOnly, data, onEditStep);
   if (selectedAssignment) {
@@ -235,13 +242,14 @@ function LoadedHistory({
           onEdit={onEdit}
           performances={performances}
         />
-        {editingStep && !readOnly && (
+        {correctionStep && (
           <CorrectionEditor
             message={message}
             onCancel={() => onEditStep(null)}
             onSave={onSaveCorrection}
+            saveDisabled={readOnly}
             saving={saving}
-            step={editingStep}
+            step={correctionStep}
           />
         )}
       </HistoryShell>
@@ -269,13 +277,14 @@ function LoadedHistory({
           )}
           workout={selectedWorkout}
         />
-        {editingStep && !readOnly && (
+        {correctionStep && (
           <CorrectionEditor
             message={message}
             onCancel={() => onEditStep(null)}
             onSave={onSaveCorrection}
+            saveDisabled={readOnly}
             saving={saving}
-            step={editingStep}
+            step={correctionStep}
           />
         )}
       </HistoryShell>
@@ -950,6 +959,7 @@ function CorrectionEditor({
   message,
   onCancel,
   onSave,
+  saveDisabled,
   saving,
   step,
 }: {
@@ -962,6 +972,7 @@ function CorrectionEditor({
     duration: number | null,
     expectedPerformance: PerformanceSnapshot,
   ) => Promise<void>;
+  saveDisabled: boolean;
   saving: boolean;
   step: WorkoutStep;
 }) {
@@ -981,6 +992,7 @@ function CorrectionEditor({
   const [shape] = useState(() => workoutEntryShape(step));
 
   const submit = async () => {
+    if (saveDisabled) return;
     const weights = expectedPerformance.weights.map((weight, index) => ({
       amount: amounts[index],
       micrograms: weightMicrograms({
@@ -1076,7 +1088,11 @@ function CorrectionEditor({
         {(localError || message) && (
           <p className="form-message">{localError || message}</p>
         )}
-        <button className="primary-action" disabled={saving} type="submit">
+        <button
+          className="primary-action"
+          disabled={saving || saveDisabled}
+          type="submit"
+        >
           {saving ? "SAVING" : "SAVE CORRECTION"}
         </button>
         <button
