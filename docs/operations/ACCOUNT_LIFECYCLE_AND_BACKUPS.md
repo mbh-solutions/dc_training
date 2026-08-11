@@ -6,8 +6,10 @@ privileged credential.
 
 ## Account deletion and recovery
 
-1. From the active editing device, open Account, re-enter the current password,
-   acknowledge the permanent-deletion warning, and request deletion.
+1. From any signed-in current client after revision-mode activation, open
+   Account, re-enter the current password, acknowledge the permanent-deletion
+   warning, and request deletion. During the legacy transition, use the active
+   editing client.
 2. The app immediately clears its local working copy and signs out every
    session. Cloud data becomes unavailable immediately.
 3. For 30 days, signing in opens only the deletion-recovery screen. Select
@@ -17,13 +19,42 @@ privileged credential.
    Cancellation is no longer accepted.
 
 The request RPC requires a password-authenticated session created within the
-previous five minutes and the current active editing-device ID. The same
-database transaction commits the deletion request and revokes every owner Auth
-session before returning; client sign-out then clears the device's persisted
-session. Database triggers and restrictive RLS policies reject owner-data
+previous five minutes. Revision mode does not use a device ID as editing
+authority; only legacy single-writer mode checks the active device during the
+transition. The same database transaction commits the deletion request and
+revokes every owner Auth session visible to that transaction; client sign-out
+then clears the device's persisted session. A concurrent or later sign-in can
+access only the deletion-recovery flow because database guards reject owner-data
 access and mutation while deletion is pending. The browser deletes its IndexedDB
 database, local device identifiers, and cached owner-access marker when the
 request succeeds.
+
+## Multi-device sync and recovery
+
+- Normal sign-in on a current client does not show an edit-access transfer
+  warning. After revision-mode activation, every signed-in current client may
+  edit.
+- Cached legacy clients remain single-writer until the active current client
+  connects, drains its local queue, and activates revision mode. After
+  activation, the server rejects new legacy writes while still recognizing
+  exact retries of operations it already accepted.
+- If the prior legacy device is unavailable, `CONTINUE ON THIS DEVICE` warns
+  that changes never synced from either device cannot be recovered. After the
+  owner's confirmation, the database performs the legacy takeover and
+  revision-mode activation atomically. Any pre-upgrade queue on the current
+  device must be reviewed before cloud data replaces it.
+- A device sends its complete pending queue as one batch with the account
+  revision it started from. The database applies every operation and advances
+  the revision, or applies none of them.
+- A stale or rejected batch remains retained. The app pauses further edits and
+  offers `USE CLOUD DATA`, `REVIEW DEVICE COPY`, and `NOT NOW`; it never silently
+  drops confirmed local work or asks the owner to transfer edit access.
+- `USE CLOUD DATA` replaces the device working copy only after the owner's
+  choice. Server-rejected batches remain archived; pre-upgrade local work stays
+  on its device until that choice. `NOT NOW` leaves the local queue untouched.
+- Successfully synced data restores after sign-in on a replacement device.
+  Changes that existed only on a lost device and never synced cannot be
+  recovered.
 
 ## Daily encrypted backup
 

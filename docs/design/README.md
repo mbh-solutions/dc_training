@@ -555,9 +555,11 @@ Remaining protocol-specific comparison and range rules are unresolved except whe
 - All durable app state syncs: settings, rotation and exercise assignments, blast/cruise state, in-progress workouts, completed history, corrections, skips, mulligans, and replacement state.
 - Temporary interface state, such as the currently open tab or expanded panel, does not sync.
 - Each meaningful user action saves to the device immediately and begins cloud sync immediately when connected; the user never needs a manual Save-to-cloud action.
-- One device per account is the active editing device; other signed-in devices may restore and view synced data but cannot change it.
-- Transferring edit access to another device requires connectivity, completes any pending sync first, and makes the prior device read-only.
-- Because only one device can edit, conflicting simultaneous changes are prevented instead of merged.
+- After revision-mode activation, every signed-in device running the current app may edit; normal sign-in never asks the owner to transfer edit access.
+- Each device submits its complete local queue as one atomic batch against the account revision. Either the whole batch commits once and advances the revision, or none of it commits.
+- A stale or rejected batch remains retained instead of being partly applied or silently discarded. The owner chooses whether to use cloud data, review the device copy, or decide later.
+- Cached legacy clients remain in single-writer mode until the active current client drains its pending queue and activates revision mode. After activation, new writes from legacy clients are rejected; exact retries of previously accepted operations remain safe.
+- If that legacy device is unavailable, the owner can explicitly continue on the current device after a warning that changes never synced from either device cannot be recovered. The database performs takeover and revision-mode activation atomically.
 - A replacement device restores all successfully synced data after sign-in; no manual import is required.
 - Changes that existed only on a lost device and never synced cannot be recovered.
 - Supabase Free provides the authoritative Postgres database; Vercel Hobby hosts the personal, non-commercial PWA.
@@ -576,15 +578,17 @@ Remaining protocol-specific comparison and range rules are unresolved except whe
 
 ![Approved sync-failure mockup](home-sync-failed-approved.png)
 
-- After one successful online sign-in and initial load, the active editing iPhone can open the cached app and previously synced data without a connection.
+- After one successful online sign-in and initial load, a device can open the cached app and previously synced data without a connection.
 - Routine training remains usable offline: viewing cached history, starting or resuming a workout, entering or correcting performances, skipping or undoing steps, completing a workout, changing assignments, and starting or ending cruise.
-- First sign-in, password recovery, sign-out, account deletion or recovery, active-device transfer, initial restore on a replacement device, and access to data never cached on the device require connectivity.
+- First sign-in, password recovery, sign-out, account deletion or recovery, initial restore on a replacement device, and access to data never cached on the device require connectivity.
 - The service worker and Cache Storage hold the app shell and static assets. IndexedDB holds account-bound working data and a durable queue of pending changes.
 - Each meaningful action writes its data and one uniquely identified pending operation to IndexedDB together. If that local write fails, the app blocks progress and never reports the action as saved.
 - Sync runs immediately while connected and whenever the app returns to the foreground or observes a successful reconnection. The app does not depend on background execution after it is closed.
-- Every queued operation carries a stable unique identifier, and the cloud database rejects a repeated identifier. Retrying can never create a duplicate save or advance rotation twice.
-- The active editing device may continue through temporary sync failures because confirmed local writes remain queued. A non-active device remains read-only.
-- Cloud writes from an old or non-active device are rejected rather than merged. Transferring edit access requires connectivity and warns the owner not to continue editing on the prior device.
+- Every queued batch carries a stable unique identifier. Retrying the same batch can never create a duplicate save or advance rotation twice.
+- The cloud compares the batch's base revision with the current account revision under one owner lock. A mismatch applies none of the batch.
+- A device may continue through temporary connection failures because confirmed local writes remain queued. Editing pauses only when newer cloud changes make the device queue unsafe to combine automatically.
+- Conflict recovery uses `CHANGES FROM ANOTHER DEVICE` for a stale revision and `CHANGES NEED REVIEW` for other rejected work, never an edit-access transfer warning. `USE CLOUD DATA` replaces the working copy, `REVIEW DEVICE COPY` shows the saved device operations and values, and `NOT NOW` leaves the queue untouched. Server-rejected batches remain archived; pre-upgrade local work remains on its device until the owner chooses.
+- Unsynced changes can be recovered only while they remain on a device. Losing that device before sync means those changes cannot be restored from the cloud or another device.
 - The interface always distinguishes `OFFLINE`, `SYNCING`, `SYNCED`, and `SYNC FAILED`. Offline and failure states state clearly that confirmed entries remain saved on the device.
 - `SYNC FAILED` remains visible until synchronization succeeds and provides `TRY AGAIN`; successful synchronization clears the failure without requiring owner action.
 

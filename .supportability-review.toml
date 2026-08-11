@@ -1,19 +1,19 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "One confirmed edit-access transfer keeps its mounted client state and becomes active after the first successful RPC. Routine account-status revalidation still locks the UI, and service-worker activation does not navigate an in-flight client."
-proof = "On deployed SHA 671c15e, production iPhone logs recorded transfer_editing_device HTTP 200 at 15:09:24.517 UTC and the database changed transferred_at at 15:09:24.543. The second HTTP 200 at 15:09:27.528 used the same device and did not change transferred_at, proving it was redundant. Source trace found two client-replacement paths: background account checking replaced FoundationHome with LoadingScreen, and sw-activate navigated every window. The focused mounted-flow regression proves a later check hides but does not unmount the owner subtree while an initial unknown-user check remains fail-closed."
+intended_behavior = "After one legacy upgrade, every current signed-in device may edit without an edit-access transfer warning. A device queue commits as one account-revision batch or not at all; stale or rejected work remains reviewable until the owner explicitly chooses cloud data."
+proof = "Production evidence established that the original first transfer already succeeded server-side and the second click was redundant. The replacement removes transfer from the current client, adds an atomic activation/takeover RPC, persists one stable batch ID and base revision with the local queue, checks the receipt before revision CAS, applies all operations inside one rollback boundary, deletes local operations only after an applied receipt and stable cloud snapshot, and freezes preserved conflicts. The focused owner-shell test passed 1/1 and its directly relevant suite passed 2/2. Production owner-device qualification remains required after merge, migration, and deployment."
 
 [characterization]
-captured_behavior = "The qualified auth shell, rotation setup, workout runtime, logbook, history, blast/cruise, offline working copy, and active-device transfer remain. S10 adds an account-status gate, deletion/recovery controls, local purge, authoritative cloud lifecycle, and encrypted operational backup without changing any training rule."
-proof = "Existing characterization definitions and goldens remain byte-identical to main, and foundation-shell-v2 reproduced its exact golden locally. The rollback-only S10 production-schema compile supplies additive lifecycle proof without changing the established driver."
+captured_behavior = "The qualified auth shell, rotation setup, workout runtime, logbook, history, blast/cruise, offline working copy, account lifecycle, and backups remain. Legacy single-writer authority now exists only as a guarded rollout fence until revision-mode activation; no training rule changes."
+proof = "Existing characterization definitions and goldens remain byte-identical to main. The forward migration compiled against production inside an explicit rollback transaction; the result was rollback_compile_ok, and a follow-up catalog query confirmed that neither account_revision nor private.offline_batches remained."
 
 [separation_of_concerns]
 before = "S09 qualified authentication recovery, cloud persistence, temporary offline use, and one active editing device, but it had no owner deletion lifecycle or operational backup."
-after = "HomeScreen exposes the existing gear as a real button; SettingsScreen owns the approved settings presentation; offline-sync reuses its ordered device-local queue for the preference; weight-conversion owns canonical display conversion; the additive migration alone owns durable profile storage and active-device authorization. Existing deletion and backup boundaries are unchanged."
+after = "FoundationHome and HomeScreen own upgrade/conflict presentation. use-offline-sync owns React scheduling and frozen conflict state. offline-sync owns IndexedDB batch identity, stable snapshots, acknowledgement, and guarded recovery. The additive migration owns atomic activation, account revision CAS, durable receipts, legacy cutover, and RPC privileges."
 
 [architecture]
-dependency_direction = "HomeScreen opens SettingsScreen through FoundationHome. SettingsScreen delegates changes to the existing offline queue; offline-sync owns local reduction, ordered replay, and profile hydration; weight-conversion owns canonical display conversion; save_weight_unit terminates trust at auth.uid, account availability, the owner lock, and the private active-device row. Existing deletion and backup boundaries remain unchanged."
+dependency_direction = "Screens delegate edits and recovery choices through FoundationHome to use-offline-sync. The hook delegates persistence and transport to offline-sync. offline-sync calls uniquely named authenticated RPCs; the migration terminates trust at auth.uid, live-account checks, the owner lock, account revision CAS, and private receipt tables. Legacy per-operation RPCs reject new writes after activation."
 reviewed_paths = [
     ".github/workflows/daily-encrypted-backup.yml",
     "src/App.tsx",
@@ -50,6 +50,7 @@ reviewed_paths = [
     "supabase/migrations/20260811063245_narrow_backup_role.sql",
     "supabase/migrations/20260811064630_require_password_amr.sql",
     "supabase/migrations/20260811094000_add_weight_unit_setting.sql",
+    "supabase/migrations/20260811171245_allow_multi_device_editing.sql",
     "docs/operations/ACCOUNT_LIFECYCLE_AND_BACKUPS.md",
     "tests/a1-assignment.e2e.mjs",
     "tests/history.test.mjs",
@@ -65,11 +66,11 @@ owns = "Authoritative request time, 30-day deadline, pending-account data denial
 does_not_own = "Password UI, local browser storage, GitHub artifact encryption, authentication email delivery, or Supportability Gate behavior."
 
 [incremental_refactor]
-target = "Keep a successful edit-access transfer in the same mounted client until React commits its active state."
-completed_step = "Separate the initial account-deletion check from later UI-locking refreshes so FoundationHome remains mounted, and remove the activation helper that navigated open clients. Production owner-device qualification remains required before claiming the one-confirm outcome."
+target = "Replace consumer-visible edit-access transfer with safe multi-device editing without allowing partial replay or silent conflict loss."
+completed_step = "Add atomic revision-mode activation, whole-queue CAS and receipts, stable cloud snapshots, explicit conflict recovery, cached-client write fencing, and a one-time confirmed lost-device upgrade path. Production owner-device qualification remains required before claiming rollout complete."
 
 [review_handoff]
-summary = "Review the client-lifecycle repair: initial account status remains fail-closed; later status checks show LoadingScreen while preserving FoundationHome state; generated Workbox still owns caching and activation without forced window navigation."
+summary = "Review the multi-device cutover: current clients never call transfer; legacy clients become non-writable after activation; activation/takeover is one owner-locked RPC; one sealed queue maps to one idempotent batch receipt; only applied batches delete local operations; conflicts freeze editing and remain reviewable."
 remaining_risks = [
     "A device that remains permanently offline cannot receive a remote deletion signal; the requesting active device is purged immediately, and cloud data is unavailable to every device while pending.",
     "The built-in authentication email path remains acceptable only if the pre-authorized owner proves delivery during final production qualification.",
@@ -77,10 +78,10 @@ remaining_risks = [
 ]
 
 [human_review]
-naming = "DELETE ACCOUNT, BEGIN 30-DAY DELETION, ACCOUNT UNAVAILABLE, DELETION PENDING, and CANCEL DELETION state the lifecycle directly; the permanent warning names account, cloud history, and device data."
+naming = "SYNC UPDATE NEEDED, CONTINUE ON THIS DEVICE, CHANGES FROM ANOTHER DEVICE, CHANGES NEED REVIEW, USE CLOUD DATA, REVIEW DEVICE COPY, and NOT NOW state the owner decision without exposing edit-authority jargon."
 cohesion = "Presentation, auth orchestration, local erasure, authoritative database lifecycle, encrypted backup, and operator documentation remain separate."
-intended_behavior = "The owner confirms edit-access transfer once; background account revalidation locks interaction without destroying the transfer state, and worker activation does not navigate it away."
-reviewability = "App.tsx owns the initial-check versus mounted-refresh distinction; main.tsx owns foreground worker update checks; VitePWA remains the only worker/cache generator. The transfer RPC, database, packages, and training rules are unchanged."
+intended_behavior = "Normal sign-in permits editing on every current device. Revision mismatch applies zero local operations, preserves the full device queue, and requires an explicit owner recovery choice."
+reviewability = "The client state machine is localized to offline-sync and use-offline-sync; presentation is localized to FoundationHome and HomeScreen; the forward migration contains the complete server cutover and compatibility contract. Packages and training rules are unchanged."
 
 [[module_boundaries]]
 path = "src/hooks/use-offline-sync.ts"
@@ -170,7 +171,7 @@ justification = "Owns completed-workout undo eligibility and predecessor restora
 path = "supabase/migrations/20260811021935_active_editing_device.sql"
 owner_path = "supabase/migrations/20260811021935_active_editing_device.sql"
 basis = "responsibility"
-justification = "Owns the private one-row-per-owner authority record, atomic register/transfer/replay serialization, stale-device rejection, and authenticated mutation-bypass removal."
+justification = "Owns the legacy one-row-per-owner authority record retained only for safe cached-client fencing and one-time revision-mode activation."
 
 [[module_boundaries]]
 path = "src/lib/auth-actions.ts"
@@ -212,4 +213,10 @@ justification = "Owns exact canonical microgram conversion and allowed-unit disp
 path = "supabase/migrations/20260811094000_add_weight_unit_setting.sql"
 owner_path = "supabase/migrations/20260811094000_add_weight_unit_setting.sql"
 basis = "responsibility"
-justification = "Owns durable owner weight-unit storage, exactly-once replay, and active-device-authorized mutation without granting direct table writes."
+justification = "Owns durable owner weight-unit storage and its original exactly-once legacy adapter without granting direct table writes."
+
+[[module_boundaries]]
+path = "supabase/migrations/20260811171245_allow_multi_device_editing.sql"
+owner_path = "supabase/migrations/20260811171245_allow_multi_device_editing.sql"
+basis = "responsibility"
+justification = "Owns atomic revision-mode activation, account revision CAS, whole-batch rollback, durable receipts, conflict resolution, cached-client fencing, and the exact authenticated RPC allowlist."
