@@ -600,13 +600,16 @@ export function NetworkStatus({
 
   if (deviceAccess === "readonly")
     return (
-      <section aria-live="polite" className="device-access-panel">
-        <strong>READ ONLY DEVICE</strong>
+      <section aria-live="polite" className="foundation-card">
+        <div className="status-strip status-strip--failed">
+          <strong>READ ONLY DEVICE</strong>
+        </div>
         <span>
           Synced cloud data is available. Changes left only on another or lost
           device cannot be recovered.
         </span>
         <button
+          className="secondary-action"
           disabled={!online || syncState === "syncing"}
           onClick={() => {
             if (

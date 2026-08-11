@@ -6,7 +6,6 @@
         "src/AuthScreens.tsx",
         "src/FoundationHome.tsx",
         "src/HomeScreen.tsx",
-        "src/index.css",
         "src/RotationSetup.tsx",
         "src/RotationSetupView.tsx",
         "src/hooks/use-auth-session.ts",

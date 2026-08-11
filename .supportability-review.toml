@@ -19,7 +19,6 @@ reviewed_paths = [
     "src/FoundationHome.tsx",
     "src/HistoryScreen.tsx",
     "src/HomeScreen.tsx",
-    "src/index.css",
     "src/RotationSetup.tsx",
     "src/hooks/use-offline-sync.ts",
     "src/hooks/use-foundation-profile.ts",
@@ -69,7 +68,7 @@ remaining_risks = [
 naming = "READ ONLY DEVICE, CHECKING EDIT ACCESS, and TRANSFER EDIT ACCESS state authority directly; the warning says the prior device becomes read-only and only cloud-synced data restores."
 cohesion = "Presentation, authority scheduling, durable local state, transport, and authoritative database enforcement remain separate."
 intended_behavior = "One signed-in device edits while secondary devices restore/view; connected transfer reverses authority without split writes."
-reviewability = "Four narrow client edits, one style block, one forward migration, and additive existing characterization evidence implement S09; no package or new test was added."
+reviewability = "Four narrow client edits, one forward migration, and additive existing characterization evidence implement S09; no package or new test was added."
 
 [[module_boundaries]]
 path = "src/hooks/use-offline-sync.ts"
