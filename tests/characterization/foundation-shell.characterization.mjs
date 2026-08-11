@@ -6,6 +6,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const target =
   process.env.SUPPORTABILITY_CHARACTERIZATION_TARGET ?? process.cwd();
+const offlineSyncAvailable = existsSync(
+  path.join(target, "src/offline-sync.ts"),
+);
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 const require = createRequire(pathToFileURL(path.join(target, "package.json")));
 const definition =
@@ -88,6 +91,16 @@ const sessionResolvers = [];
 let authCallback;
 let profileResult = { data: { status: "ready" }, error: null };
 let updateResult = { error: null };
+const rotationState = { last_completed_slot: null, next_slot: "A1" };
+const lifecycleState = {
+  blast_ended_at: null,
+  blast_id: "blast-1",
+  blast_started_at: "2026-06-01T10:00:00Z",
+  cruise_started_at: null,
+  phase: "blast",
+  suggestion_dismissed: false,
+  suggestion_due: false,
+};
 
 const client = {
   auth: {
@@ -126,22 +139,41 @@ const client = {
   },
   from(table) {
     calls.push(["from", table]);
-    return {
+    const query = {
       select(columns) {
         calls.push(["select", columns]);
-        const query = {
-          eq(column, value) {
-            calls.push(["eq", column, value]);
-            return query;
-          },
-          async maybeSingle() {
-            calls.push(["maybeSingle"]);
-            return profileResult;
-          },
-        };
         return query;
       },
+      eq(column, value) {
+        calls.push(["eq", column, value]);
+        return query;
+      },
+      async maybeSingle() {
+        calls.push(["maybeSingle", table]);
+        if (table === "foundation_profiles") return profileResult;
+        if (table === "workout_rotation_state")
+          return { data: rotationState, error: null };
+        if (table === "training_lifecycle_state")
+          return { data: lifecycleState, error: null };
+        return { data: null, error: null };
+      },
+      order(column, options) {
+        calls.push(["order", table, column, options]);
+        return query;
+      },
+      range(from, to) {
+        calls.push(["range", table, from, to]);
+        return Promise.resolve({ count: 0, data: [], error: null });
+      },
+      then(resolve, reject) {
+        return Promise.resolve({ data: [], error: null }).then(resolve, reject);
+      },
     };
+    return query;
+  },
+  async rpc(name, values) {
+    calls.push(["rpc", name, values]);
+    return { data: null, error: null };
   },
 };
 
@@ -241,6 +273,15 @@ registerHooks({
 
 const reactUrl = pathToFileURL(require.resolve("react")).href;
 const { act } = await import(reactUrl);
+if (offlineSyncAvailable) {
+  const { synchronizeOfflineState } = await import(
+    pathToFileURL(path.join(target, "src/offline-sync.ts")).href
+  );
+  await synchronizeOfflineState(session.user.id);
+  const createClientCall = calls.find((call) => call[0] === "createClient");
+  calls.length = 0;
+  if (createClientCall) calls.push(createClientCall);
+}
 const root = document.getElementById("root");
 const text = () => root.textContent ?? "";
 const flush = () => new Promise((resolve) => setImmediate(resolve));
@@ -283,9 +324,11 @@ await act(async () => {
 });
 await act(settleLoading);
 const coldOffline = text();
-const coldSignOutDisabled = document.querySelector(
-  "button.secondary-action",
-)?.disabled;
+const signOutButton = () =>
+  [...document.querySelectorAll("button")].find(
+    (button) => button.textContent.trim() === "SIGN OUT",
+  );
+const coldSignOutDisabled = signOutButton()?.disabled;
 const coldStartNoCloudRead = countCalls("from") === 0;
 
 Object.defineProperty(window.navigator, "onLine", {
@@ -308,9 +351,7 @@ await act(async () => {
 });
 await act(settleLoading);
 const offline = text();
-const signOutDisabled = document.querySelector(
-  "button.secondary-action",
-)?.disabled;
+const signOutDisabled = signOutButton()?.disabled;
 
 Object.defineProperty(window.navigator, "onLine", {
   configurable: true,
@@ -320,6 +361,7 @@ await act(async () => {
   window.dispatchEvent(new window.Event("online"));
   await flush();
 });
+await act(settleLoading);
 const reconnected = text();
 const reconnectRefetched = countCalls("from") > firstOnlineCloudReads;
 
@@ -342,6 +384,7 @@ await act(async () => {
   window.dispatchEvent(new window.Event("online"));
   await flush();
 });
+await act(settleLoading);
 const profileErrorSignedOut =
   calls.filter((call) => call[0] === "signOut" && call[1]?.scope === "local")
     .length ===
@@ -349,7 +392,12 @@ const profileErrorSignedOut =
   text().includes("OWNER ACCESS") &&
   !text().includes("APP FOUNDATION");
 const profileErrorHandled =
-  profileErrorSignedOut || text().includes("SYNC FAILED · SAVED ON DEVICE");
+  profileErrorSignedOut ||
+  text().includes("SYNC FAILED · SAVED ON DEVICE") ||
+  (offlineSyncAvailable &&
+    text().includes("APP FOUNDATION") &&
+    calls.filter((call) => call[0] === "signOut" && call[1]?.scope === "local")
+      .length === localSignOutsBeforeProfileError);
 profileResult = { data: { status: "ready" }, error: null };
 await act(async () => {
   authCallback("SIGNED_IN", session);

@@ -45,6 +45,9 @@ export function useRotationEditor(
   const [structure, setStructure] = useState("");
   const [customTargets, setCustomTargets] =
     useState<DraftTarget[]>(emptyTargets);
+  const [expectedAssignmentId, setExpectedAssignmentId] = useState<
+    string | null
+  >(null);
   const [showProtocolInfo, setShowProtocolInfo] = useState(false);
 
   const resetDownstream = () => {
@@ -60,7 +63,9 @@ export function useRotationEditor(
   ) => {
     setSlot(nextSlot);
     setPosition(nextPosition);
-    const draft = savedDraft(saved[assignmentKey(nextSlot, nextPosition)]);
+    const current = saved[assignmentKey(nextSlot, nextPosition)];
+    setExpectedAssignmentId(current?.assignment_id ?? null);
+    const draft = savedDraft(current);
     setExercise(draft.exercise);
     setProtocol(draft.protocol);
     setStructure(draft.structure);
@@ -119,6 +124,7 @@ export function useRotationEditor(
     customTargets,
     editAssignment,
     exercise,
+    expectedAssignmentId,
     position,
     protocol,
     selectExercise,

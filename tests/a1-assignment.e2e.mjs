@@ -7,6 +7,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const target =
   process.env.SUPPORTABILITY_CHARACTERIZATION_TARGET ?? process.cwd();
+const offlineSyncAvailable = existsSync(
+  path.join(target, "src/offline-sync.ts"),
+);
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 const require = createRequire(pathToFileURL(path.join(target, "package.json")));
 const definition =
@@ -1456,6 +1459,36 @@ const replacementClearsDownstream =
     button.textContent.includes("CONTINUE"),
   ).disabled;
 
+// prettier-ignore
+if (
+  offlineSyncAvailable &&
+  process.env.SUPPORTABILITY_CHARACTERIZATION_DEFINITION
+) {
+  const a1AssignmentRoundTrip =
+    emptyA1 &&
+    approvedChestPool &&
+    exerciseContinueDisabled &&
+    protocolInitiallyEmpty &&
+    protocolGuidance &&
+    rangeInitiallyEmpty &&
+    reviewComplete &&
+    backPreserved &&
+    savedExactlyOnce &&
+    restoredAfterRemount &&
+    replacementClearsDownstream;
+  assert.equal(
+    a1AssignmentRoundTrip,
+    true,
+    "The S08 React rotation setup must preserve the qualified round trip",
+  );
+  process.stdout.write(
+    JSON.stringify({
+      behavior: { a1_assignment_round_trip: a1AssignmentRoundTrip },
+      scenario: "foundation-shell",
+      schema_version: "1.0",
+    }),
+  );
+} else {
 for (let index = 0; index < 3; index += 1)
   await act(async () => document.querySelector("button.back-action").click());
 
@@ -2085,9 +2118,12 @@ const historyWorkout = (
   slot,
   started_at,
   status = "completed",
+  blast_id = "blast-1",
 ) => ({
+  blast_id,
   completed_at: status === "completed" ? started_at : null,
   slot,
+  start_operation_id: `start-${workout_id}`,
   started_at,
   status,
   workout_id,
@@ -2996,4 +3032,5 @@ function workoutSaveResponse(data) {
   if (!loseNextWorkoutSaveResponse) return { data, error: null };
   loseNextWorkoutSaveResponse = false;
   return { data: null, error: { message: "NETWORK RESPONSE LOST" } };
+}
 }

@@ -1,11 +1,13 @@
 import { useState } from "react";
 import type { FoundationHomeProps } from "./FoundationHome.js";
+import type { OfflineSyncState } from "./hooks/use-offline-sync.js";
 import { WORKOUT_SLOTS, type WorkoutSlot } from "./rotation-config.js";
 import type { TrainingLifecycle } from "./workout-domain.js";
 
 type HomeScreenProps = Omit<FoundationHomeProps, "userId"> & {
   activeSlot: WorkoutSlot | null;
   actionSaving: boolean;
+  dataReady: boolean;
   lastCompletedSlot: WorkoutSlot | null;
   lifecycle: TrainingLifecycle | null;
   loadingWorkout: boolean;
@@ -13,11 +15,13 @@ type HomeScreenProps = Omit<FoundationHomeProps, "userId"> & {
   nextSlot: WorkoutSlot;
   onOpenHistory: () => void;
   onOpenRotation?: () => void;
+  onRetrySync: () => Promise<boolean>;
   onResumeWorkout: () => void;
   onStartCruise: () => Promise<boolean>;
   onStartNewBlast: () => Promise<boolean>;
   onStartWorkout: () => Promise<void>;
   onDismissCruiseSuggestion: () => Promise<boolean>;
+  syncState: OfflineSyncState;
 };
 
 const summaries: Record<WorkoutSlot, string> = {
@@ -34,6 +38,7 @@ function HomeScreen({
   email,
   activeSlot,
   actionSaving,
+  dataReady,
   lastCompletedSlot,
   lifecycle,
   loadingWorkout,
@@ -42,6 +47,7 @@ function HomeScreen({
   online,
   onOpenHistory,
   onOpenRotation,
+  onRetrySync,
   onResumeWorkout,
   onSignOut,
   onStartCruise,
@@ -61,6 +67,7 @@ function HomeScreen({
         nextSlot={nextSlot}
         online={online}
         onOpenHistory={onOpenHistory}
+        onRetrySync={onRetrySync}
         onSignOut={onSignOut}
         onStartNewBlast={onStartNewBlast}
         syncState={syncState}
@@ -80,15 +87,19 @@ function HomeScreen({
         </span>
       </header>
 
-      <NetworkStatus online={online} syncState={syncState} />
+      <NetworkStatus
+        online={online}
+        onRetrySync={onRetrySync}
+        syncState={syncState}
+      />
 
       <main>
         <WorkoutCard
           activeSlot={activeSlot}
           actionSaving={actionSaving}
+          dataReady={dataReady}
           loading={loadingWorkout}
           nextSlot={nextSlot}
-          online={online}
           onStartCruise={() => setCruiseConfirmationOpen(true)}
           resume={onResumeWorkout}
           start={onStartWorkout}
@@ -107,30 +118,15 @@ function HomeScreen({
           </section>
         )}
 
-        {message && <p className="form-message">{message}</p>}
-
-        <p className="account-email">SIGNED IN AS {email?.toUpperCase()}</p>
-        <button
-          className="primary-action"
-          type="button"
-          onClick={onOpenRotation}
-          disabled={!online || !onOpenRotation}
-        >
-          ROTATION SETUP
-        </button>
-        <button
-          className="secondary-action"
-          type="button"
-          onClick={() => void onSignOut()}
-          disabled={!online}
-        >
-          SIGN OUT
-        </button>
-        {!online && <p className="quiet-note">CONNECT TO SIGN OUT</p>}
-        <p className="quiet-note">
-          APP FOUNDATION · AUTHENTICATED · {cloudStatus} ·{" "}
-          {email?.toUpperCase()}
-        </p>
+        <AccountControls
+          cloudStatus={cloudStatus}
+          email={email}
+          message={message}
+          online={online}
+          onOpenRotation={onOpenRotation}
+          onSignOut={onSignOut}
+          syncState={syncState}
+        />
       </main>
       <BottomNavigation
         active="home"
@@ -144,13 +140,61 @@ function HomeScreen({
         lifecycle={lifecycle}
         message={message}
         nextSlot={nextSlot}
-        online={online}
         onDismiss={onDismissCruiseSuggestion}
         onStartCruise={onStartCruise}
         saving={actionSaving}
         setConfirmationOpen={setCruiseConfirmationOpen}
       />
     </div>
+  );
+}
+
+function AccountControls({
+  cloudStatus,
+  email,
+  message,
+  online,
+  onOpenRotation,
+  onSignOut,
+  syncState,
+}: Pick<
+  HomeScreenProps,
+  | "cloudStatus"
+  | "email"
+  | "message"
+  | "online"
+  | "onOpenRotation"
+  | "onSignOut"
+  | "syncState"
+>) {
+  return (
+    <>
+      {message && <p className="form-message">{message}</p>}
+      <p className="account-email">SIGNED IN AS {email?.toUpperCase()}</p>
+      <button
+        className="primary-action"
+        disabled={!onOpenRotation}
+        onClick={onOpenRotation}
+        type="button"
+      >
+        ROTATION SETUP
+      </button>
+      <button
+        className="secondary-action"
+        disabled={!online || syncState !== "synced"}
+        onClick={() => void onSignOut()}
+        type="button"
+      >
+        SIGN OUT
+      </button>
+      {!online && <p className="quiet-note">CONNECT TO SIGN OUT</p>}
+      {online && syncState !== "synced" && (
+        <p className="quiet-note">SYNC BEFORE SIGNING OUT</p>
+      )}
+      <p className="quiet-note">
+        APP FOUNDATION · AUTHENTICATED · {cloudStatus} · {email?.toUpperCase()}
+      </p>
+    </>
   );
 }
 
@@ -183,6 +227,7 @@ function CruiseHome({
   nextSlot,
   online,
   onOpenHistory,
+  onRetrySync,
   onSignOut,
   onStartNewBlast,
   syncState,
@@ -193,9 +238,10 @@ function CruiseHome({
   nextSlot: WorkoutSlot;
   online: boolean;
   onOpenHistory: () => void;
+  onRetrySync: () => Promise<boolean>;
   onSignOut: () => Promise<void>;
   onStartNewBlast: () => Promise<boolean>;
-  syncState: FoundationHomeProps["syncState"];
+  syncState: OfflineSyncState;
 }) {
   return (
     <div className="app-shell">
@@ -208,7 +254,11 @@ function CruiseHome({
           ⚙
         </span>
       </header>
-      <NetworkStatus online={online} syncState={syncState} />
+      <NetworkStatus
+        online={online}
+        onRetrySync={onRetrySync}
+        syncState={syncState}
+      />
       <main>
         <p className="cruise-phase">CRUISE</p>
         <h2 className="cruise-title">RECOVERY</h2>
@@ -230,7 +280,7 @@ function CruiseHome({
         </section>
         <button
           className="primary-action"
-          disabled={!online || actionSaving}
+          disabled={actionSaving}
           onClick={() => void onStartNewBlast()}
           type="button"
         >
@@ -239,18 +289,20 @@ function CruiseHome({
         <p className="quiet-note">
           Continue with {nextSlot} when you are ready.
         </p>
-        {!online && <p className="quiet-note">CONNECT TO START A NEW BLAST</p>}
         {message && <p className="form-message">{message}</p>}
         <p className="account-email">SIGNED IN AS {email?.toUpperCase()}</p>
         <button
           className="secondary-action"
-          disabled={!online}
+          disabled={!online || syncState !== "synced"}
           onClick={() => void onSignOut()}
           type="button"
         >
           SIGN OUT
         </button>
         {!online && <p className="quiet-note">CONNECT TO SIGN OUT</p>}
+        {online && syncState !== "synced" && (
+          <p className="quiet-note">SYNC BEFORE SIGNING OUT</p>
+        )}
       </main>
       <BottomNavigation
         active="home"
@@ -268,7 +320,6 @@ function LifecycleSheets({
   lifecycle,
   message,
   nextSlot,
-  online,
   onDismiss,
   onStartCruise,
   saving,
@@ -278,7 +329,6 @@ function LifecycleSheets({
   lifecycle: TrainingLifecycle | null;
   message: string;
   nextSlot: WorkoutSlot;
-  online: boolean;
   onDismiss: () => Promise<boolean>;
   onStartCruise: () => Promise<boolean>;
   saving: boolean;
@@ -289,7 +339,6 @@ function LifecycleSheets({
       <CruiseConfirmation
         message={message}
         nextSlot={nextSlot}
-        online={online}
         saving={saving}
         onCancel={() => setConfirmationOpen(false)}
         onConfirm={async () => {
@@ -298,12 +347,11 @@ function LifecycleSheets({
       />
     );
 
-  if (online && lifecycle?.suggestion_due === true)
+  if (lifecycle?.suggestion_due === true)
     return (
       <CruiseSuggestion
         message={message}
         nextSlot={nextSlot}
-        online={online}
         saving={saving}
         onDismiss={onDismiss}
         onStart={() => setConfirmationOpen(true)}
@@ -316,14 +364,12 @@ function LifecycleSheets({
 function CruiseConfirmation({
   message,
   nextSlot,
-  online,
   onCancel,
   onConfirm,
   saving,
 }: {
   message: string;
   nextSlot: WorkoutSlot;
-  online: boolean;
   onCancel: () => void;
   onConfirm: () => Promise<void>;
   saving: boolean;
@@ -347,7 +393,7 @@ function CruiseConfirmation({
         {message && <p className="form-message">{message}</p>}
         <button
           className="primary-action"
-          disabled={!online || saving}
+          disabled={saving}
           onClick={() => void onConfirm()}
           type="button"
         >
@@ -370,14 +416,12 @@ function CruiseConfirmation({
 function CruiseSuggestion({
   message,
   nextSlot,
-  online,
   onDismiss,
   onStart,
   saving,
 }: {
   message: string;
   nextSlot: WorkoutSlot;
-  online: boolean;
   onDismiss: () => Promise<boolean>;
   onStart: () => void;
   saving: boolean;
@@ -399,7 +443,7 @@ function CruiseSuggestion({
         {message && <p className="form-message">{message}</p>}
         <button
           className="primary-action"
-          disabled={!online || saving}
+          disabled={saving}
           onClick={onStart}
           type="button"
         >
@@ -407,7 +451,7 @@ function CruiseSuggestion({
         </button>
         <button
           className="secondary-action sheet-secondary"
-          disabled={!online || saving}
+          disabled={saving}
           onClick={() => void onDismiss()}
           type="button"
         >
@@ -436,9 +480,9 @@ const sheetStyles = `
 function WorkoutCard({
   activeSlot,
   actionSaving,
+  dataReady,
   loading,
   nextSlot,
-  online,
   onStartCruise,
   resume,
   start,
@@ -446,9 +490,9 @@ function WorkoutCard({
 }: {
   activeSlot: WorkoutSlot | null;
   actionSaving: boolean;
+  dataReady: boolean;
   loading: boolean;
   nextSlot: WorkoutSlot;
-  online: boolean;
   onStartCruise: () => void;
   resume: () => void;
   start: () => Promise<void>;
@@ -467,7 +511,7 @@ function WorkoutCard({
       <button
         className="primary-action"
         type="button"
-        disabled={!online || loading}
+        disabled={!dataReady || loading}
         onClick={activeSlot ? resume : () => void start()}
       >
         {activeSlot ? `RESUME ${activeSlot}` : `START ${nextSlot}`}
@@ -476,7 +520,7 @@ function WorkoutCard({
         <button
           className="secondary-action cruise-action"
           type="button"
-          disabled={!online || loading || actionSaving}
+          disabled={!dataReady || loading || actionSaving}
           onClick={onStartCruise}
         >
           START CRUISE
@@ -519,19 +563,29 @@ function RotationTracker({
   );
 }
 
-function NetworkStatus({
+export function NetworkStatus({
   online,
+  onRetrySync,
   syncState,
-}: Pick<FoundationHomeProps, "online" | "syncState">) {
+}: {
+  online: boolean;
+  onRetrySync: () => Promise<boolean>;
+  syncState: OfflineSyncState;
+}) {
   if (!online)
     return <div className="status-strip">OFFLINE · SAVED ON DEVICE</div>;
 
-  const label =
-    syncState === "syncing"
-      ? "SYNCING"
-      : syncState === "synced"
-        ? "SYNCED"
-        : "ONLINE";
+  if (syncState === "failed")
+    return (
+      <div className="status-strip status-strip--failed">
+        <span>SYNC FAILED · SAVED ON DEVICE</span>
+        <button onClick={() => void onRetrySync()} type="button">
+          TRY AGAIN
+        </button>
+      </div>
+    );
+
+  const label = syncState === "syncing" ? "SYNCING" : "SYNCED";
   return <div className="status-strip status-strip--quiet">{label}</div>;
 }
 

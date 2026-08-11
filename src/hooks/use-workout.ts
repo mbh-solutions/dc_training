@@ -1,113 +1,85 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
-  type TrainingLifecycle,
-  type Workout,
-  type WorkoutStep,
-} from "../workout-domain.js";
-import {
-  loadWorkoutState,
-  replaceFailedAssignment,
-  resolveLogbookAction,
-  saveWorkoutStep,
-  startWorkout,
-  transitionTrainingLifecycle,
-  undoWorkoutStep,
-  type SaveResult,
-  type TrainingLifecycleAction,
-} from "../workout-api.js";
+  clearRecentCompletion,
+  lifecycleTransitionPayload,
+  startWorkoutPayload,
+  stepTarget,
+  type OfflineAccountState,
+  type OfflineOperationInput,
+} from "../offline-sync.js";
 import type { WeightEntry } from "../weight-conversion.js";
-import type { WorkoutSlot } from "../rotation-config.js";
-import type { Protocol, TargetSet } from "../rotation-config.js";
+import type { WorkoutStep } from "../workout-domain.js";
+import type {
+  AssignmentPosition,
+  Protocol,
+  TargetSet,
+} from "../rotation-config.js";
 
-export type WorkoutOperationStatus =
-  "baseline" | "completed" | "skipped" | "win" | null;
+export type CommitOperation = (
+  operation: OfflineOperationInput,
+) => Promise<{ data: OfflineAccountState | null; error: string }>;
 
-export function useWorkout(userId: string, online: boolean) {
-  const [activeWorkout, setActiveWorkout] = useState<Workout | null>(null);
-  const [completedWorkout, setCompletedWorkout] = useState<Workout | null>(
-    null,
-  );
-  const [lastCompletedSlot, setLastCompletedSlot] =
-    useState<WorkoutSlot | null>(null);
-  const [lifecycle, setLifecycle] = useState<TrainingLifecycle | null>(null);
-  const [lastOperationId, setLastOperationId] = useState<string | null>(null);
-  const [lastOperationStatus, setLastOperationStatus] =
-    useState<WorkoutOperationStatus>(null);
+export function useWorkout(
+  userId: string,
+  state: OfflineAccountState | null,
+  commitOperation: CommitOperation,
+) {
   const [actionSaving, setActionSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
-  const [nextSlot, setNextSlot] = useState<WorkoutSlot>("A1");
-  const [steps, setSteps] = useState<WorkoutStep[]>([]);
   const [replacementStep, setReplacementStep] = useState<WorkoutStep | null>(
     null,
   );
   const pendingOperationIds = useRef(new Map<string, string>());
+  const workout = workoutView(state);
+  const operation = operationView(state);
 
-  const load = useCallback(async () => {
-    if (!online) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setLifecycle(null);
-    const result = await loadWorkoutState(userId);
-    if (!result.data) {
-      setMessage(result.error);
-      setLoading(false);
-      return;
-    }
-    setNextSlot(result.data.nextSlot);
-    setLifecycle(result.data.lifecycle);
-    setLastCompletedSlot(result.data.lastCompletedSlot);
-    setActiveWorkout(result.data.workout);
-    setSteps(result.data.steps);
-    const blockingStep = result.data.steps.find(
-      (step) => step.enforcement_action !== null,
-    );
-    setLastOperationId(blockingStep?.last_operation_id ?? null);
-    setLastOperationStatus(blockingStep ? operationStatus(blockingStep) : null);
-    setMessage("");
-    setLoading(false);
-  }, [online, userId]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const start = async () => {
-    setMessage("");
-    const operationId = crypto.randomUUID();
-    const result = await startWorkout(operationId);
-    if (!result.data) {
-      setMessage(
-        result.error.includes("saved assignments")
-          ? `FINISH ALL ${nextSlot} ASSIGNMENTS IN ROTATION SETUP`
-          : "WORKOUT COULD NOT BE STARTED",
-      );
-      return false;
-    }
-    await load();
-    return true;
-  };
-
-  const transitionLifecycle = async (action: TrainingLifecycleAction) => {
-    if (!online) {
-      setMessage("CONNECT TO UPDATE YOUR TRAINING PHASE");
-      return false;
-    }
-    const key = `lifecycle:${action}`;
-    const operationId = retryOperationId(pendingOperationIds.current, key);
+  const submit = async (operation: OfflineOperationInput, key: string) => {
     setActionSaving(true);
     setMessage("");
-    const result = await transitionTrainingLifecycle(operationId, action);
+    const result = await commitOperation(operation);
     setActionSaving(false);
     if (!result.data) {
       setMessage(result.error);
       return false;
     }
     pendingOperationIds.current.delete(key);
-    setLifecycle(result.data);
     return true;
+  };
+
+  const start = async () => {
+    if (!state) return false;
+    const key = "start_workout";
+    try {
+      const payload = startWorkoutPayload(state);
+      return submit(
+        {
+          id: retryOperationId(pendingOperationIds.current, key),
+          kind: "start_workout",
+          payload,
+        },
+        key,
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "WORKOUT COULD NOT START",
+      );
+      return false;
+    }
+  };
+
+  const transitionLifecycle = async (
+    action: "dismiss_suggestion" | "start_cruise" | "start_new_blast",
+  ) => {
+    if (!state) return false;
+    const key = `lifecycle:${action}`;
+    return submit(
+      {
+        id: retryOperationId(pendingOperationIds.current, key),
+        kind: "transition_training_lifecycle",
+        payload: lifecycleTransitionPayload(state, action),
+      },
+      key,
+    );
   };
 
   const saveStep = async (
@@ -115,13 +87,10 @@ export function useWorkout(userId: string, online: boolean) {
     weights: WeightEntry[] = [],
     reps: number[] = [],
     durationSeconds: number | null = null,
-  ) => {
-    return submitStep(step, "completed", weights, reps, durationSeconds);
-  };
+  ) => submitStep(step, "completed", weights, reps, durationSeconds);
 
-  const skipStep = async (step: WorkoutStep) => {
-    return submitStep(step, "skipped", [], [], null);
-  };
+  const skipStep = async (step: WorkoutStep) =>
+    submitStep(step, "skipped", [], [], null);
 
   const submitStep = async (
     step: WorkoutStep,
@@ -130,71 +99,38 @@ export function useWorkout(userId: string, online: boolean) {
     reps: number[],
     durationSeconds: number | null,
   ) => {
-    const operationId = retryOperationId(
-      pendingOperationIds.current,
-      step.step_id,
+    if (!state) return false;
+    const key = step.step_id;
+    return submit(
+      {
+        id: retryOperationId(pendingOperationIds.current, key),
+        kind: "save_workout_step",
+        payload: {
+          ...stepTarget(state, step),
+          duration_seconds: durationSeconds,
+          reps,
+          status,
+          weights,
+        },
+      },
+      key,
     );
-    const response = await saveWorkoutStep(
-      operationId,
-      step,
-      status,
-      weights,
-      reps,
-      durationSeconds,
-    );
-    if (!response.data) {
-      setMessage(response.error);
-      return false;
-    }
-    const result = response.data;
-    pendingOperationIds.current.delete(step.step_id);
-    applySaveResult(result);
-    setLastOperationId(operationId);
-    setLastOperationStatus(operationStatus(result.step));
-    return true;
-  };
-
-  const applySaveResult = (result: SaveResult) => {
-    setMessage("");
-    setNextSlot(result.next_slot);
-    setSteps((current) =>
-      current.map((item) =>
-        item.step_id === result.step.step_id ? result.step : item,
-      ),
-    );
-    if (result.workout.status === "completed") {
-      setCompletedWorkout(result.workout);
-      setLastCompletedSlot(result.workout.slot);
-      setActiveWorkout(null);
-    } else {
-      setActiveWorkout(result.workout);
-    }
   };
 
   const resolveAction = async (
     step: WorkoutStep,
     action: "count_failure" | "count_win" | "use_mulligan",
   ) => {
+    if (!state) return false;
     const key = `${step.step_id}:${action}`;
-    const operationId = retryOperationId(pendingOperationIds.current, key);
-    setActionSaving(true);
-    const response = await resolveLogbookAction(
-      operationId,
-      step.step_id,
-      action,
+    return submit(
+      {
+        id: retryOperationId(pendingOperationIds.current, key),
+        kind: "resolve_logbook_action",
+        payload: { ...stepTarget(state, step), action },
+      },
+      key,
     );
-    setActionSaving(false);
-    if (!response.data) {
-      setMessage(response.error);
-      return false;
-    }
-    pendingOperationIds.current.delete(key);
-    applySaveResult(response.data);
-    if (response.data.step.enforcement_action === null) {
-      setLastOperationId(null);
-      setLastOperationStatus(null);
-    }
-    return true;
   };
 
   const replaceAssignment = async (
@@ -204,70 +140,56 @@ export function useWorkout(userId: string, online: boolean) {
     structure: string,
     targetSets: TargetSet[],
   ) => {
+    if (!state || !workout.activeWorkout) return false;
     const key = `${step.step_id}:replace`;
-    const operationId = retryOperationId(pendingOperationIds.current, key);
-    setActionSaving(true);
-    const response = await replaceFailedAssignment(operationId, step.step_id, {
-      exercise,
-      protocol,
-      structure,
-      targetSets,
-    });
-    setActionSaving(false);
-    if (!response.data) {
-      setMessage(response.error);
-      return false;
-    }
-    pendingOperationIds.current.delete(key);
-    applySaveResult(response.data);
-    setReplacementStep(null);
-    setLastOperationId(null);
-    setLastOperationStatus(null);
-    return true;
+    const replaced = await submit(
+      {
+        id: retryOperationId(pendingOperationIds.current, key),
+        kind: "replace_failed_assignment",
+        payload: {
+          ...stepTarget(state, step),
+          body_part: step.body_part as AssignmentPosition,
+          exercise,
+          protocol,
+          slot: workout.activeWorkout.slot,
+          structure,
+          target_sets: targetSets,
+        },
+      },
+      key,
+    );
+    if (replaced) setReplacementStep(null);
+    return replaced;
   };
 
   const undo = async () => {
-    if (!lastOperationId) return;
-    const result = await undoWorkoutStep(lastOperationId);
-    if (!result.data) {
-      setMessage(result.error);
-      return;
-    }
-    setSteps((current) =>
-      current.map((item) =>
-        item.step_id === result.data!.step_id ? result.data! : item,
-      ),
+    if (!operation.recent) return;
+    const key = `undo:${operation.recent.id}`;
+    await submit(
+      {
+        id: retryOperationId(pendingOperationIds.current, key),
+        kind: "undo_workout_step",
+        payload: { original_operation_id: operation.recent.id },
+      },
+      key,
     );
-    if (completedWorkout) {
-      setCompletedWorkout(null);
-      await load();
-    }
-    setLastOperationId(null);
-    setLastOperationStatus(null);
-    setMessage("");
   };
 
   return {
     actionSaving,
-    activeWorkout,
-    blockingStep:
-      steps.find((step) => step.enforcement_action !== null) ?? null,
+    activeWorkout: workout.activeWorkout,
+    blockingStep: workout.blockingStep,
     beginReplacement: setReplacementStep,
-    completedWorkout,
-    dismissCompleted: async () => {
-      await load();
-      setCompletedWorkout(null);
-      setLastOperationId(null);
-      setLastOperationStatus(null);
-    },
+    completedWorkout: operation.completedWorkout,
+    dismissCompleted: async () => clearRecentCompletion(userId),
     dismissCruiseSuggestion: () => transitionLifecycle("dismiss_suggestion"),
-    lastCompletedSlot,
-    lastOperationId,
-    lastOperationStatus,
-    lifecycle,
-    loading,
+    lastCompletedSlot: workout.lastCompletedSlot,
+    lastOperationId: operation.lastOperationId,
+    lastOperationStatus: operation.lastOperationStatus,
+    lifecycle: workout.lifecycle,
+    loading: workout.loading,
     message,
-    nextSlot,
+    nextSlot: workout.nextSlot,
     replaceAssignment,
     replacementStep,
     resolveAction,
@@ -276,20 +198,48 @@ export function useWorkout(userId: string, online: boolean) {
     start,
     startCruise: () => transitionLifecycle("start_cruise"),
     startNewBlast: () => transitionLifecycle("start_new_blast"),
-    steps,
+    steps: workout.steps,
     undo,
   };
 }
 
-function retryOperationId(operationIds: Map<string, string>, stepId: string) {
-  const operationId = operationIds.get(stepId) ?? crypto.randomUUID();
-  operationIds.set(stepId, operationId);
-  return operationId;
+function workoutView(state: OfflineAccountState | null) {
+  if (!state?.workout) {
+    return {
+      activeWorkout: null,
+      blockingStep: null,
+      lastCompletedSlot: null,
+      lifecycle: null,
+      loading: state === null,
+      nextSlot: "A1" as const,
+      steps: [] as WorkoutStep[],
+    };
+  }
+  const workout = state.workout;
+  return {
+    activeWorkout: workout.workout,
+    blockingStep:
+      workout.steps.find((step) => step.enforcement_action !== null) ?? null,
+    lastCompletedSlot: workout.lastCompletedSlot,
+    lifecycle: workout.lifecycle,
+    loading: false,
+    nextSlot: workout.nextSlot,
+    steps: workout.steps,
+  };
 }
 
-function operationStatus(step: WorkoutStep): WorkoutOperationStatus {
-  if (step.status === "skipped") return "skipped";
-  if (step.verdict === "win") return "win";
-  if (step.fresh_baseline) return "baseline";
-  return "completed";
+function operationView(state: OfflineAccountState | null) {
+  const recent = state?.recentOperation ?? null;
+  return {
+    completedWorkout: state?.recentlyCompletedWorkout ?? null,
+    lastOperationId: recent?.id ?? null,
+    lastOperationStatus: recent?.status ?? null,
+    recent,
+  };
+}
+
+function retryOperationId(operationIds: Map<string, string>, key: string) {
+  const operationId = operationIds.get(key) ?? crypto.randomUUID();
+  operationIds.set(key, operationId);
+  return operationId;
 }

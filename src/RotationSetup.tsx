@@ -8,6 +8,8 @@ import { useRotationEditor } from "./hooks/use-rotation-editor.js";
 import { useRotationFlow } from "./hooks/use-rotation-flow.js";
 import { resolveAssignmentDraft } from "./rotation-assignment-draft.js";
 import type { WorkoutStep } from "./workout-domain.js";
+import type { OfflineAccountState } from "./offline-sync.js";
+import type { CommitOperation } from "./hooks/use-workout.js";
 import type {
   AssignmentPosition,
   Protocol,
@@ -17,6 +19,8 @@ import type {
 import { useState } from "react";
 
 type RotationSetupProps = {
+  accountState: OfflineAccountState | null;
+  commitOperation: CommitOperation;
   onBack: () => void;
   replacement?: {
     message: string;
@@ -30,13 +34,17 @@ type RotationSetupProps = {
     slot: WorkoutSlot;
     step: WorkoutStep;
   };
-  userId: string;
 };
 
-function RotationSetup({ onBack, replacement, userId }: RotationSetupProps) {
+function RotationSetup({
+  accountState,
+  commitOperation,
+  onBack,
+  replacement,
+}: RotationSetupProps) {
   const [replacementSaving, setReplacementSaving] = useState(false);
   const { loadState, message, saved, saveAssignment, saving } =
-    useRotationAssignments(userId);
+    useRotationAssignments(accountState, commitOperation);
   const editor = useRotationEditor(
     saved,
     replacement
@@ -82,6 +90,7 @@ function RotationSetup({ onBack, replacement, userId }: RotationSetupProps) {
       return saveAssignment(
         editor.slot,
         editor.position,
+        editor.expectedAssignmentId,
         editor.exercise,
         editor.protocol as Protocol,
         structure,

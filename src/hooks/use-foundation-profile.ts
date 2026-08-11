@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase.js";
 
-type SyncState = "idle" | "syncing" | "synced";
-export type FoundationProfileState = "pending" | "ready" | "unavailable";
+export type FoundationProfileState =
+  "missing" | "pending" | "ready" | "unavailable";
 type ProfileResult = {
   state: Exclude<FoundationProfileState, "pending">;
   userId: string;
@@ -14,20 +14,17 @@ export function useFoundationProfile(session: Session | null, online: boolean) {
     null,
   );
   const [cloudStatus, setCloudStatus] = useState("NOT CHECKED");
-  const [syncState, setSyncState] = useState<SyncState>("idle");
 
   useEffect(() => {
     if (!session) {
       setProfileResult(null);
       setCloudStatus("NOT CHECKED");
-      setSyncState("idle");
       return;
     }
     if (!online || !supabase) return;
 
     const client = supabase;
     let active = true;
-    setSyncState("syncing");
     void client
       .from("foundation_profiles")
       .select("status")
@@ -35,14 +32,17 @@ export function useFoundationProfile(session: Session | null, online: boolean) {
       .maybeSingle()
       .then(async ({ data, error }) => {
         if (!active) return;
-        if (error || !data) {
+        if (error) {
           setProfileResult({ state: "unavailable", userId: session.user.id });
+          return;
+        }
+        if (!data) {
+          setProfileResult({ state: "missing", userId: session.user.id });
           return;
         }
 
         setProfileResult({ state: "ready", userId: session.user.id });
         setCloudStatus(data.status === "ready" ? "PROTECTED" : "CONNECTED");
-        setSyncState("synced");
       });
 
     return () => {
@@ -54,5 +54,5 @@ export function useFoundationProfile(session: Session | null, online: boolean) {
     profileResult && profileResult.userId === session?.user.id
       ? profileResult.state
       : "pending";
-  return { cloudStatus, profileState, syncState };
+  return { cloudStatus, profileState };
 }

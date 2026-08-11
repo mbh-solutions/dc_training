@@ -1,105 +1,154 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Authenticated owners can enter cruise from Home without consuming the fixed rotation, reload a read-only Cruise Home with History access, start a new blast at the preserved next slot, establish fresh per-blast exercise baselines, and receive one dismissible seven-week suggestion after workout completion and Home return."
-proof = "tests/blast-cruise.test.mjs verifies fail-closed lifecycle shapes and poisons the authoritative SQL transition boundary for rotation mutation, workout deletion, stale old-blast enforcement, missing owner serialization, missing future-profile lifecycle provisioning, missing cruise workout/assignment/undo protection, missing per-blast tagging, missing fresh-baseline separation, missing one-time dismissal, and missing RLS grants. tests/a1-assignment.e2e.mjs mounts src/main.tsx with React and captures manual confirmation/cancel, retry-stable cruise transition after a lost response, Cruise Home, offline mutation exclusion, History access with Rotation disabled, Rotation locked before lifecycle resolution, preserved slot, new blast, same-assignment prior-history guidance with a fresh baseline, completion-gated seven-week suggestion, persistent Not Now dismissal, and unchanged lifecycle rotation. Production rollback-only SQL proof covers before/at/after seven weeks, owner isolation, idempotent transitions, future-profile bootstrap, cruise workout/assignment/undo rejection, cross-blast undo rejection, fresh baselines, history preservation, and exact rotation preservation."
+intended_behavior = "After one successful owner sign-in and data load, routine training remains usable through temporary connectivity loss. Every change commits an account-bound IndexedDB working copy and a stable ordered operation in one transaction, then synchronizes immediately, on reconnect, or on foreground through one idempotent cloud boundary. The UI reports OFFLINE, SYNCING, SYNCED, or SYNC FAILED and offers Try Again without discarding queued work."
+proof = "A targeted native-IndexedDB Chromium run against the actual React application proves online hydration from canonical Postgres target JSON, all four visible sync states, offline Start A1, Skip, Undo, owner isolation, ordered queue records, stable operation identity across full-page reload, simulated 503 retention, Try Again recovery, preserved unsaved workout input across local-to-cloud identity refresh, stable event timestamps, three unique cloud actions, and a drained queue. Focused React probes prove an unsaved history-correction draft survives the same step/workout/assignment ID refresh, an incomplete rotation reports the missing-assignment validation instead of rejecting Start, and an operation committed during post-drain reload triggers a second drain before SYNCED. Focused reducer probes prove preserved local step IDs still target their immutable start operation after offline completion/undo, stale assignment and workout-predecessor snapshots fail closed, sequential offline local assignment versions resolve, the event-time seven-week cruise suggestion appears on completion then reverses on Undo, and authoritative later-progression, active-workout, or cruise divergence drops stale Undo feedback. One narrowed production rollback SQL falsification proves device-skewed event time remains separate from authoritative progression/predecessor order, exact correction replay is stable, a stale expected-performance fingerprint rejects before ledger or mutation, private validation remains inaccessible, and rollback residue is zero. One focused production rollback falsification proves a backdated latest completed workout can be undone by progression order, restores the true predecessor slot, records the undo identity, and leaves zero workout/step/operation residue. The earlier comprehensive production rollback-only SQL proves five assignment writes plus start and nine steps, duplicate replay stability, payload-mismatch rejection, fail-closed start/lifecycle/assignment/predecessor context drift, queued local assignment/blast reference resolution, preserved assignment/workout event times, event-time-correct cruise suggestion, nine authoritative step writes, one completed workout, exactly one A1-to-B1 rotation advance, and zero residue. Focused reducer probes prove blast-boundary logbook reset and current-blast lookup by immutable blast identity despite device-clock skew. The focused foundation runtime and production build/lint commands verify the directly relevant application boundary."
 
 [characterization]
-captured_behavior = "The qualified auth/offline shell, rotation setup, six-slot workout runtime, logbook enforcement, and history correction remain while blast-cruise-v1 adds the lifecycle seam around the existing fixed rotation."
-proof = "The rotation-setup-v1, a1-workout-v1, and history-v1 definitions remain unchanged. The foundation-shell-v2 driver keeps its golden behavior while selecting Sign Out by label after the new outlined Cruise action changed button order. The additive blast-cruise-v1 definition proves the predecessor on base and the S07 schema/UI/runtime contract on head; the directly relevant actual-React packet exercises the complete S07 interaction."
+captured_behavior = "The qualified auth shell, rotation setup, six-slot workout runtime, logbook enforcement, history correction, and blast/cruise lifecycle remain; S08 replaces routine cloud-only mutations with one durable offline working-copy and synchronization seam while retaining online-only sign-in, sign-out, recovery, deletion, and active-device transfer boundaries."
+proof = "Existing foundation-shell-v2, rotation-setup-v1, a1-workout-v1, history-v1, and blast-cruise-v1 definitions remain immutable and reproduce their golden behavior. Additive offline-sync-v1 returns the same compatible surface result on the S07 base and S08 head while covering every S08 production path; the focused React helpers seed the qualified prior online load and exercise the queued client seam."
 
 [separation_of_concerns]
-before = "S06 persisted the fixed rotation, workout history, and correction semantics but deliberately had no blast or cruise lifecycle."
-after = "workout-domain validates lifecycle rows; workout-api alone reads lifecycle state and calls its mutation RPC; use-workout owns retry-stable React lifecycle state; HomeScreen owns confirmation, suggestion, and Cruise Home presentation; the migration alone owns owner serialization, phase invariants, blast clocks, per-blast baselines, suggestion eligibility, and rotation-independent transitions."
+before = "S07 React hooks called individual Supabase mutation RPCs and disabled routine changes whenever navigator.onLine was false."
+after = "UI hooks submit typed local operations and bind assignment/correction drafts to the cloud version captured when each editor opens; HistoryScreen retains semantic selection identity across authoritative refreshes; offline-sync alone owns IndexedDB state reduction, monotonic progression, account logbook hydration, draft-safe cloud identity reconciliation, authoritative-refresh undo eligibility, immutable-blast performance lookup, cloud replay, and authoritative refresh; use-offline-sync alone schedules foreground/reconnect retries and exposes status; the migrations own cross-retry cloud idempotency, local-step/reference resolution, start/lifecycle/assignment/predecessor/performance-context validation, and event-time preservation separate from progression order."
 
 [architecture]
-dependency_direction = "FoundationHome composes HomeScreen and the workout hook; HomeScreen receives lifecycle state and callbacks without cloud access; use-workout delegates lifecycle I/O to workout-api; workout-api alone reaches Supabase; the database RPC and triggers remain authoritative for concurrency, ownership, rotation preservation, and fresh-baseline enforcement."
+dependency_direction = "App authenticates one owner; FoundationHome composes use-offline-sync; workout, rotation, and history hooks submit typed operations without direct cloud writes; offline-sync persists account state plus stable operation/event/context identity and calls only apply_offline_operation; the public RPC validates queued start, assignment-version, workout-predecessor, expected-performance, and lifecycle snapshots, dispatches to established authoritative functions, preserves user event time separately from progression order, and records results in a private ledger. Cache Storage remains owned by the existing Vite PWA configuration."
 reviewed_paths = [
+    "src/App.tsx",
     "src/FoundationHome.tsx",
     "src/HistoryScreen.tsx",
     "src/HomeScreen.tsx",
-    "src/WorkoutTracer.tsx",
+    "src/RotationSetup.tsx",
+    "src/hooks/use-offline-sync.ts",
+    "src/hooks/use-foundation-profile.ts",
+    "src/hooks/use-owner-access.ts",
+    "src/hooks/use-rotation-assignment.ts",
+    "src/hooks/use-rotation-editor.ts",
     "src/hooks/use-workout.ts",
+    "src/offline-sync.ts",
+    "src/rotation-assignment.ts",
     "src/workout-api.ts",
     "src/workout-domain.ts",
-    "supabase/migrations/20260810163233_add_blast_cruise_lifecycle.sql",
-    "supabase/migrations/20260810174144_backfill_migrated_cruise_suggestions.sql",
-    "supabase/migrations/20260810180700_reset_new_blast_enforcement.sql",
-    "supabase/migrations/20260810182600_guard_rotation_assignment_during_cruise.sql",
-    "tests/blast-cruise.test.mjs",
+    "supabase/migrations/20260810192528_offline_operation_queue.sql",
+    "supabase/migrations/20260810211000_preserve_offline_event_time.sql",
+    "supabase/migrations/20260810214500_validate_offline_replay_context.sql",
+    "supabase/migrations/20260810222500_validate_offline_lifecycle_context.sql",
+    "supabase/migrations/20260810223500_fix_offline_blast_reference_resolution.sql",
+    "supabase/migrations/20260810234000_validate_offline_versions.sql",
+    "supabase/migrations/20260811000500_protect_offline_progression_and_corrections.sql",
+    "supabase/migrations/20260811002000_fix_offline_performance_context.sql",
+    "supabase/migrations/20260811003500_use_progression_order_for_undo.sql",
     "tests/a1-assignment.e2e.mjs",
-    "tests/characterization/blast-cruise-v1.characterization.mjs",
-    "tests/characterization/blast-cruise-v1.golden.json",
+    "tests/history.test.mjs",
     "tests/characterization/foundation-shell.characterization.mjs",
+    "tests/characterization/offline-sync-v1.characterization.mjs",
+    "tests/characterization/offline-sync-v1.golden.json",
     ".supportability-characterization.json",
 ]
 
 [responsibility_boundary]
-path = "supabase/migrations/20260810163233_add_blast_cruise_lifecycle.sql"
-owns = "Durable owner lifecycle state, exact phase transition idempotency, blast timestamps, one-time suggestion eligibility, cruise workout exclusion, per-blast baseline selection, and active-blast logbook reconstruction."
-does_not_own = "Rotation advancement or reset, assignment changes, prior performance deletion, cruise scheduling, offline mutation queuing, cruise workouts, analytics, or Supportability Gate behavior."
+path = "src/offline-sync.ts"
+owns = "Account-keyed durable working state, ordered operation records, atomic local commits, deterministic optimistic reducers, retry replay, local-step targeting, and post-drain authoritative refresh."
+does_not_own = "Authentication, PWA shell caching, background execution after close, active-device transfer, merge/conflict policy, database authorization, or Supportability Gate behavior."
 
 [incremental_refactor]
-target = "Add only S07 blast and cruise lifecycle around the qualified S06 rotation and workout boundaries."
-completed_step = "Added one owner lifecycle row with future-profile provisioning, an internal idempotency ledger, one lifecycle RPC, narrow phase guards and insert/status triggers, a blast-aware replacement of the established recalculation function, and small state/presentation extensions; no package or Supportability Gate change."
+target = "Add only S08 temporary-offline routine training and exactly-once synchronization to the qualified S07 app."
+completed_step = "Reused the existing PWA precache; extracted the shared assignment shape; added one native IndexedDB module, one small scheduling hook, narrow consumer rewiring, one private-ledger dispatcher migration, and eight forward repairs separating event time from progression plus validating replay context. No package, active-device, background-sync, conflict-resolution, or Supportability Gate change."
 
 [review_handoff]
-summary = "Review owner locking and RLS, operation-ID replay, future-profile lifecycle provisioning, no rotation writes in lifecycle transitions, cruise workout/assignment/undo exclusion, cross-blast undo rejection, stopped blast clock, completion-gated seven-week eligibility, persistent per-blast dismissal, new-blast logbook reset without history deletion, and actual-React runtime evidence."
+summary = "Review atomic IndexedDB state-plus-operation commits, strict user keys, semantic assignment-target hydration, stable operation replay, step resolution by start-operation plus ordinal, ordered drain/refresh races, retry states, established RPC delegation, private ledger privileges, and preservation of online-only account boundaries."
 remaining_risks = [
-    "Offline lifecycle mutations remain explicitly outside S07; phase actions are disabled without connectivity.",
-    "Cruise remains deliberately manual with no duration, reason, countdown, scheduling, or cruise workout logging.",
+    "S08 intentionally synchronizes only while the app is open or returns to foreground; background execution after close is excluded.",
+    "S09 must add the separately approved one-active-editing-device transfer boundary before multiple devices may edit.",
 ]
 
 [human_review]
-naming = "Start Cruise, Recovery, paused rotation, preserved next workout, Start New Blast, seven weeks, Consider a Cruise, Not Now, and fresh baseline labels match the locked product ledger."
-cohesion = "Presentation, React state, cloud I/O, row validation, and authoritative transactional lifecycle logic remain separate."
-intended_behavior = "The owner controls cruise and new-blast transitions without losing rotation position or history, while the database prevents cruise workouts and old-blast failures from leaking into the new blast."
-reviewability = "Four forward-only migrations, narrow established-boundary extensions, one focused contract test, one additive characterization, and one extended actual-React packet cover S07 only."
+naming = "OFFLINE, SYNCING, SYNCED, SYNC FAILED, Try Again, and Saved on device match the locked S08 product ledger."
+cohesion = "Presentation, scheduling, durable local state, cloud transport, and authoritative database mutation remain separate."
+intended_behavior = "The signed-in owner can train, correct history, edit assignments, complete workouts, and change blast/cruise state during temporary connectivity loss without duplicate cloud effects."
+reviewability = "One client persistence module, one scheduling hook, narrow existing-hook rewiring, nine forward-only migrations, and one additive compatibility characterization implement and prove S08; no package was added."
 
 [[module_boundaries]]
-path = "src/HomeScreen.tsx"
-owner_path = "src/HomeScreen.tsx"
+path = "src/hooks/use-offline-sync.ts"
+owner_path = "src/hooks/use-offline-sync.ts"
 basis = "responsibility"
-justification = "Owns Home lifecycle actions, approved bottom sheets, and read-only Cruise Home presentation only."
+justification = "Owns React lifecycle scheduling for immediate, reconnect, foreground, and manual sync without training semantics or database policy."
+
+[[module_boundaries]]
+path = "src/offline-sync.ts"
+owner_path = "src/offline-sync.ts"
+basis = "responsibility"
+justification = "Owns typed offline operations, native IndexedDB persistence, ordered replay, and deterministic optimistic state without UI presentation."
+
+[[module_boundaries]]
+path = "src/rotation-assignment.ts"
+owner_path = "src/rotation-assignment.ts"
+basis = "domain"
+justification = "Owns the shared persisted-assignment shape and validation used by rotation, history, workout, and offline state without persistence or presentation behavior."
 
 [[module_boundaries]]
 path = "src/hooks/use-workout.ts"
 owner_path = "src/hooks/use-workout.ts"
 basis = "responsibility"
-justification = "Owns client lifecycle state, retry-stable operation IDs, and post-completion Home refresh without database policy."
+justification = "Owns workout interaction messages and retry-stable local operation creation without direct Supabase access."
 
 [[module_boundaries]]
-path = "src/workout-api.ts"
-owner_path = "src/workout-api.ts"
+path = "src/hooks/use-rotation-assignment.ts"
+owner_path = "src/hooks/use-rotation-assignment.ts"
 basis = "responsibility"
-justification = "Owns validated lifecycle reads and the single lifecycle RPC call without presentation or transition rules."
+justification = "Owns rotation-assignment operation creation and editor feedback without persistence or cloud policy."
 
 [[module_boundaries]]
-path = "src/workout-domain.ts"
-owner_path = "src/workout-domain.ts"
+path = "supabase/migrations/20260810192528_offline_operation_queue.sql"
+owner_path = "supabase/migrations/20260810192528_offline_operation_queue.sql"
 basis = "responsibility"
-justification = "Owns the fail-closed lifecycle row shape without I/O or React state."
+justification = "Owns authenticated exactly-once dispatch, private result ledger, duplicate mismatch rejection, and queued local-step resolution through established authoritative RPCs."
 
 [[module_boundaries]]
-path = "supabase/migrations/20260810163233_add_blast_cruise_lifecycle.sql"
-owner_path = "supabase/migrations/20260810163233_add_blast_cruise_lifecycle.sql"
+path = "supabase/migrations/20260810211000_preserve_offline_event_time.sql"
+owner_path = "supabase/migrations/20260810211000_preserve_offline_event_time.sql"
 basis = "responsibility"
-justification = "Owns durable lifecycle invariants, authorization, concurrency, idempotency, blast-aware baselines, and suggestion timing without changing rotation state."
+justification = "Owns stable offline event-time application for workouts, assignments, and lifecycle transitions while retaining the existing authenticated exactly-once dispatcher boundary."
 
 [[module_boundaries]]
-path = "supabase/migrations/20260810174144_backfill_migrated_cruise_suggestions.sql"
-owner_path = "supabase/migrations/20260810174144_backfill_migrated_cruise_suggestions.sql"
+path = "supabase/migrations/20260810214500_validate_offline_replay_context.sql"
+owner_path = "supabase/migrations/20260810214500_validate_offline_replay_context.sql"
 basis = "responsibility"
-justification = "Owns the forward-only eligibility repair for completed workouts migrated into the initial blast without changing dismissal or rotation state."
+justification = "Owns fail-closed queued-start validation, queued local reference resolution, and cruise-suggestion recomputation after preserved offline completion time."
 
 [[module_boundaries]]
-path = "supabase/migrations/20260810180700_reset_new_blast_enforcement.sql"
-owner_path = "supabase/migrations/20260810180700_reset_new_blast_enforcement.sql"
+path = "supabase/migrations/20260810222500_validate_offline_lifecycle_context.sql"
+owner_path = "supabase/migrations/20260810222500_validate_offline_lifecycle_context.sql"
 basis = "responsibility"
-justification = "Owns the forward-only phase-boundary reset of stale old-blast enforcement without changing performance history, assignments, or rotation state."
+justification = "Owns fail-closed lifecycle replay validation against the queued phase/blast snapshot, including earlier queued local new-blast references."
 
 [[module_boundaries]]
-path = "supabase/migrations/20260810182600_guard_rotation_assignment_during_cruise.sql"
-owner_path = "supabase/migrations/20260810182600_guard_rotation_assignment_during_cruise.sql"
+path = "supabase/migrations/20260810223500_fix_offline_blast_reference_resolution.sql"
+owner_path = "supabase/migrations/20260810223500_fix_offline_blast_reference_resolution.sql"
 basis = "responsibility"
-justification = "Owns forward-only future-profile lifecycle provisioning plus authoritative blast-phase guards for assignment saves and undo under the existing owner serialization lock."
+justification = "Owns the production forward repair for unambiguous lookup of an earlier queued new-blast operation; rollback-only SQL proves local-reference resolution and zero residue."
+
+[[module_boundaries]]
+path = "supabase/migrations/20260810234000_validate_offline_versions.sql"
+owner_path = "supabase/migrations/20260810234000_validate_offline_versions.sql"
+basis = "responsibility"
+justification = "Owns fail-closed replay checks for the expected active assignment version and monotonic completed-workout predecessor, including earlier queued local assignment versions."
+
+[[module_boundaries]]
+path = "supabase/migrations/20260811000500_protect_offline_progression_and_corrections.sql"
+owner_path = "supabase/migrations/20260811000500_protect_offline_progression_and_corrections.sql"
+basis = "responsibility"
+justification = "Owns authoritative workout progression order independent of event time and fail-closed expected-performance validation for queued history corrections."
+
+[[module_boundaries]]
+path = "supabase/migrations/20260811002000_fix_offline_performance_context.sql"
+owner_path = "supabase/migrations/20260811002000_fix_offline_performance_context.sql"
+basis = "responsibility"
+justification = "Owns the forward repair that makes resolved step identity unambiguous inside the private expected-performance validator."
+
+[[module_boundaries]]
+path = "supabase/migrations/20260811003500_use_progression_order_for_undo.sql"
+owner_path = "supabase/migrations/20260811003500_use_progression_order_for_undo.sql"
+basis = "responsibility"
+justification = "Owns completed-workout undo eligibility and predecessor restoration by authoritative progression order rather than backdated event time."

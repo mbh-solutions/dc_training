@@ -27,7 +27,7 @@ function App() {
     signOut,
   } = useAuthSession();
   const activeSession = recoveringPassword ? null : session;
-  const { cloudStatus, profileState, syncState } = useFoundationProfile(
+  const { cloudStatus, profileState } = useFoundationProfile(
     activeSession,
     online,
   );
@@ -51,9 +51,9 @@ function App() {
     <FoundationHome
       cloudStatus={cloudStatus}
       email={session.user.email}
+      key={session.user.id}
       online={online}
       onSignOut={signOut}
-      syncState={syncState}
       userId={session.user.id}
     />
   );
