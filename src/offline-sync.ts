@@ -365,9 +365,10 @@ export async function commitOfflineOperation(
     return saved;
   }
   const stored = (await request(states.get(userId))) as
-    | OfflineAccountState
-    | undefined;
-  const current = stored ? normalizeOfflineState(stored, userId) : emptyState(userId);
+    OfflineAccountState | undefined;
+  const current = stored
+    ? normalizeOfflineState(stored, userId)
+    : emptyState(userId);
   const pendingBatch = editableBatch(current);
   const operation = completeOperation(
     current,
@@ -484,10 +485,15 @@ function validPendingBatch(value: unknown): value is PendingOfflineBatch {
     validRevision(batch.baseRevision) &&
     Number.isInteger(batch.throughSequence) &&
     Number(batch.throughSequence) >= 0 &&
-    ["open", "sealed", "conflict"].includes(batch.status ?? "") &&
-    (batch.status === "conflict"
-      ? validBatchConflict(batch.conflict)
-      : batch.conflict === null)
+    validPendingBatchStatus(batch)
+  );
+}
+
+function validPendingBatchStatus(batch: Partial<PendingOfflineBatch>) {
+  if (batch.status === "conflict") return validBatchConflict(batch.conflict);
+  return (
+    (batch.status === "open" || batch.status === "sealed") &&
+    batch.conflict === null
   );
 }
 
@@ -599,8 +605,7 @@ export async function synchronizeOfflineState(
   deviceId = editingDeviceId(),
 ): Promise<OfflineSynchronizationResult> {
   if (!supabase) throw new Error("CLOUD IS NOT CONFIGURED");
-  if (!isCloudOwnerId(userId))
-    return synchronizeFixtureState(userId, deviceId);
+  if (!isCloudOwnerId(userId)) return synchronizeFixtureState(userId, deviceId);
 
   const status = await accountSyncStatus();
   const existingConflict = await reviewOfflineConflict(userId);
@@ -616,8 +621,7 @@ export async function continueSyncUpgradeOnThisDevice(
   deviceId = editingDeviceId(),
 ): Promise<OfflineSynchronizationResult> {
   if (!supabase) throw new Error("CLOUD IS NOT CONFIGURED");
-  if (!isCloudOwnerId(userId))
-    return synchronizeFixtureState(userId, deviceId);
+  if (!isCloudOwnerId(userId)) return synchronizeFixtureState(userId, deviceId);
 
   const status = await accountSyncStatus();
   if (status.mode === "revision_multi")
@@ -658,34 +662,51 @@ async function synchronizeLegacyState(
   const registration = await registerEditingDevice(deviceId);
   if (registration.mode === "revision_multi")
     return synchronizeRevisionState(userId, deviceId, registration.revision);
-  if (!registration.active)
-    return { status: "upgrade_required" };
+  if (!registration.active) return { status: "upgrade_required" };
   const revision = registration.revision;
 
   for (;;) {
     const operations = await listOfflineOperations(userId);
-    if (operations.some((operation) => !validStoredOperation(operation, userId)))
+    if (
+      operations.some((operation) => !validStoredOperation(operation, userId))
+    )
       return invalidLocalQueueResult(userId, revision);
-    for (const operation of operations) {
-      try {
-        await replayLegacyOperation(operation, userId, deviceId);
-      } catch (error) {
-        if (!deterministicLegacyRejection(error)) throw error;
-        const conflict = await reviewLegacyQueueForUpgrade(userId, revision);
-        if (!conflict) throw error;
-        return {
-          conflict: await requiredConflictReview(userId),
-          status: "conflict",
-        };
-      }
-      await deleteOfflineOperation(operation.id);
-    }
+    const replayResult = await replayLegacyQueue(
+      userId,
+      deviceId,
+      operations,
+      revision,
+    );
+    if (replayResult) return replayResult;
     if ((await listOfflineOperations(userId)).length > 0) continue;
     const activation = await activateMultiDeviceSync(deviceId, false);
     if (activation.status === "upgrade_required")
       return { status: "upgrade_required" };
     return finishMultiDeviceActivation(userId, deviceId, activation.revision);
   }
+}
+
+async function replayLegacyQueue(
+  userId: string,
+  deviceId: string,
+  operations: OfflineOperation[],
+  revision: number,
+): Promise<OfflineSynchronizationResult | null> {
+  for (const operation of operations) {
+    try {
+      await replayLegacyOperation(operation, userId, deviceId);
+    } catch (error) {
+      if (!deterministicLegacyRejection(error)) throw error;
+      const conflict = await reviewLegacyQueueForUpgrade(userId, revision);
+      if (!conflict) throw error;
+      return {
+        conflict: await requiredConflictReview(userId),
+        status: "conflict",
+      };
+    }
+    await deleteOfflineOperation(operation.id);
+  }
+  return null;
 }
 
 async function finishMultiDeviceActivation(
@@ -708,16 +729,18 @@ async function synchronizeRevisionState(
 ): Promise<OfflineSynchronizationResult> {
   for (;;) {
     const state = await readOfflineState(userId);
-    if (state?.pendingBatch?.status === "conflict")
+    if (hasConflictedBatch(state))
       return {
         conflict: await requiredConflictReview(userId),
         status: "conflict",
       };
 
     const operations = await listOfflineOperations(userId);
-    if (operations.some((operation) => !validStoredOperation(operation, userId)))
+    if (
+      operations.some((operation) => !validStoredOperation(operation, userId))
+    )
       return invalidLocalQueueResult(userId, currentRevision);
-    if (operations.length === 0 && state?.pendingBatch?.status !== "sealed") {
+    if (shouldRefreshCloudState(operations, state)) {
       const cloud = await loadStableCloudState(userId);
       if (await replaceStateWhenQueueEmpty(cloud)) {
         emitOfflineState(userId);
@@ -737,6 +760,17 @@ async function synchronizeRevisionState(
   }
 }
 
+function hasConflictedBatch(state: OfflineAccountState | null) {
+  return state?.pendingBatch?.status === "conflict";
+}
+
+function shouldRefreshCloudState(
+  operations: OfflineOperation[],
+  state: OfflineAccountState | null,
+) {
+  return operations.length === 0 && state?.pendingBatch?.status !== "sealed";
+}
+
 async function submitSealedBatch(
   userId: string,
   deviceId: string,
@@ -746,37 +780,11 @@ async function submitSealedBatch(
   const operations = await listOfflineOperations(userId);
   if (operations.some((operation) => !validStoredOperation(operation, userId)))
     return invalidLocalQueueResult(userId, currentRevision);
-  if (operations.length === 0) {
-    const state = await readOfflineState(userId);
-    if (state?.pendingBatch === null) return { status: "synced" };
-    if (
-      state?.pendingBatch?.id !== batch.id ||
-      state.pendingBatch.status !== "sealed"
-    )
-      throw new Error("LOCAL SYNC BATCH CHANGED");
-  }
-  const legacyQueue = operations.some((item) => item.baseRevision === null);
-  const changedQueue = operations.some(
-    (item) =>
-      item.baseRevision !== batch.baseRevision ||
-      item.sequence > batch.throughSequence,
-  );
-  if (legacyQueue || changedQueue) {
-    await markBatchConflict(userId, batch.id, {
-      code: legacyQueue
-        ? "LEGACY_QUEUE_REQUIRES_REVIEW"
-        : "SEALED_BATCH_CHANGED",
-      currentRevision,
-      message: legacyQueue
-        ? "PRE-UPGRADE DEVICE CHANGES NEED REVIEW BEFORE CLOUD DATA CAN REPLACE THEM"
-        : "SAVED DEVICE CHANGES CHANGED AFTER SYNC STARTED",
-      status: "rejected",
-    });
-    return {
-      conflict: await requiredConflictReview(userId),
-      status: "conflict",
-    };
-  }
+  const emptyResult = await emptySealedBatchResult(userId, batch, operations);
+  if (emptyResult) return emptyResult;
+  const queueConflict = sealedQueueConflict(operations, batch, currentRevision);
+  if (queueConflict)
+    return recordBatchConflict(userId, batch.id, queueConflict);
   const { data, error } = await supabase!.rpc("apply_offline_batch", {
     p_base_revision: batch.baseRevision,
     p_batch_id: batch.id,
@@ -786,7 +794,73 @@ async function submitSealedBatch(
   if (error) throw new Error(error.message);
   if (!validBatchRpcResult(data))
     throw new Error("SYNC BATCH RESPONSE IS INVALID");
+  return finishBatchSubmission(userId, batch, data);
+}
 
+async function emptySealedBatchResult(
+  userId: string,
+  batch: PendingOfflineBatch,
+  operations: OfflineOperation[],
+): Promise<OfflineSynchronizationResult | null> {
+  if (operations.length !== 0) return null;
+  const state = await readOfflineState(userId);
+  if (state?.pendingBatch === null) return { status: "synced" };
+  const pendingBatch = state?.pendingBatch;
+  if (
+    !pendingBatch ||
+    pendingBatch.id !== batch.id ||
+    pendingBatch.status !== "sealed"
+  )
+    throw new Error("LOCAL SYNC BATCH CHANGED");
+  return null;
+}
+
+function sealedQueueConflict(
+  operations: OfflineOperation[],
+  batch: PendingOfflineBatch,
+  currentRevision: number,
+): OfflineBatchConflict | null {
+  if (operations.some((item) => item.baseRevision === null))
+    return {
+      code: "LEGACY_QUEUE_REQUIRES_REVIEW",
+      currentRevision,
+      message:
+        "PRE-UPGRADE DEVICE CHANGES NEED REVIEW BEFORE CLOUD DATA CAN REPLACE THEM",
+      status: "rejected",
+    };
+  if (
+    operations.some(
+      (item) =>
+        item.baseRevision !== batch.baseRevision ||
+        item.sequence > batch.throughSequence,
+    )
+  )
+    return {
+      code: "SEALED_BATCH_CHANGED",
+      currentRevision,
+      message: "SAVED DEVICE CHANGES CHANGED AFTER SYNC STARTED",
+      status: "rejected",
+    };
+  return null;
+}
+
+async function recordBatchConflict(
+  userId: string,
+  batchId: string,
+  conflict: OfflineBatchConflict,
+): Promise<OfflineSynchronizationResult> {
+  await markBatchConflict(userId, batchId, conflict);
+  return {
+    conflict: await requiredConflictReview(userId),
+    status: "conflict",
+  };
+}
+
+async function finishBatchSubmission(
+  userId: string,
+  batch: PendingOfflineBatch,
+  data: BatchRpcResult,
+): Promise<OfflineSynchronizationResult> {
   if (data.status === "applied") {
     const cloud = await loadStableCloudState(userId);
     await acknowledgeAppliedBatch(userId, batch, cloud);
@@ -794,20 +868,24 @@ async function submitSealedBatch(
     return { status: "synced" };
   }
 
-  await markBatchConflict(userId, batch.id, {
+  return recordBatchConflict(userId, batch.id, batchRpcConflict(data));
+}
+
+function batchRpcConflict(data: BatchRpcResult): OfflineBatchConflict {
+  if (data.status === "applied")
+    throw new Error("APPLIED SYNC BATCH CANNOT BE A CONFLICT");
+  return {
     code: data.error_code ?? `BATCH_${data.status.toUpperCase()}`,
     currentRevision: data.revision,
-    message:
-      data.error_message ??
-      (data.status === "stale"
-        ? "CLOUD CHANGED AFTER THESE DEVICE CHANGES WERE SAVED"
-        : "DEVICE CHANGES COULD NOT BE APPLIED SAFELY"),
+    message: data.error_message ?? rejectedBatchMessage(data.status),
     status: data.status,
-  });
-  return {
-    conflict: await requiredConflictReview(userId),
-    status: "conflict",
   };
+}
+
+function rejectedBatchMessage(status: "rejected" | "stale") {
+  return status === "stale"
+    ? "CLOUD CHANGED AFTER THESE DEVICE CHANGES WERE SAVED"
+    : "DEVICE CHANGES COULD NOT BE APPLIED SAFELY";
 }
 
 function batchOperation(operation: OfflineOperation) {
@@ -874,7 +952,8 @@ function validBatchRpcResult(value: unknown): value is BatchRpcResult {
   return (
     ["applied", "rejected", "stale"].includes(result.status ?? "") &&
     validRevision(result.revision) &&
-    (result.error_code === undefined || typeof result.error_code === "string") &&
+    (result.error_code === undefined ||
+      typeof result.error_code === "string") &&
     (result.error_message === undefined ||
       typeof result.error_message === "string")
   );
@@ -922,10 +1001,7 @@ async function loadStableCloudState(userId: string) {
       throw new Error("SYNC UPGRADE IS NOT COMPLETE");
     const cloud = await loadCloudState(userId);
     const after = await accountSyncStatus();
-    if (
-      after.mode === "revision_multi" &&
-      after.revision === before.revision
-    )
+    if (after.mode === "revision_multi" && after.revision === before.revision)
       return { ...cloud, accountRevision: after.revision };
   }
   throw new Error("CLOUD CHANGED DURING SYNC · TRY AGAIN");
@@ -1027,7 +1103,12 @@ async function reviewLegacyQueueForUpgrade(
         [...memoryOperations.values()].filter((item) => item.userId === userId),
       );
       if (queued.length === 0) return null;
-      const batch = legacyUpgradeConflict(state, queued, revision, invalidQueue);
+      const batch = legacyUpgradeConflict(
+        state,
+        queued,
+        revision,
+        invalidQueue,
+      );
       memoryStates.set(userId, { ...state, pendingBatch: batch });
       return batch;
     });
@@ -1049,9 +1130,10 @@ async function reviewLegacyQueueForUpgrade(
     operations.index("userId").getAll(userId),
   )) as OfflineOperation[];
   const stored = (await request(states.get(userId))) as
-    | OfflineAccountState
-    | undefined;
-  const state = stored ? normalizeOfflineState(stored, userId) : emptyState(userId);
+    OfflineAccountState | undefined;
+  const state = stored
+    ? normalizeOfflineState(stored, userId)
+    : emptyState(userId);
   if (state.pendingBatch?.status === "conflict") {
     await transactionDone(transaction);
     return state.pendingBatch;
@@ -1084,9 +1166,7 @@ function legacyUpgradeConflict(
       : 0,
     ...operations
       .map((operation) => operation.sequence)
-      .filter(
-        (sequence) => Number.isSafeInteger(sequence) && sequence >= 0,
-      ),
+      .filter((sequence) => Number.isSafeInteger(sequence) && sequence >= 0),
   );
   return conflictBatch(
     state.pendingBatch?.id ?? crypto.randomUUID(),
@@ -1145,8 +1225,7 @@ async function sealPendingBatch(userId: string, currentRevision: number) {
   const states = transaction.objectStore(stateStore);
   const operationStoreValue = transaction.objectStore(operationStore);
   const stored = (await request(states.get(userId))) as
-    | OfflineAccountState
-    | undefined;
+    OfflineAccountState | undefined;
   const state = normalizeOfflineState(stored ?? emptyState(userId), userId);
   const operations = normalizedOperations(
     (await request(
@@ -1165,56 +1244,78 @@ function sealedBatchState(
   operations: OfflineOperation[],
   currentRevision: number,
 ) {
-  if (state.pendingBatch?.status === "conflict")
-    return { batch: state.pendingBatch, state };
-  if (state.pendingBatch?.status === "sealed") {
-    const legacyQueue = operations.some((item) => item.baseRevision === null);
-    const changedQueue = operations.some(
-      (item) =>
-        item.baseRevision !== state.pendingBatch!.baseRevision ||
-        item.sequence > state.pendingBatch!.throughSequence,
+  const pendingBatch = state.pendingBatch;
+  if (pendingBatch && pendingBatch.status === "conflict")
+    return { batch: pendingBatch, state };
+  if (pendingBatch && pendingBatch.status === "sealed")
+    return existingSealedBatchState(
+      state,
+      operations,
+      pendingBatch,
+      currentRevision,
     );
-    if (!legacyQueue && !changedQueue)
-      return { batch: state.pendingBatch, state };
-    const batch = conflictBatch(
-      state.pendingBatch.id,
-      state.pendingBatch.baseRevision,
-      Math.max(
-        state.pendingBatch.throughSequence,
-        ...operations.map((item) => item.sequence),
-      ),
-      {
-        code: legacyQueue
-          ? "LEGACY_QUEUE_REQUIRES_REVIEW"
-          : "SEALED_BATCH_CHANGED",
-        currentRevision,
-        message: legacyQueue
-          ? "PRE-UPGRADE DEVICE CHANGES NEED REVIEW BEFORE CLOUD DATA CAN REPLACE THEM"
-          : "SAVED DEVICE CHANGES CHANGED AFTER SYNC STARTED",
-        status: "rejected",
-      },
-    );
-    return { batch, state: { ...state, pendingBatch: batch } };
-  }
   if (operations.length === 0) return { batch: null, state };
 
-  const baseRevisions = new Set(operations.map((item) => item.baseRevision));
-  if (baseRevisions.has(null) || baseRevisions.size !== 1) {
-    const batch = conflictBatch(
-      state.pendingBatch?.id ?? crypto.randomUUID(),
-      state.pendingBatch?.baseRevision ?? currentRevision,
-      Math.max(...operations.map((item) => item.sequence)),
-      {
-        code: "LEGACY_QUEUE_REQUIRES_REVIEW",
-        currentRevision,
-        message:
-          "PRE-UPGRADE DEVICE CHANGES NEED REVIEW BEFORE CLOUD DATA CAN REPLACE THEM",
-        status: "rejected",
-      },
-    );
-    return { batch, state: { ...state, pendingBatch: batch } };
-  }
+  const invalidBaseRevision = invalidBaseRevisionBatchState(
+    state,
+    operations,
+    currentRevision,
+  );
+  if (invalidBaseRevision) return invalidBaseRevision;
+  return openBatchState(state, operations, currentRevision);
+}
 
+function existingSealedBatchState(
+  state: OfflineAccountState,
+  operations: OfflineOperation[],
+  pendingBatch: PendingOfflineBatch,
+  currentRevision: number,
+) {
+  const conflict = sealedQueueConflict(
+    operations,
+    pendingBatch,
+    currentRevision,
+  );
+  if (!conflict) return { batch: pendingBatch, state };
+  const batch = conflictBatch(
+    pendingBatch.id,
+    pendingBatch.baseRevision,
+    Math.max(
+      pendingBatch.throughSequence,
+      ...operations.map((item) => item.sequence),
+    ),
+    conflict,
+  );
+  return { batch, state: { ...state, pendingBatch: batch } };
+}
+
+function invalidBaseRevisionBatchState(
+  state: OfflineAccountState,
+  operations: OfflineOperation[],
+  currentRevision: number,
+) {
+  const baseRevisions = new Set(operations.map((item) => item.baseRevision));
+  if (!baseRevisions.has(null) && baseRevisions.size === 1) return null;
+  const batch = conflictBatch(
+    state.pendingBatch?.id ?? crypto.randomUUID(),
+    state.pendingBatch?.baseRevision ?? currentRevision,
+    Math.max(...operations.map((item) => item.sequence)),
+    {
+      code: "LEGACY_QUEUE_REQUIRES_REVIEW",
+      currentRevision,
+      message:
+        "PRE-UPGRADE DEVICE CHANGES NEED REVIEW BEFORE CLOUD DATA CAN REPLACE THEM",
+      status: "rejected",
+    },
+  );
+  return { batch, state: { ...state, pendingBatch: batch } };
+}
+
+function openBatchState(
+  state: OfflineAccountState,
+  operations: OfflineOperation[],
+  currentRevision: number,
+) {
   const baseRevision = operations[0]!.baseRevision;
   if (baseRevision === null)
     throw new Error("SAVED DEVICE CHANGES DO NOT HAVE A CLOUD BASE");
@@ -1276,11 +1377,15 @@ async function acknowledgeAppliedBatch(
   if (typeof indexedDB === "undefined") {
     const work = memoryWrite.then(() => {
       const stored = memoryStates.get(userId);
-      const current = normalizeOfflineState(stored ?? emptyState(userId), userId);
+      const current = normalizeOfflineState(
+        stored ?? emptyState(userId),
+        userId,
+      );
       const queued = [...memoryOperations.values()].filter(
         (item) => item.userId === userId,
       );
-      if (stored && current.pendingBatch === null && queued.length === 0) return;
+      if (stored && current.pendingBatch === null && queued.length === 0)
+        return;
       assertCurrentBatch(current, batch.id);
       if (
         queued.some(
@@ -1308,12 +1413,12 @@ async function acknowledgeAppliedBatch(
   const states = transaction.objectStore(stateStore);
   const operations = transaction.objectStore(operationStore);
   const stored = (await request(states.get(userId))) as
-    | OfflineAccountState
-    | undefined;
+    OfflineAccountState | undefined;
   const current = normalizeOfflineState(stored ?? emptyState(userId), userId);
   const queued = normalizedOperations(
-    (await request(operations.index("userId").getAll(userId))) as
-      OfflineOperation[],
+    (await request(
+      operations.index("userId").getAll(userId),
+    )) as OfflineOperation[],
   );
   if (stored && current.pendingBatch === null && queued.length === 0) {
     await transactionDone(transaction);
@@ -1408,7 +1513,9 @@ export async function reviewOfflineConflict(userId: string) {
   const state = await readOfflineState(userId);
   const batch = state?.pendingBatch;
   if (batch?.status !== "conflict" || !batch.conflict) return null;
-  const operations = (await listOfflineOperations(userId)).map(operationSummary);
+  const operations = (await listOfflineOperations(userId)).map(
+    operationSummary,
+  );
   return {
     baseRevision: batch.baseRevision,
     batchId: batch.id,
@@ -1488,11 +1595,15 @@ async function installResolvedCloudState(
   if (typeof indexedDB === "undefined") {
     const work = memoryWrite.then(() => {
       const stored = memoryStates.get(userId);
-      const current = normalizeOfflineState(stored ?? emptyState(userId), userId);
+      const current = normalizeOfflineState(
+        stored ?? emptyState(userId),
+        userId,
+      );
       const queued = [...memoryOperations.values()].filter(
         (operation) => operation.userId === userId,
       );
-      if (stored && current.pendingBatch === null && queued.length === 0) return;
+      if (stored && current.pendingBatch === null && queued.length === 0)
+        return;
       assertCurrentBatch(current, batchId);
       if (!sameOperationIds(queued, reviewedOperationIds))
         throw new Error("DEVICE CHANGES CHANGED DURING REVIEW · REVIEW AGAIN");
@@ -1514,8 +1625,7 @@ async function installResolvedCloudState(
   const states = transaction.objectStore(stateStore);
   const operations = transaction.objectStore(operationStore);
   const stored = (await request(states.get(userId))) as
-    | OfflineAccountState
-    | undefined;
+    OfflineAccountState | undefined;
   const current = normalizeOfflineState(stored ?? emptyState(userId), userId);
   const queued = (await request(
     operations.index("userId").getAll(userId),
@@ -1564,22 +1674,42 @@ function safeOperationSummaryLabel(operation: OfflineOperation) {
 }
 
 function validStoredOperation(operation: unknown, userId: string) {
-  if (!operation || typeof operation !== "object" || Array.isArray(operation))
-    return false;
-  const value = operation as Partial<OfflineOperation>;
+  if (!storedOperationObject(operation)) return false;
+  const value = operation;
   return (
     validUuid(value.id ?? "") &&
     value.userId === userId &&
-    typeof value.createdAt === "number" &&
-    Number.isFinite(value.createdAt) &&
-    !Number.isNaN(new Date(value.createdAt).getTime()) &&
-    Number.isSafeInteger(value.sequence) &&
-    Number(value.sequence) > 0 &&
+    validStoredOperationTime(value.createdAt) &&
+    validStoredOperationSequence(value.sequence) &&
     offlineOperationKinds.has(value.kind as OfflineOperation["kind"]) &&
-    value.payload !== null &&
-    typeof value.payload === "object" &&
-    !Array.isArray(value.payload)
+    validStoredOperationPayload(value.payload)
   );
+}
+
+function storedOperationObject(
+  operation: unknown,
+): operation is Partial<OfflineOperation> {
+  return (
+    Boolean(operation) &&
+    typeof operation === "object" &&
+    !Array.isArray(operation)
+  );
+}
+
+function validStoredOperationTime(value: unknown) {
+  return (
+    typeof value === "number" &&
+    Number.isFinite(value) &&
+    !Number.isNaN(new Date(value).getTime())
+  );
+}
+
+function validStoredOperationSequence(value: unknown) {
+  return Number.isSafeInteger(value) && Number(value) > 0;
+}
+
+function validStoredOperationPayload(value: unknown) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function operationSummaryLabel(operation: OfflineOperation) {
@@ -1587,9 +1717,7 @@ function operationSummaryLabel(operation: OfflineOperation) {
     case "start_workout":
       return `START ${operation.payload.slot} WORKOUT`;
     case "save_workout_step":
-      return operation.payload.status === "skipped"
-        ? "SKIP WORKOUT STEP"
-        : `SAVE WORKOUT STEP · ${performanceSummary(operation.payload)}`;
+      return workoutStepSummaryLabel(operation);
     case "undo_workout_step":
       return "UNDO WORKOUT STEP";
     case "resolve_logbook_action":
@@ -1605,6 +1733,15 @@ function operationSummaryLabel(operation: OfflineOperation) {
     case "set_weight_unit":
       return `SET WEIGHT UNIT TO ${operation.payload.unit.toUpperCase()}`;
   }
+}
+
+function workoutStepSummaryLabel(
+  operation: Extract<OfflineOperation, { kind: "save_workout_step" }>,
+) {
+  const payload = operation.payload;
+  return payload.status === "skipped"
+    ? "SKIP WORKOUT STEP"
+    : `SAVE WORKOUT STEP · ${performanceSummary(payload)}`;
 }
 
 function performanceSummary(performance: PerformanceSnapshot) {
@@ -1662,8 +1799,7 @@ async function replaceStateWhenQueueEmpty(state: OfflineAccountState) {
     return false;
   }
   const stored = (await request(states.get(state.userId))) as
-    | OfflineAccountState
-    | undefined;
+    OfflineAccountState | undefined;
   const current = stored
     ? normalizeOfflineState(stored, state.userId)
     : undefined;

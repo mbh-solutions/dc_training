@@ -80,74 +80,18 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
       />
     );
 
-  if (canEdit) {
-    if (workout.completedWorkout) {
-      return withSyncStatus(
-        syncStatus,
-        <WorkoutComplete
-          lastOperationStatus={workout.lastOperationStatus}
-          message={workout.message}
-          nextSlot={workout.nextSlot}
-          onUndo={workout.undo}
-          workout={workout.completedWorkout}
-          onDone={async () => {
-            await workout.dismissCompleted();
-            setShowWorkout(false);
-          }}
-        />,
-      );
-    }
-
-    if (workout.replacementStep && workout.activeWorkout) {
-      return withSyncStatus(
-        syncStatus,
-        <RotationSetup
-          accountState={offline.accountState}
-          commitOperation={offline.commitOperation}
-          onBack={() => workout.beginReplacement(null)}
-          replacement={{
-            message: workout.message,
-            onSave: workout.replaceAssignment,
-            slot: workout.activeWorkout.slot,
-            step: workout.replacementStep,
-          }}
-        />,
-      );
-    }
-
-    if (showWorkout && workout.activeWorkout) {
-      return withSyncStatus(
-        syncStatus,
-        <WorkoutTracer
-          lastOperationId={workout.lastOperationId}
-          lastOperationStatus={workout.lastOperationStatus}
-          message={workout.message}
-          actionSaving={workout.actionSaving}
-          blockingStep={workout.blockingStep}
-          onBeginReplacement={workout.beginReplacement}
-          onExit={() => setShowWorkout(false)}
-          onResolveAction={workout.resolveAction}
-          onSave={workout.saveStep}
-          onSkip={workout.skipStep}
-          onUndo={workout.undo}
-          steps={workout.steps}
-          weightUnit={weightUnit}
-          workout={workout.activeWorkout}
-        />,
-      );
-    }
-
-    if (showRotationSetup) {
-      return withSyncStatus(
-        syncStatus,
-        <RotationSetup
-          accountState={offline.accountState}
-          commitOperation={offline.commitOperation}
-          onBack={() => setShowRotationSetup(false)}
-        />,
-      );
-    }
-  }
+  const editingScreen = renderEditingScreen({
+    canEdit,
+    offline,
+    onCloseRotation: () => setShowRotationSetup(false),
+    onCloseWorkout: () => setShowWorkout(false),
+    showRotationSetup,
+    showWorkout,
+    syncStatus,
+    weightUnit,
+    workout,
+  });
+  if (editingScreen) return editingScreen;
 
   if (showHistory) {
     return withSyncStatus(
@@ -179,6 +123,96 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
       userId={userId}
       workout={workout}
     />
+  );
+}
+
+function renderEditingScreen({
+  canEdit,
+  offline,
+  onCloseRotation,
+  onCloseWorkout,
+  showRotationSetup,
+  showWorkout,
+  syncStatus,
+  weightUnit,
+  workout,
+}: {
+  canEdit: boolean;
+  offline: ReturnType<typeof useOfflineSync>;
+  onCloseRotation: () => void;
+  onCloseWorkout: () => void;
+  showRotationSetup: boolean;
+  showWorkout: boolean;
+  syncStatus: ReactNode;
+  weightUnit: ReturnType<typeof accountWeightUnit>;
+  workout: ReturnType<typeof useWorkout>;
+}) {
+  if (!canEdit) return null;
+
+  if (workout.completedWorkout) {
+    return withSyncStatus(
+      syncStatus,
+      <WorkoutComplete
+        lastOperationStatus={workout.lastOperationStatus}
+        message={workout.message}
+        nextSlot={workout.nextSlot}
+        onUndo={workout.undo}
+        workout={workout.completedWorkout}
+        onDone={async () => {
+          await workout.dismissCompleted();
+          onCloseWorkout();
+        }}
+      />,
+    );
+  }
+
+  if (workout.replacementStep && workout.activeWorkout) {
+    return withSyncStatus(
+      syncStatus,
+      <RotationSetup
+        accountState={offline.accountState}
+        commitOperation={offline.commitOperation}
+        onBack={() => workout.beginReplacement(null)}
+        replacement={{
+          message: workout.message,
+          onSave: workout.replaceAssignment,
+          slot: workout.activeWorkout.slot,
+          step: workout.replacementStep,
+        }}
+      />,
+    );
+  }
+
+  if (showWorkout && workout.activeWorkout) {
+    return withSyncStatus(
+      syncStatus,
+      <WorkoutTracer
+        lastOperationId={workout.lastOperationId}
+        lastOperationStatus={workout.lastOperationStatus}
+        message={workout.message}
+        actionSaving={workout.actionSaving}
+        blockingStep={workout.blockingStep}
+        onBeginReplacement={workout.beginReplacement}
+        onExit={onCloseWorkout}
+        onResolveAction={workout.resolveAction}
+        onSave={workout.saveStep}
+        onSkip={workout.skipStep}
+        onUndo={workout.undo}
+        steps={workout.steps}
+        weightUnit={weightUnit}
+        workout={workout.activeWorkout}
+      />,
+    );
+  }
+
+  if (!showRotationSetup) return null;
+  return withSyncStatus(
+    syncStatus,
+    <RotationSetup
+      accountState={offline.accountState}
+      commitOperation={offline.commitOperation}
+      onBack={onCloseRotation}
+    />,
   );
 }
 
@@ -471,15 +505,9 @@ function SyncConflictScreen({
           role="status"
         >
           <p className="section-label">SYNC PAUSED</p>
-          <h2 id="sync-conflict-title">
-            {stale ? "CHANGES FROM ANOTHER DEVICE" : "CHANGES NEED REVIEW"}
-          </h2>
+          <h2 id="sync-conflict-title">{syncConflictTitle(stale)}</h2>
           <p className="foundation-copy" id={descriptionId}>
-            This device has {conflict.pendingCount} unsynced {" "}
-            {conflict.pendingCount === 1 ? "change" : "changes"}. They remain
-            saved here. DC Training could not safely {stale
-              ? "combine them with newer cloud data."
-              : "apply them to your cloud data."}
+            {syncConflictDescription(conflict.pendingCount, stale)}
           </p>
           <p className="quiet-note" id="sync-conflict-recommended">
             RECOMMENDED · USE THE LATEST CLOUD DATA
@@ -534,6 +562,18 @@ function SyncConflictScreen({
       </main>
     </div>
   );
+}
+
+function syncConflictTitle(stale: boolean) {
+  return stale ? "CHANGES FROM ANOTHER DEVICE" : "CHANGES NEED REVIEW";
+}
+
+function syncConflictDescription(pendingCount: number, stale: boolean) {
+  const changeLabel = pendingCount === 1 ? "change" : "changes";
+  const resolution = stale
+    ? "combine them with newer cloud data."
+    : "apply them to your cloud data.";
+  return `This device has ${pendingCount} unsynced ${changeLabel}. They remain saved here. DC Training could not safely ${resolution}`;
 }
 
 function accountWeightUnit(

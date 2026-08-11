@@ -21,11 +21,7 @@ import {
   type OfflineOperationInput,
 } from "../offline-sync.js";
 
-export type OfflineSyncState =
-  | "conflict"
-  | "failed"
-  | "synced"
-  | "syncing";
+export type OfflineSyncState = "conflict" | "failed" | "synced" | "syncing";
 
 export function useOfflineSync(userId: string, online: boolean) {
   const deviceId = useRef(editingDeviceId()).current;
@@ -64,10 +60,7 @@ export function useOfflineSync(userId: string, online: boolean) {
     ]);
     setAccountState(current);
     installConflict(currentConflict);
-    if (
-      !cloudOwner ||
-      (current !== null && current.accountRevision !== null)
-    )
+    if (!cloudOwner || (current !== null && current.accountRevision !== null))
       setDeviceAccess("active");
     if (currentConflict) setSyncState("conflict");
     return current;
@@ -129,10 +122,7 @@ export function useOfflineSync(userId: string, online: boolean) {
     setLoaded(false);
     setSyncState("syncing");
     let active = true;
-    void Promise.all([
-      readOfflineState(userId),
-      reviewOfflineConflict(userId),
-    ])
+    void Promise.all([readOfflineState(userId), reviewOfflineConflict(userId)])
       .then(([current, currentConflict]) => {
         if (!active) return;
         setAccountState(current);
