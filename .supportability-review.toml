@@ -1,8 +1,8 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "A deployed service-worker update replaces every open browser or installed-PWA client instead of leaving old JavaScript running behind a newly activated worker. Foregrounding the app also checks for a newer worker, so the one-confirm edit-access repair reaches mobile and desktop clients."
-proof = "Production network capture on the current bundle sent exactly one transfer_editing_device request, received HTTP 200, and became SYNCED after the first confirmation. The reported native confirmation can only come from the superseded bundle. The production build imports the activation reload script, precaches it, and contains the foreground update check."
+intended_behavior = "One confirmed edit-access transfer keeps its mounted client state and becomes active after the first successful RPC. Routine account-status revalidation still locks the UI, and service-worker activation does not navigate an in-flight client."
+proof = "On deployed SHA 671c15e, production iPhone logs recorded transfer_editing_device HTTP 200 at 15:09:24.517 UTC and the database changed transferred_at at 15:09:24.543. The second HTTP 200 at 15:09:27.528 used the same device and did not change transferred_at, proving it was redundant. Source trace found two client-replacement paths: background account checking replaced FoundationHome with LoadingScreen, and sw-activate navigated every window. The focused mounted-flow regression proves a later check hides but does not unmount the owner subtree while an initial unknown-user check remains fail-closed."
 
 [characterization]
 captured_behavior = "The qualified auth shell, rotation setup, workout runtime, logbook, history, blast/cruise, offline working copy, and active-device transfer remain. S10 adds an account-status gate, deletion/recovery controls, local purge, authoritative cloud lifecycle, and encrypted operational backup without changing any training rule."
@@ -36,7 +36,6 @@ reviewed_paths = [
     "src/workout-domain.ts",
     "src/weight-conversion.ts",
     "vite.config.ts",
-    "public/sw-activate.js",
     "supabase/migrations/20260810193129_offline_operation_queue.sql",
     "supabase/migrations/20260810211509_preserve_offline_event_time.sql",
     "supabase/migrations/20260810215003_validate_offline_replay_context.sql",
@@ -66,11 +65,11 @@ owns = "Authoritative request time, 30-day deadline, pending-account data denial
 does_not_own = "Password UI, local browser storage, GitHub artifact encryption, authentication email delivery, or Supportability Gate behavior."
 
 [incremental_refactor]
-target = "Deliver the already-merged one-confirm edit-access repair to open browser and installed-PWA clients."
-completed_step = "Reload open clients once when a new worker activates and check for a worker update whenever the app returns to the foreground. No transfer, database, package, or training-rule change was made."
+target = "Keep a successful edit-access transfer in the same mounted client until React commits its active state."
+completed_step = "Separate the initial account-deletion check from later UI-locking refreshes so FoundationHome remains mounted, and remove the activation helper that navigated open clients. Production owner-device qualification remains required before claiming the one-confirm outcome."
 
 [review_handoff]
-summary = "Review update delivery: generated Workbox still owns caching and skip-waiting; the imported activation script claims and reloads open windows once, while main requests an update only when visible. The transfer path is unchanged."
+summary = "Review the client-lifecycle repair: initial account status remains fail-closed; later status checks show LoadingScreen while preserving FoundationHome state; generated Workbox still owns caching and activation without forced window navigation."
 remaining_risks = [
     "A device that remains permanently offline cannot receive a remote deletion signal; the requesting active device is purged immediately, and cloud data is unavailable to every device while pending.",
     "The built-in authentication email path remains acceptable only if the pre-authorized owner proves delivery during final production qualification.",
@@ -80,14 +79,8 @@ remaining_risks = [
 [human_review]
 naming = "DELETE ACCOUNT, BEGIN 30-DAY DELETION, ACCOUNT UNAVAILABLE, DELETION PENDING, and CANCEL DELETION state the lifecycle directly; the permanent warning names account, cloud history, and device data."
 cohesion = "Presentation, auth orchestration, local erasure, authoritative database lifecycle, encrypted backup, and operator documentation remain separate."
-intended_behavior = "An open or installed client reloads into the current bundle when its service worker updates, then the owner confirms edit-access transfer once."
-reviewability = "public/sw-activate.js owns activation-time client reload; main.tsx owns foreground update checks; VitePWA remains the only worker/cache generator. Transfer code, database, packages, and Gate remain untouched."
-
-[[module_boundaries]]
-path = "public/sw-activate.js"
-owner_path = "public/sw-activate.js"
-basis = "responsibility"
-justification = "Owns the one activation-time claim and reload of open app windows; it has no cache, auth, transfer, or training responsibility."
+intended_behavior = "The owner confirms edit-access transfer once; background account revalidation locks interaction without destroying the transfer state, and worker activation does not navigate it away."
+reviewability = "App.tsx owns the initial-check versus mounted-refresh distinction; main.tsx owns foreground worker update checks; VitePWA remains the only worker/cache generator. The transfer RPC, database, packages, and training rules are unchanged."
 
 [[module_boundaries]]
 path = "src/hooks/use-offline-sync.ts"

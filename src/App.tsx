@@ -6,7 +6,13 @@ import {
   SetupScreen,
   SignInScreen,
 } from "./AuthScreens.jsx";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { Session } from "@supabase/supabase-js";
 import FoundationHome from "./FoundationHome.jsx";
 import { useAuthSession } from "./hooks/use-auth-session.js";
@@ -79,14 +85,33 @@ function App() {
   }
 
   return (
-    <FoundationHome
-      cloudStatus={cloudStatus}
-      email={session.user.email}
-      key={session.user.id}
-      online={online}
-      onSignOut={signOut}
-      userId={session.user.id}
-    />
+    <AccountStatusRefreshLock refreshing={deletion.refreshing}>
+      <FoundationHome
+        cloudStatus={cloudStatus}
+        email={session.user.email}
+        key={session.user.id}
+        online={online}
+        onSignOut={signOut}
+        userId={session.user.id}
+      />
+    </AccountStatusRefreshLock>
+  );
+}
+
+export function AccountStatusRefreshLock({
+  children,
+  refreshing,
+}: {
+  children: ReactNode;
+  refreshing: boolean;
+}) {
+  return (
+    <>
+      {refreshing && <LoadingScreen key="loading" />}
+      <div hidden={refreshing} key="owner">
+        {children}
+      </div>
+    </>
   );
 }
 
@@ -162,8 +187,8 @@ function useAccountDeletion(session: Session | null, online: boolean) {
     };
   }, [load, online, session]);
 
-  const checking = accountDeletionCheckPending(
-    session,
+  const { checking, refreshing } = accountDeletionCheckState(
+    session?.user.id,
     online,
     checkingUserId,
     result?.userId,
@@ -175,22 +200,25 @@ function useAccountDeletion(session: Session | null, online: boolean) {
     },
     checking,
     error: error && error.userId === session?.user.id ? error.message : "",
+    refreshing,
     retry: load,
     status: result && result.userId === session?.user.id ? result.status : null,
   };
 }
 
-function accountDeletionCheckPending(
-  session: Session | null,
+export function accountDeletionCheckState(
+  userId: string | undefined,
   online: boolean,
   checkingUserId: string,
   checkedUserId?: string,
 ) {
-  return Boolean(
-    session &&
-    online &&
-    (checkingUserId === session.user.id || checkedUserId !== session.user.id),
-  );
+  const checking = Boolean(userId && online && checkedUserId !== userId);
+  return {
+    checking,
+    refreshing: Boolean(
+      userId && online && !checking && checkingUserId === userId,
+    ),
+  };
 }
 
 function commitLatestDeletionCheck(

@@ -86,3 +86,57 @@ test("foundation modules load without browser secrets", async () => {
   assert.match(document.body.textContent, /SETUP REQUIRED/);
   await act(async () => root.unmount());
 });
+
+test("background account check locks without remounting the owner app", async () => {
+  const { AccountStatusRefreshLock, accountDeletionCheckState } =
+    await import("../src/App.tsx");
+  const [{ act, createElement, useEffect }, { createRoot }] = await Promise.all(
+    [import("react"), import("react-dom/client")],
+  );
+  let mounts = 0;
+  let unmounts = 0;
+  function OwnerApp() {
+    useEffect(() => {
+      mounts += 1;
+      return () => {
+        unmounts += 1;
+      };
+    }, []);
+    return createElement("span", null, "OWNER APP");
+  }
+
+  assert.deepEqual(accountDeletionCheckState("owner", true, "owner"), {
+    checking: true,
+    refreshing: false,
+  });
+  assert.deepEqual(accountDeletionCheckState("owner", true, "owner", "owner"), {
+    checking: false,
+    refreshing: true,
+  });
+
+  document.body.innerHTML = '<div id="refresh-root"></div>';
+  const root = createRoot(document.getElementById("refresh-root"));
+  const render = (refreshing) =>
+    root.render(
+      createElement(
+        AccountStatusRefreshLock,
+        { refreshing },
+        createElement(OwnerApp),
+      ),
+    );
+
+  await act(async () => render(false));
+  const ownerNode = document.querySelector("span");
+  await act(async () => render(true));
+  assert.equal(mounts, 1);
+  assert.equal(unmounts, 0);
+  assert.equal(ownerNode.isConnected, true);
+  assert.equal(ownerNode.parentElement.hidden, true);
+
+  await act(async () => render(false));
+  assert.equal(document.querySelector("span"), ownerNode);
+  await act(async () => root.unmount());
+  assert.equal(unmounts, 1);
+});
+
+test.after(() => dom.window.close());
