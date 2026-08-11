@@ -50,7 +50,6 @@ jobs:
             --dbname="${SUPABASE_DB_URL}" \
             --format=custom \
             --no-owner \
-            --no-privileges \
             --schema=private \
             --schema=public \
             --file="${dump}"

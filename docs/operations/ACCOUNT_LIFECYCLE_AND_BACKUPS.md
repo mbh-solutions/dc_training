@@ -93,10 +93,19 @@ use the production database as the proof target.
 gh run download <run-id> --repo mbh-solutions/dc_training --name <artifact-name> --dir .recovery
 gpg --batch --pinentry-mode loopback --decrypt --output .recovery\dc-training.dump .recovery\dc-training-<run-id>.dump.gpg
 pg_restore --list .recovery\dc-training.dump
-pg_restore --clean --if-exists --no-owner --no-privileges --section=pre-data --dbname "$env:RECOVERY_DATABASE_URL" .recovery\dc-training.dump
-pg_restore --no-owner --no-privileges --section=data --dbname "$env:RECOVERY_DATABASE_URL" .recovery\dc-training.dump
+@'
+do $$
+begin
+  if not exists (select 1 from pg_roles where rolname = 'dc_training_backup') then
+    create role dc_training_backup nologin nosuperuser nocreatedb nocreaterole noinherit noreplication;
+  end if;
+end;
+$$;
+'@ | psql "$env:RECOVERY_DATABASE_URL" --set ON_ERROR_STOP=1
+pg_restore --clean --if-exists --no-owner --section=pre-data --dbname "$env:RECOVERY_DATABASE_URL" .recovery\dc-training.dump
+pg_restore --no-owner --section=data --dbname "$env:RECOVERY_DATABASE_URL" .recovery\dc-training.dump
 # Run the privileged source-owner-to-recovery-owner UUID remap here.
-pg_restore --no-owner --no-privileges --section=post-data --dbname "$env:RECOVERY_DATABASE_URL" .recovery\dc-training.dump
+pg_restore --no-owner --section=post-data --dbname "$env:RECOVERY_DATABASE_URL" .recovery\dc-training.dump
 ```
 
 The restore is deliberately split. After data and before post-data constraints,
@@ -108,6 +117,65 @@ destroy the isolated recovery project and securely remove the local plaintext
 dump. Record only the Actions run URL, artifact name/size/expiry,
 restore-target identifier, tool versions, assertions, and pass/fail result. Do
 not record owner data or secret values.
+
+The archive preserves schema/table/function ACLs. Before pre-data restore, a
+privileged recovery operator must create a `nologin` `dc_training_backup` role
+if the isolated project does not already have it; all standard Supabase roles
+must also exist. After post-data restore, verify the restored grants and
+revocations, including authenticated owner-table access, anon denial, public
+gateway execution only for `authenticated`, and no `authenticated` execution
+on their private implementations. This query must return `true`:
+
+```powershell
+@'
+select
+  has_table_privilege('authenticated', 'public.foundation_profiles', 'select')
+  and not has_table_privilege('anon', 'public.foundation_profiles', 'select')
+  and not has_table_privilege(
+    'authenticated',
+    'private.account_deletion_requests',
+    'select'
+  )
+  and has_function_privilege(
+    'authenticated',
+    'public.apply_offline_operation(uuid,text,jsonb,uuid)',
+    'execute'
+  )
+  and not has_function_privilege(
+    'anon',
+    'public.apply_offline_operation(uuid,text,jsonb,uuid)',
+    'execute'
+  )
+  and not has_function_privilege(
+    'authenticated',
+    'private.apply_offline_operation(uuid,text,jsonb,uuid)',
+    'execute'
+  ) as acl_hardening_restored;
+'@ | psql "$env:RECOVERY_DATABASE_URL" --set ON_ERROR_STOP=1
+```
+
+The app-schema archive does not contain `pg_cron` catalog state. Recreate and
+verify the finalizer schedule after every restore:
+
+```powershell
+@'
+create extension if not exists pg_cron with schema pg_catalog;
+select cron.unschedule(jobid)
+from cron.job
+where jobname = 'dc-training-finalize-account-deletions';
+select cron.schedule(
+  'dc-training-finalize-account-deletions',
+  '* * * * *',
+  'select private.finalize_account_deletions();'
+);
+select count(*) = 1 as finalizer_schedule_restored
+from cron.job
+where jobname = 'dc-training-finalize-account-deletions'
+  and schedule = '* * * * *'
+  and command = 'select private.finalize_account_deletions();'
+  and active;
+'@ | psql "$env:RECOVERY_DATABASE_URL" --set ON_ERROR_STOP=1
+```
 
 ## Release operations
 
