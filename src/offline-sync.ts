@@ -394,11 +394,15 @@ export async function synchronizeOfflineState(
     if (deviceAccess === "readonly" && operations.length > 0)
       throw new Error("READ ONLY · UNSYNCED CHANGES REMAIN ON THIS DEVICE");
     for (const operation of operations) {
-      const { error } = await replayOfflineOperation(
-        userId,
-        deviceId,
-        operation,
-      );
+      const { error } = await supabase.rpc("apply_offline_operation", {
+        ...(isCloudOwnerId(userId) ? { p_device_id: deviceId } : {}),
+        p_kind: operation.kind,
+        p_operation_id: operation.id,
+        p_payload: {
+          ...operation.payload,
+          created_at: new Date(operation.createdAt).toISOString(),
+        },
+      });
       if (error) throw new Error(error.message);
       await deleteOfflineOperation(operation.id);
     }
@@ -408,27 +412,6 @@ export async function synchronizeOfflineState(
       return deviceAccess;
     }
   }
-}
-
-function replayOfflineOperation(
-  userId: string,
-  deviceId: string,
-  operation: OfflineOperation,
-) {
-  const parameters = {
-    p_kind: operation.kind,
-    p_operation_id: operation.id,
-    p_payload: {
-      ...operation.payload,
-      created_at: new Date(operation.createdAt).toISOString(),
-    },
-  };
-  if (!isCloudOwnerId(userId))
-    return supabase!.rpc("apply_offline_operation", parameters);
-  return supabase!.rpc("apply_offline_operation", {
-    p_device_id: deviceId,
-    ...parameters,
-  });
 }
 
 async function loadCloudState(userId: string): Promise<OfflineAccountState> {
