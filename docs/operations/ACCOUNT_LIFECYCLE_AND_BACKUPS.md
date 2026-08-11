@@ -51,6 +51,25 @@ Repository administrators configure these Actions secrets:
 
 Never print, paste into an issue, or commit either value.
 
+After applying the migrations in a fresh project, provision the login out of
+band before enabling the workflow:
+
+1. Generate a high-entropy database password in a local operator process that
+   does not print or persist it.
+2. In the same process, use a privileged Supabase SQL session to run
+   `alter role dc_training_backup password '<generated password>';`.
+3. Build the SSL-required direct or session-pooler URI with that password. For
+   the session pooler, the custom-role username is
+   `dc_training_backup.<project-ref>`.
+4. Prove that URI with a read-only `pg_dump` connection, then store it as
+   `SUPABASE_DB_URL`. Store a separately generated encryption passphrase as
+   `BACKUP_PASSPHRASE`; pass both to `gh secret set` without command-line
+   arguments or terminal output.
+
+Repeat these steps whenever the backup login is rotated. A migration creates
+the role and grants only its durable privileges; it intentionally never embeds
+a password.
+
 The backup role has one permitted connection, `private`/`public` schema usage,
 table/sequence read, and RLS bypass so it can capture complete app data. It has
 no Auth-schema access, write, role-management, database-creation, superuser, or
@@ -74,16 +93,21 @@ use the production database as the proof target.
 gh run download <run-id> --repo mbh-solutions/dc_training --name <artifact-name> --dir .recovery
 gpg --batch --pinentry-mode loopback --decrypt --output .recovery\dc-training.dump .recovery\dc-training-<run-id>.dump.gpg
 pg_restore --list .recovery\dc-training.dump
-pg_restore --clean --if-exists --no-owner --no-privileges --dbname "$env:RECOVERY_DATABASE_URL" .recovery\dc-training.dump
+pg_restore --clean --if-exists --no-owner --no-privileges --section=pre-data --dbname "$env:RECOVERY_DATABASE_URL" .recovery\dc-training.dump
+pg_restore --no-owner --no-privileges --section=data --dbname "$env:RECOVERY_DATABASE_URL" .recovery\dc-training.dump
+# Run the privileged source-owner-to-recovery-owner UUID remap here.
+pg_restore --no-owner --no-privileges --section=post-data --dbname "$env:RECOVERY_DATABASE_URL" .recovery\dc-training.dump
 ```
 
-Before restoring post-data constraints, use privileged recovery-only SQL to
-map the source owner UUID found in the restored app tables to the recreated
-Supabase Auth owner UUID. Then prove representative row counts and foreign-key
-integrity in `private` and `public`; destroy the isolated recovery project and
-securely remove the local plaintext dump. Record only the Actions run URL,
-artifact name/size/expiry, restore-target identifier, tool versions,
-assertions, and pass/fail result. Do not record owner data or secret values.
+The restore is deliberately split. After data and before post-data constraints,
+use privileged recovery-only SQL to map the source owner UUID found in every
+restored app-owned identifier/reference to the recreated Supabase Auth owner
+UUID. Only then restore the foreign keys and other post-data objects. Prove
+representative row counts and foreign-key integrity in `private` and `public`;
+destroy the isolated recovery project and securely remove the local plaintext
+dump. Record only the Actions run URL, artifact name/size/expiry,
+restore-target identifier, tool versions, assertions, and pass/fail result. Do
+not record owner data or secret values.
 
 ## Release operations
 
