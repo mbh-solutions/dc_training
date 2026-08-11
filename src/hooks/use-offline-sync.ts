@@ -43,6 +43,7 @@ export function useOfflineSync(userId: string, online: boolean) {
   const [syncState, setSyncState] = useState<OfflineSyncState>("syncing");
   const syncPromise = useRef<Promise<boolean> | null>(null);
   const syncRequested = useRef(false);
+  const transferInProgress = useRef(false);
   const verifiedDeviceAccess = useRef<Exclude<
     EditingDeviceAccess,
     "checking"
@@ -145,7 +146,8 @@ export function useOfflineSync(userId: string, online: boolean) {
   useEffect(() => {
     if (!online) return;
     const onForeground = () => {
-      if (document.visibilityState === "visible") void synchronize();
+      if (document.visibilityState === "visible" && !transferInProgress.current)
+        void synchronize();
     };
     document.addEventListener("visibilitychange", onForeground);
     window.addEventListener("focus", onForeground);
@@ -183,10 +185,13 @@ export function useOfflineSync(userId: string, online: boolean) {
       setLoadError("CONNECT TO TRANSFER EDIT ACCESS");
       return false;
     }
+    if (transferInProgress.current) return false;
+    transferInProgress.current = true;
     setSyncState("syncing");
     try {
       await prepareReadOnlyTransfer(userId, deviceAccess);
-      if (!(await synchronize())) return false;
+      const foregroundSync = syncPromise.current;
+      if (foregroundSync) await foregroundSync;
       if ((await pendingOfflineOperationCount(userId)) > 0) {
         setLoadError("SYNC THIS DEVICE BEFORE TRANSFERRING EDIT ACCESS");
         setSyncState("failed");
@@ -205,8 +210,10 @@ export function useOfflineSync(userId: string, online: boolean) {
       setLoadError(error instanceof Error ? error.message : "TRANSFER FAILED");
       setSyncState("failed");
       return false;
+    } finally {
+      transferInProgress.current = false;
     }
-  }, [deviceAccess, deviceId, online, reload, synchronize, userId]);
+  }, [deviceAccess, deviceId, online, reload, userId]);
 
   return {
     accountState,
