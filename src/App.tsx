@@ -134,6 +134,19 @@ function useAccountDeletion(session: Session | null, online: boolean) {
     if (online) void load();
   }, [load, online, session]);
 
+  useEffect(() => {
+    if (!session || !online) return;
+    const onForeground = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    document.addEventListener("visibilitychange", onForeground);
+    window.addEventListener("focus", onForeground);
+    return () => {
+      document.removeEventListener("visibilitychange", onForeground);
+      window.removeEventListener("focus", onForeground);
+    };
+  }, [load, online, session]);
+
   const checking = Boolean(
     session && online && result?.userId !== session.user.id,
   );

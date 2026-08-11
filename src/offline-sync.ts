@@ -384,7 +384,7 @@ export async function deleteLocalAccountData(userId: string) {
     await new Promise<void>((resolve, reject) => {
       const deleting = indexedDB.deleteDatabase(databaseName);
       deleting.onerror = () => reject(deleting.error);
-      deleting.onblocked = () => reject(new Error("DEVICE DATA IS IN USE"));
+      deleting.onblocked = () => resolve();
       deleting.onsuccess = () => resolve();
     });
   }

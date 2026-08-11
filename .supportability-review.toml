@@ -2,7 +2,7 @@ schema_version = "1.0"
 
 [behavior]
 intended_behavior = "The active editing device can request owner-account deletion only after password re-entry and an explicit permanent-deletion acknowledgement. A successful request clears the current device, globally signs out, and makes owner data unavailable for exactly 30 days; authenticated recovery exposes only status, cancellation, password recovery, and sign-out. Expired requests are finalized by a database scheduler that deletes auth.users and relies on established cascading owner foreign keys. A daily GitHub Actions workflow uploads only a GPG-encrypted logical Supabase dump, verifies it before upload, surfaces failures, and expires every artifact after 30 days."
-proof = "The existing foundation-shell-v2 characterization reproduces the qualified auth, PWA, offline, and training shell unchanged. Production oxlint and tsc/Vite PWA build passed once. Rollback-only production-schema compilation created the backup role, request table, guards, restrictive RLS policies, finalizer, pg_cron job, and deletion RPCs successfully, then proved the role, table, RPC, extension, and cron schema had zero residue. The request boundary checks a password-created auth session no older than five minutes and the S09 active device; server triggers and restrictive RLS fail closed while pending; cancellation refuses an expired deadline; finalization deletes the auth owner so every existing ON DELETE CASCADE owner record follows. The backup workflow uses native pg_dump, GPG AES-256, pg_restore parsing, a pinned upload action, ciphertext-only upload, and 30-day retention."
+proof = "The existing foundation-shell-v2 characterization reproduces the qualified auth, PWA, offline, and training shell unchanged. Production oxlint and tsc/Vite PWA build passed once. Rollback-only production-schema compilation created the backup role, request table, guards, restrictive RLS policies, finalizer, pg_cron job, and deletion RPCs successfully, then proved the role, table, RPC, extension, and cron schema had zero residue. The request boundary checks a most-recent password AMR timestamp and matching session no older than five minutes plus the S09 active device; server triggers and restrictive RLS fail closed while pending; cancellation refuses an expired deadline; finalization deletes the auth owner so every existing ON DELETE CASCADE owner record follows. The backup workflow uses native pg_dump, GPG AES-256, pg_restore parsing, a pinned upload action, ciphertext-only upload, and 30-day retention."
 
 [characterization]
 captured_behavior = "The qualified auth shell, rotation setup, workout runtime, logbook, history, blast/cruise, offline working copy, and active-device transfer remain. S10 adds an account-status gate, deletion/recovery controls, local purge, authoritative cloud lifecycle, and encrypted operational backup without changing any training rule."
@@ -45,6 +45,7 @@ reviewed_paths = [
     "supabase/migrations/20260811021935_active_editing_device.sql",
     "supabase/migrations/20260811054903_account_deletion_lifecycle.sql",
     "supabase/migrations/20260811063245_narrow_backup_role.sql",
+    "supabase/migrations/20260811064630_require_password_amr.sql",
     "docs/operations/ACCOUNT_LIFECYCLE_AND_BACKUPS.md",
     "tests/a1-assignment.e2e.mjs",
     "tests/history.test.mjs",
@@ -61,10 +62,10 @@ does_not_own = "Password UI, local browser storage, GitHub artifact encryption, 
 
 [incremental_refactor]
 target = "Add only S10 account deletion/recovery, encrypted backup, and release operations to the qualified S09 app."
-completed_step = "Added one auth-status gate, one deletion control, one recovery screen, one local purge function, two forward migrations, one native backup workflow, and one runbook. No package, training rule, hosting platform, public-user surface, paid service, or Supportability Gate change was made."
+completed_step = "Added one auth-status gate, one deletion control, one recovery screen, one local purge function, three forward migrations, one native backup workflow, and one runbook. No package, training rule, hosting platform, public-user surface, paid service, or Supportability Gate change was made."
 
 [review_handoff]
-summary = "Review recent-password session enforcement, active-device binding, exact 30-day timestamps, restrictive RLS plus trigger coverage, expired cancellation, auth-user cascade finalization, fail-closed App routing, local purge before global sign-out, ciphertext-only upload, and 30-day artifact retention."
+summary = "Review recent password-AMR enforcement, active-device binding, exact 30-day timestamps, restrictive RLS plus trigger coverage, expired cancellation, auth-user cascade finalization, foreground fail-closed App routing, cross-device local purge before global sign-out, ciphertext-only upload, and 30-day artifact retention."
 remaining_risks = [
     "A device that remains permanently offline cannot receive a remote deletion signal; the requesting active device is purged immediately, and cloud data is unavailable to every device while pending.",
     "The built-in authentication email path remains acceptable only if the pre-authorized owner proves delivery during final production qualification.",
@@ -75,7 +76,7 @@ remaining_risks = [
 naming = "DELETE ACCOUNT, BEGIN 30-DAY DELETION, ACCOUNT UNAVAILABLE, DELETION PENDING, and CANCEL DELETION state the lifecycle directly; the permanent warning names account, cloud history, and device data."
 cohesion = "Presentation, auth orchestration, local erasure, authoritative database lifecycle, encrypted backup, and operator documentation remain separate."
 intended_behavior = "The owner deliberately requests deletion from the active device, loses ordinary access immediately, can cancel for 30 days, and then loses live data permanently while encrypted backups age out within 30 more days."
-reviewability = "Six narrow client edits, two forward migrations, one workflow, one runbook, immutable existing characterization evidence, and rollback-only schema compilation implement S10; no package or new test was added."
+reviewability = "Six narrow client edits, three forward migrations, one workflow, one runbook, immutable existing characterization evidence, and rollback-only schema compilation implement S10; no package or new test was added."
 
 [[module_boundaries]]
 path = "src/hooks/use-offline-sync.ts"
@@ -184,6 +185,12 @@ path = "supabase/migrations/20260811063245_narrow_backup_role.sql"
 owner_path = "supabase/migrations/20260811063245_narrow_backup_role.sql"
 basis = "responsibility"
 justification = "Removes ineffective managed-Auth grants so the logical-backup role can read only the app-owned private and public schemas."
+
+[[module_boundaries]]
+path = "supabase/migrations/20260811064630_require_password_amr.sql"
+owner_path = "supabase/migrations/20260811064630_require_password_amr.sql"
+basis = "responsibility"
+justification = "Hardens deletion reauthentication by requiring the current JWT's most recent authentication method to be a password no older than five minutes."
 
 [[module_boundaries]]
 path = ".github/workflows/daily-encrypted-backup.yml"

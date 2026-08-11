@@ -36,7 +36,9 @@ export async function ownerAccountDeletionStatus(userId: string) {
   if (!supabase) return null;
   const { data, error } = await supabase.rpc("account_deletion_status");
   if (error) throw new Error(error.message);
-  return validDeletionStatus(data) ? data : null;
+  if (!validDeletionStatus(data)) return null;
+  await deleteLocalAccountData(userId);
+  return data;
 }
 
 export async function requestOwnerAccountDeletion(
@@ -52,9 +54,15 @@ export async function requestOwnerAccountDeletion(
     p_device_id: editingDeviceId(),
   });
   if (error) return false;
-  await deleteLocalAccountData(userId);
-  await supabase.auth.signOut();
-  return true;
+  let purged = true;
+  try {
+    await deleteLocalAccountData(userId);
+  } catch {
+    purged = false;
+  } finally {
+    await supabase.auth.signOut();
+  }
+  return purged;
 }
 
 export async function cancelOwnerAccountDeletion() {
