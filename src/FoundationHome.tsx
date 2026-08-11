@@ -218,42 +218,49 @@ function renderEditingScreen({
 
 function FoundationDashboard({ ...props }: DashboardProps) {
   const [showSettings, setShowSettings] = useState(false);
-  if (showSettings) {
-    const { homeProps, offline } = props;
-    return withSyncStatus(
-      <NetworkStatus
-        conflictDeferred={offline.conflictDeferred}
-        online={homeProps.online}
-        onReviewConflict={offline.reviewConflict}
-        onRetrySync={offline.retry}
-        syncState={offline.syncState}
-      />,
-      <SettingsScreen
-        editingEnabled={props.editingEnabled}
-        online={homeProps.online}
-        onBack={() => setShowSettings(false)}
-        onChangeUnit={async (unit) =>
-          Boolean(
-            (
-              await offline.commitOperation({
-                id: crypto.randomUUID(),
-                kind: "set_weight_unit",
-                payload: { unit },
-              })
-            ).data,
-          )
-        }
-        onSignOut={homeProps.onSignOut}
-        syncState={offline.syncState}
-        unit={accountWeightUnit(offline.accountState)}
-      />,
-    );
-  }
+  const { homeProps, offline } = props;
   return (
-    <FoundationDashboardHome
-      {...props}
-      onOpenSettings={() => setShowSettings(true)}
-    />
+    <>
+      <div hidden={!showSettings}>
+        {withSyncStatus(
+          <NetworkStatus
+            conflictDeferred={offline.conflictDeferred}
+            online={homeProps.online}
+            onReviewConflict={offline.reviewConflict}
+            onRetrySync={offline.retry}
+            syncState={offline.syncState}
+          />,
+          <SettingsScreen
+            editingEnabled={props.editingEnabled}
+            email={homeProps.email}
+            key={showSettings ? "open" : "closed"}
+            online={homeProps.online}
+            onBack={() => setShowSettings(false)}
+            onChangeUnit={async (unit) =>
+              Boolean(
+                (
+                  await offline.commitOperation({
+                    id: crypto.randomUUID(),
+                    kind: "set_weight_unit",
+                    payload: { unit },
+                  })
+                ).data,
+              )
+            }
+            onSignOut={homeProps.onSignOut}
+            syncState={offline.syncState}
+            unit={accountWeightUnit(offline.accountState)}
+            userId={props.userId}
+          />,
+        )}
+      </div>
+      <div hidden={showSettings}>
+        <FoundationDashboardHome
+          {...props}
+          onOpenSettings={() => setShowSettings(true)}
+        />
+      </div>
+    </>
   );
 }
 
@@ -276,7 +283,6 @@ function FoundationDashboardHome({
   onOpenRotation,
   onOpenSettings,
   onOpenWorkout,
-  userId,
   workout,
 }: DashboardProps & {
   onOpenSettings: () => void;
@@ -313,7 +319,6 @@ function FoundationDashboardHome({
         if (await workout.start()) onOpenWorkout();
       }}
       syncState={offline.syncState}
-      userId={userId}
     />
   );
 }
