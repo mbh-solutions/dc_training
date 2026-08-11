@@ -1,8 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   commitOfflineOperation,
   discardOfflineOperations,
   editingDeviceId,
+  hasDurableEditingDeviceId,
   isCloudOwnerId,
   listenOfflineState,
   pendingOfflineOperationCount,
@@ -24,13 +31,19 @@ export function useOfflineSync(userId: string, online: boolean) {
     null,
   );
   const [deviceAccess, setDeviceAccess] = useState<EditingDeviceAccess>(() =>
-    deviceAuthorityRequired ? cachedDeviceAccess(userId, deviceId) : "active",
+    initialDeviceAccess(deviceAuthorityRequired, online, userId, deviceId),
   );
   const [loadError, setLoadError] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [syncState, setSyncState] = useState<OfflineSyncState>("syncing");
   const syncPromise = useRef<Promise<boolean> | null>(null);
   const syncRequested = useRef(false);
+
+  useLayoutEffect(() => {
+    setDeviceAccess(
+      initialDeviceAccess(deviceAuthorityRequired, online, userId, deviceId),
+    );
+  }, [deviceAuthorityRequired, deviceId, online, userId]);
 
   const reload = useCallback(async () => {
     const current = await readOfflineState(userId);
@@ -44,6 +57,7 @@ export function useOfflineSync(userId: string, online: boolean) {
       syncRequested.current = true;
       return syncPromise.current;
     }
+    if (deviceAuthorityRequired) setDeviceAccess("checking");
     setSyncState("syncing");
     setLoadError("");
     const work = (async () => {
@@ -77,9 +91,6 @@ export function useOfflineSync(userId: string, online: boolean) {
     setLoadError("");
     setLoaded(false);
     setSyncState("syncing");
-    setDeviceAccess(
-      deviceAuthorityRequired ? cachedDeviceAccess(userId, deviceId) : "active",
-    );
     let active = true;
     void readOfflineState(userId)
       .then((current) => {
@@ -152,11 +163,7 @@ export function useOfflineSync(userId: string, online: boolean) {
     }
     setSyncState("syncing");
     try {
-      if (
-        deviceAccess === "readonly" &&
-        (await pendingOfflineOperationCount(userId)) > 0
-      )
-        await discardOfflineOperations(userId);
+      await prepareReadOnlyTransfer(userId, deviceAccess);
       if (!(await synchronize())) return false;
       if ((await pendingOfflineOperationCount(userId)) > 0) {
         setLoadError("SYNC THIS DEVICE BEFORE TRANSFERRING EDIT ACCESS");
@@ -188,6 +195,30 @@ export function useOfflineSync(userId: string, online: boolean) {
     syncState,
     transfer,
   };
+}
+
+function initialDeviceAccess(
+  required: boolean,
+  online: boolean,
+  userId: string,
+  deviceId: string,
+): EditingDeviceAccess {
+  if (!required) return "active";
+  if (online) return "checking";
+  return cachedDeviceAccess(userId, deviceId);
+}
+
+async function prepareReadOnlyTransfer(
+  userId: string,
+  access: EditingDeviceAccess,
+) {
+  if (access !== "readonly") return;
+  if ((await pendingOfflineOperationCount(userId)) === 0) return;
+  if (!hasDurableEditingDeviceId())
+    throw new Error(
+      "DEVICE ID COULD NOT BE RECOVERED · UNSYNCED CHANGES PRESERVED",
+    );
+  await discardOfflineOperations(userId);
 }
 
 function cachedDeviceAccess(userId: string, deviceId: string) {

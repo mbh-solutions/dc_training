@@ -151,6 +151,7 @@ const memoryOperations = new Map<string, OfflineOperation>();
 let memoryWrite = Promise.resolve();
 let databasePromise: Promise<IDBDatabase> | null = null;
 let memoryDeviceId = "";
+let memoryDeviceIdDurable = false;
 
 export function isCloudOwnerId(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
@@ -160,22 +161,48 @@ export function isCloudOwnerId(value: string) {
 
 export function editingDeviceId() {
   try {
-    const stored =
-      typeof localStorage === "undefined"
-        ? memoryDeviceId
-        : (localStorage.getItem(deviceIdStorageKey) ?? "");
+    if (typeof localStorage === "undefined") return fallbackEditingDeviceId();
+    const stored = localStorage.getItem(deviceIdStorageKey) ?? "";
     if (validUuid(stored)) {
       memoryDeviceId = stored;
+      memoryDeviceIdDurable = true;
       return stored;
     }
     memoryDeviceId = crypto.randomUUID();
-    if (typeof localStorage !== "undefined")
-      localStorage.setItem(deviceIdStorageKey, memoryDeviceId);
+    localStorage.setItem(deviceIdStorageKey, memoryDeviceId);
+    memoryDeviceIdDurable = true;
     return memoryDeviceId;
   } catch {
-    if (!validUuid(memoryDeviceId)) memoryDeviceId = crypto.randomUUID();
-    return memoryDeviceId;
+    return fallbackEditingDeviceId();
   }
+}
+
+export function hasDurableEditingDeviceId() {
+  return memoryDeviceIdDurable;
+}
+
+function fallbackEditingDeviceId() {
+  if (!validUuid(memoryDeviceId)) memoryDeviceId = crypto.randomUUID();
+  memoryDeviceIdDurable = false;
+  try {
+    if (typeof document === "undefined") return memoryDeviceId;
+    const stored = document.cookie
+      .split(";")
+      .map((item) => item.trim())
+      .find((item) => item.startsWith(`${deviceIdStorageKey}=`))
+      ?.slice(deviceIdStorageKey.length + 1);
+    if (stored && validUuid(stored)) memoryDeviceId = stored;
+    else
+      document.cookie = `${deviceIdStorageKey}=${memoryDeviceId}; Max-Age=315360000; Path=/; SameSite=Lax`;
+    memoryDeviceIdDurable = document.cookie
+      .split(";")
+      .some(
+        (item) => item.trim() === `${deviceIdStorageKey}=${memoryDeviceId}`,
+      );
+  } catch {
+    // A volatile ID may view data, but transfer will preserve its queued work.
+  }
+  return memoryDeviceId;
 }
 
 function validUuid(value: string) {

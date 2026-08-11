@@ -1,7 +1,7 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Exactly one durable browser device ID per owner account holds edit authority. A second signed-in device restores cloud-synced data read-only. Connected transfer drains an active device queue before moving authority; after an explicit cloud-only warning, a read-only device discards its now-unauthorized stale queue and refreshes before transfer. The prior device becomes read-only when it next verifies, and every stale cloud mutation is rejected."
+intended_behavior = "Exactly one durable browser device ID per owner account holds edit authority. A connected device stays fail-closed while authority is verified; offline startup alone may use cached authority. A second signed-in device restores cloud-synced data read-only. Connected transfer drains an active device queue before moving authority; after an explicit cloud-only warning, a read-only device with a durable identity discards its now-unauthorized stale queue and refreshes before transfer. If both durable browser stores reject identity persistence, transfer fails with the unsynced queue preserved."
 proof = "The immutable offline-sync-v1 and foundation-shell-v2 scenarios reproduce their qualified S08 behavior at exact head. Production lint and build passed once. One rollback-only live-schema poison applied the candidate migration, proved active, secondary, transfer, repeated-transfer, stale-rejection, and privilege-removal behavior, then returned zero residue. The server boundary serializes register, transfer, and replay on the same per-owner advisory transaction lock, stores one primary-keyed device row per owner, rejects any replay whose device differs, makes repeated same-device transfer converge on the same row, removes authenticated direct writes on every owner-mutable training table, and revokes every legacy authenticated mutation RPC."
 
 [characterization]
@@ -10,7 +10,7 @@ proof = "Existing characterization definitions and goldens remain byte-identical
 
 [separation_of_concerns]
 before = "S08 had one durable offline mutation seam but no device identity or active-editor authority; every signed-in device could call it."
-after = "offline-sync owns the durable browser device ID and device-aware transport; use-offline-sync owns authority verification, cached temporary-offline access, foreground checks, and transfer sequencing; HomeScreen owns read-only status and owner warning; the new migration alone owns durable authority, serialization, and cloud rejection before established offline dispatch."
+after = "offline-sync owns the durable browser device ID with local-storage and cookie persistence plus device-aware transport; use-offline-sync owns fail-closed online authority verification, cached temporary-offline access, foreground checks, and transfer sequencing; HomeScreen owns read-only status and owner warning; the new migration alone owns durable authority, serialization, and cloud rejection before established offline dispatch."
 
 [architecture]
 dependency_direction = "FoundationHome composes use-offline-sync; feature hooks still submit only typed local operations; offline-sync registers one durable device ID and includes it on the sole cloud mutation boundary; the public wrapper locks the owner, checks the private active-device row, then delegates to the unchanged private S08 dispatcher. No UI or client state can grant itself cloud authority."
@@ -58,10 +58,11 @@ target = "Add only S09 one-active-editing-device enforcement and connected trans
 completed_step = "Extended the existing offline transport and hook, added one read-only/transfer panel, and added one forward migration wrapping the established dispatcher with atomic server authority. No package, training-rule, merge-policy, lost-data recovery, or Supportability Gate change."
 
 [review_handoff]
-summary = "Review device-ID durability, fail-closed cached authority, transfer queue drain, focus/foreground re-verification, owner advisory locking, wrapper-before-dispatch rejection, and revocation of legacy write bypasses."
+summary = "Review device-ID durability and volatile-fallback queue preservation, connected-start checking, transfer queue drain, focus/foreground re-verification, owner advisory locking, wrapper-before-dispatch rejection, and revocation of legacy write bypasses."
 remaining_risks = [
     "A prior device that stays offline can still edit its local S08 working copy until connectivity returns; cloud rejects those stale writes and the UI then marks it read-only.",
     "Never-synced changes on another or lost device remain intentionally unrecoverable; the transfer UI states this explicitly.",
+    "If both local storage and cookies reject the device ID, the mounted session can view data but transfer fails without deleting its unsynced queue.",
 ]
 
 [human_review]
