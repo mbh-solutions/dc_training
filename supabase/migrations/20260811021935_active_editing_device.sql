@@ -1,6 +1,7 @@
 create table private.active_editing_devices (
   user_id uuid primary key references auth.users(id) on delete cascade,
   device_id uuid not null,
+  legacy_session_id uuid not null,
   transferred_at timestamptz not null default now()
 );
 
@@ -16,34 +17,39 @@ set search_path = ''
 as $$
 declare
   owner_id uuid := (select auth.uid());
-  legacy_session_id uuid := nullif(auth.jwt() ->> 'session_id', '')::uuid;
+  current_session_id uuid := nullif(auth.jwt() ->> 'session_id', '')::uuid;
   current_device private.active_editing_devices;
 begin
   if owner_id is null then raise exception 'Authentication required'; end if;
+  if current_session_id is null then raise exception 'Auth session required'; end if;
   if p_device_id is null then raise exception 'Device ID required'; end if;
 
   perform pg_advisory_xact_lock(hashtextextended(owner_id::text, 0));
-  insert into private.active_editing_devices (user_id, device_id)
-  values (owner_id, p_device_id)
+  insert into private.active_editing_devices (
+    user_id,
+    device_id,
+    legacy_session_id
+  )
+  values (owner_id, p_device_id, current_session_id)
   on conflict (user_id) do nothing;
 
   select * into strict current_device
   from private.active_editing_devices device
   where device.user_id = owner_id;
 
-  if legacy_session_id is not null
-    and current_device.device_id = legacy_session_id
-    and current_device.device_id <> p_device_id
+  if current_device.device_id = p_device_id
+    or current_device.device_id = current_session_id
   then
     update private.active_editing_devices device
-    set device_id = p_device_id
+    set device_id = p_device_id,
+        legacy_session_id = current_session_id
     where device.user_id = owner_id
     returning * into current_device;
   end if;
 
   return jsonb_build_object(
     'active', current_device.device_id = p_device_id,
-    'device_id', current_device.device_id,
+    'device_id', p_device_id,
     'transferred_at', current_device.transferred_at
   );
 end;
@@ -62,16 +68,23 @@ set search_path = ''
 as $$
 declare
   owner_id uuid := (select auth.uid());
+  current_session_id uuid := nullif(auth.jwt() ->> 'session_id', '')::uuid;
   current_device private.active_editing_devices;
 begin
   if owner_id is null then raise exception 'Authentication required'; end if;
+  if current_session_id is null then raise exception 'Auth session required'; end if;
   if p_device_id is null then raise exception 'Device ID required'; end if;
 
   perform pg_advisory_xact_lock(hashtextextended(owner_id::text, 0));
-  insert into private.active_editing_devices (user_id, device_id)
-  values (owner_id, p_device_id)
+  insert into private.active_editing_devices (
+    user_id,
+    device_id,
+    legacy_session_id
+  )
+  values (owner_id, p_device_id, current_session_id)
   on conflict (user_id) do update
   set device_id = excluded.device_id,
+      legacy_session_id = excluded.legacy_session_id,
       transferred_at = case
         when active_editing_devices.device_id = excluded.device_id
           then active_editing_devices.transferred_at
@@ -111,22 +124,26 @@ set search_path = ''
 as $$
 declare
   owner_id uuid := (select auth.uid());
-  legacy_session_id uuid := nullif(auth.jwt() ->> 'session_id', '')::uuid;
-  active_device_id uuid;
+  current_session_id uuid := nullif(auth.jwt() ->> 'session_id', '')::uuid;
+  active_legacy_session_id uuid;
 begin
   if owner_id is null then raise exception 'Authentication required'; end if;
-  if legacy_session_id is null then raise exception 'App update required'; end if;
+  if current_session_id is null then raise exception 'App update required'; end if;
 
   perform pg_advisory_xact_lock(hashtextextended(owner_id::text, 0));
-  insert into private.active_editing_devices (user_id, device_id)
-  values (owner_id, legacy_session_id)
+  insert into private.active_editing_devices (
+    user_id,
+    device_id,
+    legacy_session_id
+  )
+  values (owner_id, current_session_id, current_session_id)
   on conflict (user_id) do nothing;
 
-  select device.device_id into strict active_device_id
+  select device.legacy_session_id into strict active_legacy_session_id
   from private.active_editing_devices device
   where device.user_id = owner_id;
 
-  if active_device_id <> legacy_session_id then
+  if active_legacy_session_id <> current_session_id then
     raise exception 'This device is read only';
   end if;
 
