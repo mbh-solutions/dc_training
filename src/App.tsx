@@ -156,10 +156,11 @@ function useAccountDeletion(session: Session | null, online: boolean) {
     };
   }, [load, online, session]);
 
-  const checking = Boolean(
-    session &&
-    online &&
-    (checkingUserId === session.user.id || result?.userId !== session.user.id),
+  const checking = accountDeletionCheckPending(
+    session,
+    online,
+    checkingUserId,
+    result?.userId,
   );
   return {
     cancel: async () => {
@@ -171,6 +172,19 @@ function useAccountDeletion(session: Session | null, online: boolean) {
     retry: load,
     status: result && result.userId === session?.user.id ? result.status : null,
   };
+}
+
+function accountDeletionCheckPending(
+  session: Session | null,
+  online: boolean,
+  checkingUserId: string,
+  checkedUserId?: string,
+) {
+  return Boolean(
+    session &&
+    online &&
+    (checkingUserId === session.user.id || checkedUserId !== session.user.id),
+  );
 }
 
 export default App;
