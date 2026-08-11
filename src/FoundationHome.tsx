@@ -233,6 +233,7 @@ function FoundationDashboard({ ...props }: DashboardProps) {
           <SettingsScreen
             editingEnabled={props.editingEnabled}
             email={homeProps.email}
+            key={showSettings ? "open" : "closed"}
             online={homeProps.online}
             onBack={() => setShowSettings(false)}
             onChangeUnit={async (unit) =>
