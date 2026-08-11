@@ -1,7 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { FoundationHomeProps } from "./FoundationHome.js";
 import type { OfflineSyncState } from "./hooks/use-offline-sync.js";
-import type { EditingDeviceAccess } from "./offline-sync.js";
 import { WORKOUT_SLOTS, type WorkoutSlot } from "./rotation-config.js";
 import type { TrainingLifecycle } from "./workout-domain.js";
 import { requestOwnerAccountDeletion } from "./lib/auth-actions.js";
@@ -10,8 +9,9 @@ import type { WeightUnit } from "./weight-conversion.js";
 type HomeScreenProps = Omit<FoundationHomeProps, "userId"> & {
   activeSlot: WorkoutSlot | null;
   actionSaving: boolean;
+  conflictDeferred: boolean;
   dataReady: boolean;
-  deviceAccess: EditingDeviceAccess;
+  editingEnabled: boolean;
   lastCompletedSlot: WorkoutSlot | null;
   lifecycle: TrainingLifecycle | null;
   loadingWorkout: boolean;
@@ -20,8 +20,8 @@ type HomeScreenProps = Omit<FoundationHomeProps, "userId"> & {
   onOpenHistory: () => void;
   onOpenRotation?: () => void;
   onOpenSettings: () => void;
+  onReviewConflict: () => void;
   onRetrySync: () => Promise<boolean>;
-  onTransferDevice: () => Promise<boolean>;
   onResumeWorkout: () => void;
   onStartCruise: () => Promise<boolean>;
   onStartNewBlast: () => Promise<boolean>;
@@ -45,8 +45,9 @@ function HomeScreen({
   email,
   activeSlot,
   actionSaving,
+  conflictDeferred,
   dataReady,
-  deviceAccess,
+  editingEnabled,
   lastCompletedSlot,
   lifecycle,
   loadingWorkout,
@@ -56,8 +57,8 @@ function HomeScreen({
   onOpenHistory,
   onOpenRotation,
   onOpenSettings,
+  onReviewConflict,
   onRetrySync,
-  onTransferDevice,
   onResumeWorkout,
   onSignOut,
   onStartCruise,
@@ -69,24 +70,25 @@ function HomeScreen({
 }: HomeScreenProps) {
   const [cruiseConfirmationOpen, setCruiseConfirmationOpen] = useState(false);
   useEffect(() => {
-    if (deviceAccess !== "active") setCruiseConfirmationOpen(false);
-  }, [deviceAccess]);
+    if (!editingEnabled) setCruiseConfirmationOpen(false);
+  }, [editingEnabled]);
 
   if (lifecycle?.phase === "cruise")
     return (
       <CruiseHome
         actionSaving={actionSaving}
-        deviceAccess={deviceAccess}
+        conflictDeferred={conflictDeferred}
+        editingEnabled={editingEnabled}
         email={email}
         message={message}
         nextSlot={nextSlot}
         online={online}
         onOpenHistory={onOpenHistory}
         onOpenSettings={onOpenSettings}
+        onReviewConflict={onReviewConflict}
         onRetrySync={onRetrySync}
         onSignOut={onSignOut}
         onStartNewBlast={onStartNewBlast}
-        onTransferDevice={onTransferDevice}
         syncState={syncState}
         userId={userId}
       />
@@ -112,10 +114,10 @@ function HomeScreen({
       </header>
 
       <NetworkStatus
-        deviceAccess={deviceAccess}
+        conflictDeferred={conflictDeferred}
         online={online}
+        onReviewConflict={onReviewConflict}
         onRetrySync={onRetrySync}
-        onTransferDevice={onTransferDevice}
         syncState={syncState}
       />
 
@@ -146,7 +148,7 @@ function HomeScreen({
 
         <AccountControls
           cloudStatus={cloudStatus}
-          deviceAccess={deviceAccess}
+          editingEnabled={editingEnabled}
           email={email}
           message={message}
           online={online}
@@ -163,7 +165,7 @@ function HomeScreen({
         onRotation={onOpenRotation ?? (() => undefined)}
         rotationDisabled={!onOpenRotation}
       />
-      {deviceAccess === "active" && (
+      {editingEnabled && (
         <LifecycleSheets
           confirmationOpen={cruiseConfirmationOpen}
           lifecycle={lifecycle}
@@ -181,7 +183,7 @@ function HomeScreen({
 
 function AccountControls({
   cloudStatus,
-  deviceAccess,
+  editingEnabled,
   email,
   message,
   online,
@@ -192,7 +194,7 @@ function AccountControls({
 }: Pick<
   HomeScreenProps,
   | "cloudStatus"
-  | "deviceAccess"
+  | "editingEnabled"
   | "email"
   | "message"
   | "online"
@@ -226,7 +228,7 @@ function AccountControls({
         <p className="quiet-note">SYNC BEFORE SIGNING OUT</p>
       )}
       <AccountDeletionControl
-        deviceAccess={deviceAccess}
+        editingEnabled={editingEnabled}
         email={email}
         online={online}
         syncState={syncState}
@@ -267,32 +269,34 @@ const homeStyles = [
 
 function CruiseHome({
   actionSaving,
-  deviceAccess,
+  conflictDeferred,
+  editingEnabled,
   email,
   message,
   nextSlot,
   online,
   onOpenHistory,
   onOpenSettings,
+  onReviewConflict,
   onRetrySync,
   onSignOut,
   onStartNewBlast,
-  onTransferDevice,
   syncState,
   userId,
 }: {
   actionSaving: boolean;
-  deviceAccess: EditingDeviceAccess;
+  conflictDeferred: boolean;
+  editingEnabled: boolean;
   email?: string;
   message: string;
   nextSlot: WorkoutSlot;
   online: boolean;
   onOpenHistory: () => void;
   onOpenSettings: () => void;
+  onReviewConflict: () => void;
   onRetrySync: () => Promise<boolean>;
   onSignOut: () => Promise<void>;
   onStartNewBlast: () => Promise<boolean>;
-  onTransferDevice: () => Promise<boolean>;
   syncState: OfflineSyncState;
   userId: string;
 }) {
@@ -314,10 +318,10 @@ function CruiseHome({
         </button>
       </header>
       <NetworkStatus
-        deviceAccess={deviceAccess}
+        conflictDeferred={conflictDeferred}
         online={online}
+        onReviewConflict={onReviewConflict}
         onRetrySync={onRetrySync}
-        onTransferDevice={onTransferDevice}
         syncState={syncState}
       />
       <main>
@@ -341,7 +345,7 @@ function CruiseHome({
         </section>
         <button
           className="primary-action"
-          disabled={actionSaving || deviceAccess !== "active"}
+          disabled={actionSaving || !editingEnabled}
           onClick={() => void onStartNewBlast()}
           type="button"
         >
@@ -365,7 +369,7 @@ function CruiseHome({
           <p className="quiet-note">SYNC BEFORE SIGNING OUT</p>
         )}
         <AccountDeletionControl
-          deviceAccess={deviceAccess}
+          editingEnabled={editingEnabled}
           email={email}
           online={online}
           syncState={syncState}
@@ -384,22 +388,21 @@ function CruiseHome({
 }
 
 function AccountDeletionControl({
-  deviceAccess,
+  editingEnabled,
   email,
   online,
   syncState,
   userId,
 }: Pick<
   HomeScreenProps,
-  "deviceAccess" | "email" | "online" | "syncState" | "userId"
+  "editingEnabled" | "email" | "online" | "syncState" | "userId"
 >) {
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const available =
-    online && syncState === "synced" && deviceAccess === "active" && email;
+  const available = online && syncState === "synced" && editingEnabled && email;
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!available || !confirmed || submitting) return;
@@ -724,21 +727,41 @@ function RotationTracker({
 }
 
 export function NetworkStatus({
-  deviceAccess,
+  conflictDeferred = false,
   online,
+  onReviewConflict,
   onRetrySync,
-  onTransferDevice,
   syncState,
 }: {
-  deviceAccess: EditingDeviceAccess;
+  conflictDeferred?: boolean;
   online: boolean;
+  onReviewConflict?: () => void;
   onRetrySync: () => Promise<boolean>;
-  onTransferDevice: () => Promise<boolean>;
   syncState: OfflineSyncState;
 }) {
-  if (online && syncState === "failed" && deviceAccess !== "readonly")
+  if (conflictDeferred)
     return (
-      <div className="status-strip status-strip--failed">
+      <div
+        aria-atomic="true"
+        aria-live="polite"
+        className="status-strip status-strip--failed"
+        role="status"
+      >
+        <span>CHANGES NEED REVIEW · EDITING PAUSED</span>
+        <button onClick={onReviewConflict} type="button">
+          REVIEW
+        </button>
+      </div>
+    );
+
+  if (online && syncState === "failed")
+    return (
+      <div
+        aria-atomic="true"
+        aria-live="polite"
+        className="status-strip status-strip--failed"
+        role="status"
+      >
         <span>SYNC FAILED · SAVED ON DEVICE</span>
         <button onClick={() => void onRetrySync()} type="button">
           TRY AGAIN
@@ -746,28 +769,25 @@ export function NetworkStatus({
       </div>
     );
 
-  if (deviceAccess === "checking")
+  if (!online)
     return (
-      <div className="status-strip status-strip--quiet">
-        {online ? "CHECKING EDIT ACCESS" : "CONNECT TO VERIFY EDIT ACCESS"}
+      <div
+        aria-atomic="true"
+        aria-live="polite"
+        className="status-strip"
+        role="status"
+      >
+        OFFLINE · SAVED ON DEVICE
       </div>
     );
 
-  if (deviceAccess === "readonly")
-    return (
-      <ReadOnlyDeviceStatus
-        online={online}
-        onRetrySync={onRetrySync}
-        onTransferDevice={onTransferDevice}
-        syncState={syncState}
-      />
-    );
-
-  if (!online)
-    return <div className="status-strip">OFFLINE · SAVED ON DEVICE</div>;
-
   return (
-    <div className="status-strip status-strip--quiet">
+    <div
+      aria-atomic="true"
+      aria-live="polite"
+      className="status-strip status-strip--quiet"
+      role="status"
+    >
       {networkStatusLabel(syncState)}
     </div>
   );
@@ -775,82 +795,6 @@ export function NetworkStatus({
 
 function networkStatusLabel(syncState: OfflineSyncState) {
   return syncState === "syncing" ? "SYNCING" : "SYNCED";
-}
-
-function ReadOnlyDeviceStatus({
-  online,
-  onRetrySync,
-  onTransferDevice,
-  syncState,
-}: {
-  online: boolean;
-  onRetrySync: () => Promise<boolean>;
-  onTransferDevice: () => Promise<boolean>;
-  syncState: OfflineSyncState;
-}) {
-  const [confirmationOpen, setConfirmationOpen] = useState(false);
-  const refreshFailed = online && syncState === "failed";
-  const copy = refreshFailed
-    ? "Cloud data could not be refreshed. Retry before relying on this device's view. Changes left only on another or lost device cannot be recovered."
-    : "Synced cloud data is available. Changes left only on another or lost device cannot be recovered.";
-  return (
-    <section aria-live="polite" className="foundation-card">
-      <div className="status-strip status-strip--failed">
-        <strong>READ ONLY DEVICE</strong>
-      </div>
-      <span>{copy}</span>
-      {refreshFailed && (
-        <button
-          className="secondary-action"
-          onClick={() => void onRetrySync()}
-          type="button"
-        >
-          TRY AGAIN
-        </button>
-      )}
-      {confirmationOpen ? (
-        <div
-          aria-describedby="transfer-edit-access-warning"
-          aria-labelledby="transfer-edit-access-title"
-          role="alertdialog"
-        >
-          <strong id="transfer-edit-access-title">TRANSFER EDIT ACCESS?</strong>
-          <p id="transfer-edit-access-warning">
-            The prior device will become read only. Do not keep editing it. Any
-            unsynced changes on this read-only device will be discarded; only
-            changes already synced to cloud can be restored.
-          </p>
-          <button
-            className="secondary-action"
-            onClick={() => setConfirmationOpen(false)}
-            type="button"
-          >
-            CANCEL
-          </button>
-          <button
-            className="secondary-action"
-            disabled={!online || syncState === "syncing"}
-            onClick={() => {
-              setConfirmationOpen(false);
-              void onTransferDevice();
-            }}
-            type="button"
-          >
-            OK
-          </button>
-        </div>
-      ) : (
-        <button
-          className="secondary-action"
-          disabled={!online || syncState === "syncing"}
-          onClick={() => setConfirmationOpen(true)}
-          type="button"
-        >
-          {online ? "TRANSFER EDIT ACCESS" : "CONNECT TO TRANSFER"}
-        </button>
-      )}
-    </section>
-  );
 }
 
 export function BottomNavigation({
@@ -904,7 +848,7 @@ const bottomNavigationStyles = `
 `;
 
 export function SettingsScreen({
-  deviceAccess,
+  editingEnabled,
   online,
   onBack,
   onChangeUnit,
@@ -912,7 +856,7 @@ export function SettingsScreen({
   syncState,
   unit,
 }: {
-  deviceAccess: EditingDeviceAccess;
+  editingEnabled: boolean;
   online: boolean;
   onBack: () => void;
   onChangeUnit: (unit: WeightUnit) => Promise<boolean>;
@@ -922,7 +866,7 @@ export function SettingsScreen({
 }) {
   const [saving, setSaving] = useState(false);
   const changeUnit = async (next: WeightUnit) => {
-    if (next === unit || saving || deviceAccess !== "active") return;
+    if (next === unit || saving || !editingEnabled) return;
     setSaving(true);
     await onChangeUnit(next);
     setSaving(false);
@@ -946,7 +890,7 @@ export function SettingsScreen({
             {(["lb", "kg"] as const).map((choice) => (
               <button
                 aria-pressed={unit === choice}
-                disabled={saving || deviceAccess !== "active"}
+                disabled={saving || !editingEnabled}
                 key={choice}
                 onClick={() => void changeUnit(choice)}
                 type="button"
@@ -959,10 +903,8 @@ export function SettingsScreen({
             Changing units converts weights everywhere. Your workout history
             stays together.
           </p>
-          {deviceAccess !== "active" && (
-            <p className="quiet-note">
-              TRANSFER EDIT ACCESS TO CHANGE SETTINGS
-            </p>
+          {!editingEnabled && (
+            <p className="quiet-note">FINISH SYNC BEFORE CHANGING SETTINGS</p>
           )}
         </section>
         <button

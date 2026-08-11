@@ -719,7 +719,7 @@ function WorkoutDetail({
               </strong>
               <em>
                 {!onEdit
-                  ? "READ ONLY DEVICE"
+                  ? "EDITING PAUSED"
                   : correctionLocked(activeAssignmentIds, step)
                     ? "FINISH ACTIVE WORKOUT TO CORRECT"
                     : stepStatus(step, weightUnit)}
@@ -801,7 +801,7 @@ function ExercisePerformance({
             <strong>{performanceSummary(performance.step, weightUnit)}</strong>
             <em className={performance.step.verdict === "win" ? "red" : ""}>
               {!onEdit
-                ? "READ ONLY DEVICE"
+                ? "EDITING PAUSED"
                 : correctionLocked(activeAssignmentIds, performance.step)
                   ? "FINISH ACTIVE WORKOUT TO CORRECT"
                   : verdictLabel(performance.step)}
