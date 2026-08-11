@@ -401,49 +401,88 @@ export function preservedUndoFeedback(
   local: OfflineAccountState | undefined,
 ) {
   const empty = { recentOperation: null, recentlyCompletedWorkout: null };
-  const recentOperation = local?.recentOperation;
-  if (!recentOperation || !cloud.history || !cloud.workout) return empty;
-  const step = cloud.history.steps.find(
-    (item) => item.last_operation_id === recentOperation.id,
-  );
-  if (!step) return empty;
-  const workout = cloud.history.workouts.find(
-    (item) => item.workout_id === step.workout_id,
-  );
-  const lifecycle = cloud.workout.lifecycle;
-  if (
-    !workout ||
-    lifecycle.phase !== "blast" ||
-    workout.blast_id !== lifecycle.blast_id
-  )
-    return empty;
-  if (workout.status === "completed") {
+  const context = undoFeedbackContext(cloud, local);
+  if (!context || !feedbackInCurrentBlast(cloud, context.workout)) return empty;
+  if (context.workout.status === "completed") {
     const recentlyCompletedWorkout = local?.recentlyCompletedWorkout;
     if (
-      recentlyCompletedWorkout?.workout_id !== workout.workout_id ||
-      cloud.workout.workout ||
-      cloud.workout.lastCompletedSlot !== workout.slot ||
-      cloud.workout.nextSlot !== nextSlot(workout.slot) ||
-      cloud.history.workouts.some(
-        (item) =>
-          item.status === "completed" &&
-          progressionOrder(item) > progressionOrder(workout),
+      !recentlyCompletedWorkout ||
+      !canPreserveCompletedUndo(
+        cloud,
+        context.workout,
+        recentlyCompletedWorkout,
       )
     )
       return empty;
-    return { recentOperation, recentlyCompletedWorkout };
+    return {
+      recentOperation: context.recentOperation,
+      recentlyCompletedWorkout,
+    };
   }
-  if (cloud.workout.workout?.workout_id !== workout.workout_id) return empty;
-  if (
-    cloud.history.steps.some(
+  if (!canPreserveActiveUndo(cloud, context.workout, context.step))
+    return empty;
+  return {
+    recentOperation: context.recentOperation,
+    recentlyCompletedWorkout: null,
+  };
+}
+
+function undoFeedbackContext(
+  cloud: OfflineAccountState,
+  local: OfflineAccountState | undefined,
+) {
+  const recentOperation = local?.recentOperation;
+  if (!recentOperation || !cloud.history || !cloud.workout) return null;
+  const step = cloud.history.steps.find(
+    (item) => item.last_operation_id === recentOperation.id,
+  );
+  if (!step) return null;
+  const workout = cloud.history.workouts.find(
+    (item) => item.workout_id === step.workout_id,
+  );
+  return workout ? { recentOperation, step, workout } : null;
+}
+
+function feedbackInCurrentBlast(
+  cloud: OfflineAccountState,
+  workout: HistoryWorkout,
+) {
+  const lifecycle = cloud.workout!.lifecycle;
+  return lifecycle.phase === "blast" && workout.blast_id === lifecycle.blast_id;
+}
+
+function canPreserveCompletedUndo(
+  cloud: OfflineAccountState,
+  workout: HistoryWorkout,
+  recentlyCompletedWorkout: Workout,
+) {
+  return (
+    recentlyCompletedWorkout.workout_id === workout.workout_id &&
+    !cloud.workout!.workout &&
+    cloud.workout!.lastCompletedSlot === workout.slot &&
+    cloud.workout!.nextSlot === nextSlot(workout.slot) &&
+    !cloud.history!.workouts.some(
+      (item) =>
+        item.status === "completed" &&
+        progressionOrder(item) > progressionOrder(workout),
+    )
+  );
+}
+
+function canPreserveActiveUndo(
+  cloud: OfflineAccountState,
+  workout: HistoryWorkout,
+  step: WorkoutStep,
+) {
+  return (
+    cloud.workout!.workout?.workout_id === workout.workout_id &&
+    !cloud.history!.steps.some(
       (item) =>
         item.workout_id === workout.workout_id &&
         item.ordinal > step.ordinal &&
         item.status !== "pending",
     )
-  )
-    return empty;
-  return { recentOperation, recentlyCompletedWorkout: null };
+  );
 }
 
 function preserveActiveWorkoutStepIds(
