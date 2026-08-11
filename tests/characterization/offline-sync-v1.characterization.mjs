@@ -24,6 +24,8 @@ const progressionValidationMigration =
   "supabase/migrations/20260811000500_protect_offline_progression_and_corrections.sql";
 const performanceContextRepair =
   "supabase/migrations/20260811002000_fix_offline_performance_context.sql";
+const progressionUndoRepair =
+  "supabase/migrations/20260811003500_use_progression_order_for_undo.sql";
 const read = (relativePath) =>
   readFileSync(path.join(target, relativePath), "utf8");
 const hasAll = (source, fragments) =>
@@ -53,6 +55,7 @@ const offlineContract =
   existsSync(path.join(target, versionValidationMigration)) &&
   existsSync(path.join(target, progressionValidationMigration)) &&
   existsSync(path.join(target, performanceContextRepair)) &&
+  existsSync(path.join(target, progressionUndoRepair)) &&
   hasAll(read(offlineModule), [
     'const databaseName = "dc-training-offline"',
     "[stateStore, operationStore]",
@@ -154,6 +157,11 @@ const offlineContract =
     "resolved_step_id",
     "private.assert_offline_performance_context",
     "Offline performance context changed",
+  ]) &&
+  hasAll(read(progressionUndoRepair), [
+    "public.undo_workout_step",
+    "progression_order > current_workout.progression_order",
+    "order by progression_order desc",
   ]);
 
 process.stdout.write(

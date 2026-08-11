@@ -80,7 +80,8 @@
         "supabase/migrations/20260810223500_fix_offline_blast_reference_resolution.sql",
         "supabase/migrations/20260810234000_validate_offline_versions.sql",
         "supabase/migrations/20260811000500_protect_offline_progression_and_corrections.sql",
-        "supabase/migrations/20260811002000_fix_offline_performance_context.sql"
+        "supabase/migrations/20260811002000_fix_offline_performance_context.sql",
+        "supabase/migrations/20260811003500_use_progression_order_for_undo.sql"
       ],
       "id": "offline-sync-v1",
       "kind": "regression"
