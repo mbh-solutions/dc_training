@@ -17,16 +17,19 @@ privileged credential.
    Cancellation is no longer accepted.
 
 The request RPC requires a password-authenticated session created within the
-previous five minutes and the current active editing-device ID. Database
-triggers and restrictive RLS policies reject owner-data access and mutation
-while deletion is pending. The browser deletes its IndexedDB database, local
-device identifiers, and cached owner-access marker when the request succeeds.
+previous five minutes and the current active editing-device ID. The same
+database transaction commits the deletion request and revokes every owner Auth
+session before returning; client sign-out then clears the device's persisted
+session. Database triggers and restrictive RLS policies reject owner-data
+access and mutation while deletion is pending. The browser deletes its IndexedDB
+database, local device identifiers, and cached owner-access marker when the
+request succeeds.
 
 ## Daily encrypted backup
 
 The `Daily encrypted Supabase backup` GitHub Actions workflow runs at 07:17 UTC
-and can also be dispatched manually. It uses the runner's native `pg_dump`,
-GnuPG, and `pg_restore` tools to:
+and can also be dispatched manually. It installs the PostgreSQL 17 client and
+uses its native `pg_dump`/`pg_restore` tools with GnuPG to:
 
 1. create a custom-format logical dump of the owner-data `private` and `public`
    schemas;
@@ -74,7 +77,8 @@ The backup role has one permitted connection, `private`/`public` schema usage,
 table/sequence read, and RLS bypass so it can capture complete app data. It has
 no Auth-schema access, write, role-management, database-creation, superuser, or
 replication privilege. Its generated password is stored only in the Actions
-connection-string secret.
+connection-string secret. Postgres default privileges give future
+migration-created tables and sequences the same read-only backup access.
 
 Supabase owns and restricts the managed `auth` schema, so this least-privilege
 logical dump does not copy password hashes, sessions, or identities. In a real
