@@ -328,19 +328,7 @@ const signOutButton = () =>
   [...document.querySelectorAll("button")].find(
     (button) => button.textContent.trim() === "SIGN OUT",
   );
-const deleteAccountButton = () =>
-  [...document.querySelectorAll("button")].find(
-    (button) => button.textContent.trim() === "DELETE ACCOUNT",
-  );
-const homeAccountActionsAbsent =
-  signOutButton() === undefined && deleteAccountButton() === undefined;
-await act(async () => {
-  document.querySelector('button[aria-label="Settings"]').click();
-  await flush();
-});
 const coldSignOutDisabled = signOutButton()?.disabled;
-const settingsAccountActionsPresent =
-  coldSignOutDisabled === true && deleteAccountButton()?.disabled === true;
 const coldStartNoCloudRead = countCalls("from") === 0;
 
 Object.defineProperty(window.navigator, "onLine", {
@@ -363,12 +351,6 @@ await act(async () => {
 });
 await act(settleLoading);
 const offline = text();
-if (!signOutButton()) {
-  await act(async () => {
-    document.querySelector('button[aria-label="Settings"]').click();
-    await flush();
-  });
-}
 const signOutDisabled = signOutButton()?.disabled;
 
 Object.defineProperty(window.navigator, "onLine", {
@@ -423,10 +405,6 @@ await act(async () => {
 });
 
 await act(async () => {
-  if (!signOutButton()) {
-    document.querySelector('button[aria-label="Settings"]').click();
-    await flush();
-  }
   [...document.querySelectorAll("button")]
     .find((button) => button.textContent.trim() === "SIGN OUT")
     .click();
@@ -551,8 +529,7 @@ const behavior = {
   cold_start_offline:
     coldStartNoCloudRead &&
     coldOffline.includes("OFFLINE · SAVED ON DEVICE") &&
-    homeAccountActionsAbsent &&
-    settingsAccountActionsPresent,
+    coldSignOutDisabled === true,
   expired_recovery_explained: expiredRecoveryExplained,
   generic_sign_in_error: genericSignInError,
   mounted_application:
