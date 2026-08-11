@@ -19,20 +19,27 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
   const [showHistory, setShowHistory] = useState(false);
   const [showRotationSetup, setShowRotationSetup] = useState(false);
   const [showWorkout, setShowWorkout] = useState(false);
+  const [verifiedEditingOwner, setVerifiedEditingOwner] = useState("");
   const offline = useOfflineSync(userId, homeProps.online);
   const workout = useWorkout(
     userId,
     offline.accountState,
     offline.commitOperation,
   );
-  const canEdit = offline.deviceAccess === "active";
+  const canEdit = editorAuthorized(
+    offline.deviceAccess,
+    userId,
+    verifiedEditingOwner,
+  );
   useEffect(() => {
-    if (canEdit) return;
+    if (offline.deviceAccess === "active") setVerifiedEditingOwner(userId);
+    if (offline.deviceAccess !== "readonly") return;
+    setVerifiedEditingOwner("");
     setShowRotationSetup(false);
     setShowWorkout(false);
-  }, [canEdit]);
+  }, [offline.deviceAccess, userId]);
   const openRotation = () => {
-    if (!canEdit) return;
+    if (offline.deviceAccess !== "active") return;
     setShowHistory(false);
     setShowRotationSetup(true);
   };
@@ -122,11 +129,11 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
         commitOperation={offline.commitOperation}
         onHome={() => setShowHistory(false)}
         onOpenRotation={
-          canEdit
+          offline.deviceAccess === "active"
             ? rotationDuringBlast(workout.lifecycle, openRotation)
             : undefined
         }
-        readOnly={!canEdit}
+        readOnly={offline.deviceAccess !== "active"}
       />,
     );
   }
@@ -209,6 +216,17 @@ function rotationDuringBlast(
 ) {
   if (lifecycle?.phase !== "blast") return undefined;
   return onOpenRotation;
+}
+
+function editorAuthorized(
+  access: ReturnType<typeof useOfflineSync>["deviceAccess"],
+  userId: string,
+  verifiedEditingOwner: string,
+) {
+  return (
+    access === "active" ||
+    (access === "checking" && verifiedEditingOwner === userId)
+  );
 }
 
 export default FoundationHome;
