@@ -24,6 +24,11 @@ import {
 
 export type OfflineSyncState = "failed" | "synced" | "syncing";
 
+const memoryDeviceAccess = new Map<
+  string,
+  { access: EditingDeviceAccess; deviceId: string }
+>();
+
 export function useOfflineSync(userId: string, online: boolean) {
   const deviceId = useRef(editingDeviceId()).current;
   const deviceAuthorityRequired = isCloudOwnerId(userId);
@@ -222,6 +227,8 @@ async function prepareReadOnlyTransfer(
 }
 
 function cachedDeviceAccess(userId: string, deviceId: string) {
+  const memory = memoryDeviceAccess.get(userId);
+  if (memory?.deviceId === deviceId) return memory.access;
   try {
     const cached = JSON.parse(
       localStorage.getItem(`dc-training-editing-access:${userId}`) ?? "null",
@@ -242,6 +249,7 @@ function cacheDeviceAccess(
   deviceId: string,
   access: EditingDeviceAccess,
 ) {
+  memoryDeviceAccess.set(userId, { access, deviceId });
   try {
     localStorage.setItem(
       `dc-training-editing-access:${userId}`,
