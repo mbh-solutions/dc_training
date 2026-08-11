@@ -1,8 +1,8 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "The active editing device can request owner-account deletion only after password re-entry and an explicit permanent-deletion acknowledgement. A successful request clears the current device, globally signs out, and makes owner data unavailable for exactly 30 days; authenticated recovery exposes only status, cancellation, password recovery, and sign-out. Expired requests are finalized by a database scheduler that deletes auth.users and relies on established cascading owner foreign keys. A daily GitHub Actions workflow uploads only a GPG-encrypted logical Supabase dump, verifies it before upload, surfaces failures, and expires every artifact after 30 days."
-proof = "The existing foundation-shell-v2 characterization reproduces the qualified auth, PWA, offline, and training shell unchanged. Production oxlint and tsc/Vite PWA build passed once. Rollback-only production-schema compilation created the backup role, request table, guards, restrictive RLS policies, finalizer, pg_cron job, and deletion RPCs successfully, then proved the role, table, RPC, extension, and cron schema had zero residue. The request boundary checks a most-recent password AMR timestamp and matching session no older than five minutes plus the S09 active device; server triggers and restrictive RLS fail closed while pending; cancellation refuses an expired deadline; finalization deletes the auth owner so every existing ON DELETE CASCADE owner record follows. The backup workflow uses native pg_dump, GPG AES-256, pg_restore parsing, a pinned upload action, ciphertext-only upload, and 30-day retention."
+intended_behavior = "The Settings gear opens the approved Settings screen in blast and cruise. The active editing device can switch LB/KG immediately through the existing offline queue; the owner profile stores the preference, future workout input follows it, and canonical micrograms drive converted workout/history display without rewriting history. Settings also preserves sync-safe sign-out. Existing account deletion, recovery, and encrypted backup behavior remains unchanged."
+proof = "The smallest conversion assertion proves canonical 100 lb displays as approximately 45.25 kg; the existing actual-React foundation test, oxlint, and production tsc/Vite PWA build pass once. Rollback-only production-schema compilation proves the new column/function compile, the active device can save KG, a stale device is rejected, authenticated has execute, anon and direct table update remain denied, and rollback leaves no column/function residue."
 
 [characterization]
 captured_behavior = "The qualified auth shell, rotation setup, workout runtime, logbook, history, blast/cruise, offline working copy, and active-device transfer remain. S10 adds an account-status gate, deletion/recovery controls, local purge, authoritative cloud lifecycle, and encrypted operational backup without changing any training rule."
@@ -10,10 +10,10 @@ proof = "Existing characterization definitions and goldens remain byte-identical
 
 [separation_of_concerns]
 before = "S09 qualified authentication recovery, cloud persistence, temporary offline use, and one active editing device, but it had no owner deletion lifecycle or operational backup."
-after = "auth-actions owns the reauthentication/status/cancel client boundary; App owns the fail-closed recovery-only route; HomeScreen owns explicit owner confirmation; offline-sync owns device purge; the migration alone owns deadlines, data guards, and final deletion; the workflow and runbook own backup operations."
+after = "HomeScreen exposes the existing gear as a real button; SettingsScreen owns the approved settings presentation; offline-sync reuses its ordered device-local queue for the preference; weight-conversion owns canonical display conversion; the additive migration alone owns durable profile storage and active-device authorization. Existing deletion and backup boundaries are unchanged."
 
 [architecture]
-dependency_direction = "App reads deletion state through auth-actions before it mounts FoundationHome. HomeScreen calls one request action; the action reauthenticates, passes the existing durable device ID to the RPC, purges local state, and asks Supabase Auth for global sign-out. All client trust terminates at security-definer RPCs; those RPCs read auth.uid, JWT session ID, auth.sessions, and the private active-device row. The cron finalizer is private and not executable by browser roles. The independent backup job receives its database URL and passphrase only from Actions secrets and uploads only ciphertext."
+dependency_direction = "HomeScreen opens SettingsScreen through FoundationHome. SettingsScreen delegates changes to the existing offline queue; offline-sync owns local reduction, ordered replay, and profile hydration; weight-conversion owns canonical display conversion; save_weight_unit terminates trust at auth.uid, account availability, the owner lock, and the private active-device row. Existing deletion and backup boundaries remain unchanged."
 reviewed_paths = [
     ".github/workflows/daily-encrypted-backup.yml",
     "src/App.tsx",
@@ -22,6 +22,7 @@ reviewed_paths = [
     "src/HistoryScreen.tsx",
     "src/HomeScreen.tsx",
     "src/RotationSetup.tsx",
+    "src/SettingsScreen.tsx",
     "src/hooks/use-offline-sync.ts",
     "src/hooks/use-foundation-profile.ts",
     "src/hooks/use-owner-access.ts",
@@ -33,6 +34,7 @@ reviewed_paths = [
     "src/rotation-assignment.ts",
     "src/workout-api.ts",
     "src/workout-domain.ts",
+    "src/weight-conversion.ts",
     "supabase/migrations/20260810193129_offline_operation_queue.sql",
     "supabase/migrations/20260810211509_preserve_offline_event_time.sql",
     "supabase/migrations/20260810215003_validate_offline_replay_context.sql",
@@ -46,6 +48,7 @@ reviewed_paths = [
     "supabase/migrations/20260811054903_account_deletion_lifecycle.sql",
     "supabase/migrations/20260811063245_narrow_backup_role.sql",
     "supabase/migrations/20260811064630_require_password_amr.sql",
+    "supabase/migrations/20260811094000_add_weight_unit_setting.sql",
     "docs/operations/ACCOUNT_LIFECYCLE_AND_BACKUPS.md",
     "tests/a1-assignment.e2e.mjs",
     "tests/history.test.mjs",
@@ -61,11 +64,11 @@ owns = "Authoritative request time, 30-day deadline, pending-account data denial
 does_not_own = "Password UI, local browser storage, GitHub artifact encryption, authentication email delivery, or Supportability Gate behavior."
 
 [incremental_refactor]
-target = "Add only S10 account deletion/recovery, encrypted backup, and release operations to the qualified S09 app."
-completed_step = "Added one auth-status gate, one deletion control, one recovery screen, one local purge function, three forward migrations, one native backup workflow, and one runbook. No package, training rule, hosting platform, public-user surface, paid service, or Supportability Gate change was made."
+target = "Repair the non-interactive Settings gear exposed during final owner-iPhone qualification."
+completed_step = "Replaced both decorative gear spans with buttons and added one Settings screen, one queued preference operation, canonical display conversion, and one active-device-authorized profile update. No package, training rule, hosting platform, or Supportability Gate change was made."
 
 [review_handoff]
-summary = "Review recent password-AMR enforcement, active-device binding, exact 30-day timestamps, restrictive RLS plus trigger coverage, expired cancellation, auth-user cascade finalization, foreground fail-closed App routing, cross-device local purge before global sign-out, ciphertext-only upload, and 30-day artifact retention."
+summary = "Review blast/cruise Settings navigation, active/read-only unit controls, offline queue replay, canonical no-drift conversion, correction preservation when only reps change, and the save_weight_unit active-device/account-availability boundary."
 remaining_risks = [
     "A device that remains permanently offline cannot receive a remote deletion signal; the requesting active device is purged immediately, and cloud data is unavailable to every device while pending.",
     "The built-in authentication email path remains acceptable only if the pre-authorized owner proves delivery during final production qualification.",
@@ -75,8 +78,8 @@ remaining_risks = [
 [human_review]
 naming = "DELETE ACCOUNT, BEGIN 30-DAY DELETION, ACCOUNT UNAVAILABLE, DELETION PENDING, and CANCEL DELETION state the lifecycle directly; the permanent warning names account, cloud history, and device data."
 cohesion = "Presentation, auth orchestration, local erasure, authoritative database lifecycle, encrypted backup, and operator documentation remain separate."
-intended_behavior = "The owner deliberately requests deletion from the active device, loses ordinary access immediately, can cancel for 30 days, and then loses live data permanently while encrypted backups age out within 30 more days."
-reviewability = "Six narrow client edits, three forward migrations, one workflow, one runbook, immutable existing characterization evidence, and rollback-only schema compilation implement S10; no package or new test was added."
+intended_behavior = "The owner taps Settings, switches one global unit immediately, sees canonical conversions everywhere, can return home, and can sign out only after sync. A read-only device can view but not change the setting."
+reviewability = "One new screen, one additive profile column/RPC, and narrow wiring through existing offline and weight-display seams repair the observed bug; no package, new test file, or Gate change was added."
 
 [[module_boundaries]]
 path = "src/hooks/use-offline-sync.ts"
@@ -197,3 +200,21 @@ path = ".github/workflows/daily-encrypted-backup.yml"
 owner_path = ".github/workflows/daily-encrypted-backup.yml"
 basis = "responsibility"
 justification = "Owns native logical dump creation, symmetric encryption, parse verification, ciphertext-only artifact upload, visible job failure, and 30-day retention."
+
+[[module_boundaries]]
+path = "src/SettingsScreen.tsx"
+owner_path = "src/SettingsScreen.tsx"
+basis = "responsibility"
+justification = "Owns the approved Settings presentation and delegates persistence and sign-out through existing callbacks."
+
+[[module_boundaries]]
+path = "src/weight-conversion.ts"
+owner_path = "src/weight-conversion.ts"
+basis = "domain"
+justification = "Owns exact canonical microgram conversion and allowed-unit display rounding without persistence or UI state."
+
+[[module_boundaries]]
+path = "supabase/migrations/20260811094000_add_weight_unit_setting.sql"
+owner_path = "supabase/migrations/20260811094000_add_weight_unit_setting.sql"
+basis = "responsibility"
+justification = "Owns durable owner weight-unit storage and active-device-authorized mutation without granting direct table writes."

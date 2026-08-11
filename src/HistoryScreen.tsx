@@ -17,7 +17,12 @@ import {
   type HistoryWorkout,
   type WorkoutStep,
 } from "./workout-domain.js";
-import { weightMicrograms, type WeightEntry } from "./weight-conversion.js";
+import {
+  displayWeight,
+  weightMicrograms,
+  type WeightEntry,
+  type WeightUnit,
+} from "./weight-conversion.js";
 
 type Props = {
   accountState: OfflineAccountState | null;
@@ -26,6 +31,7 @@ type Props = {
   onOpenRotation?: () => void;
   preserveCorrectionDraft?: boolean;
   readOnly?: boolean;
+  weightUnit: WeightUnit;
 };
 
 type Performance = {
@@ -67,6 +73,7 @@ export default function HistoryScreen({
   onOpenRotation,
   preserveCorrectionDraft = false,
   readOnly = false,
+  weightUnit,
 }: Props) {
   const data = accountState?.history ?? null;
   const [editingStep, setEditingStep] = useState<HistoryStepIdentity | null>(
@@ -162,6 +169,7 @@ export default function HistoryScreen({
       setSearch={setSearch}
       setTab={setTab}
       tab={tab}
+      weightUnit={weightUnit}
     />
   ) : (
     <HistoryShell onHome={onHome} onOpenRotation={onOpenRotation}>
@@ -193,6 +201,7 @@ function LoadedHistory({
   setSearch,
   setTab,
   tab,
+  weightUnit,
 }: {
   data: HistoryData;
   editingStep: HistoryStepIdentity | null;
@@ -216,6 +225,7 @@ function LoadedHistory({
   setSearch: (search: string) => void;
   setTab: (tab: "exercises" | "workouts") => void;
   tab: "exercises" | "workouts";
+  weightUnit: WeightUnit;
 }) {
   const selectedAssignment = historyAssignmentByIdentity(
     data,
@@ -241,6 +251,7 @@ function LoadedHistory({
           }}
           onEdit={onEdit}
           performances={performances}
+          weightUnit={weightUnit}
         />
         {correctionStep && (
           <CorrectionEditor
@@ -250,6 +261,7 @@ function LoadedHistory({
             saveDisabled={readOnly}
             saving={saving}
             step={correctionStep}
+            weightUnit={weightUnit}
           />
         )}
       </HistoryShell>
@@ -276,6 +288,7 @@ function LoadedHistory({
             (step) => step.workout_id === selectedWorkout.workout_id,
           )}
           workout={selectedWorkout}
+          weightUnit={weightUnit}
         />
         {correctionStep && (
           <CorrectionEditor
@@ -285,6 +298,7 @@ function LoadedHistory({
             saveDisabled={readOnly}
             saving={saving}
             step={correctionStep}
+            weightUnit={weightUnit}
           />
         )}
       </HistoryShell>
@@ -324,6 +338,7 @@ function LoadedHistory({
           }
           search={search}
           setSearch={setSearch}
+          weightUnit={weightUnit}
         />
       ) : (
         <WorkoutsView
@@ -428,6 +443,7 @@ function ExercisesView({
   onOpen,
   search,
   setSearch,
+  weightUnit,
 }: {
   data: HistoryData;
   expanded: string | null;
@@ -435,6 +451,7 @@ function ExercisesView({
   onOpen: (assignment: HistoryAssignment) => void;
   search: string;
   setSearch: (search: string) => void;
+  weightUnit: WeightUnit;
 }) {
   const groups = currentHistoryGroups(data.assignments);
   const retired = retiredHistoryAssignments(data.assignments);
@@ -466,6 +483,7 @@ function ExercisesView({
               data={data}
               key={assignment.assignment_id}
               onOpen={onOpen}
+              weightUnit={weightUnit}
             />
           ))}
           {matches.length === 0 && <p>NO MATCHING EXERCISE</p>}
@@ -483,6 +501,7 @@ function ExercisesView({
             onExpand(expanded === group.bodyPart ? null : group.bodyPart)
           }
           onOpen={onOpen}
+          weightUnit={weightUnit}
         />
       ))}
       <ExerciseGroup
@@ -492,6 +511,7 @@ function ExercisesView({
         expanded={expanded === "retired"}
         onExpand={() => onExpand(expanded === "retired" ? null : "retired")}
         onOpen={onOpen}
+        weightUnit={weightUnit}
       />
       {groups.length === 0 && retired.length === 0 && (
         <p className="history-state">NO EXERCISE HISTORY YET</p>
@@ -507,6 +527,7 @@ function ExerciseGroup({
   expanded,
   onExpand,
   onOpen,
+  weightUnit,
 }: {
   assignments: HistoryAssignment[];
   bodyPart: string;
@@ -514,6 +535,7 @@ function ExerciseGroup({
   expanded: boolean;
   onExpand: () => void;
   onOpen: (assignment: HistoryAssignment) => void;
+  weightUnit: WeightUnit;
 }) {
   return (
     <section className="exercise-group">
@@ -535,6 +557,7 @@ function ExerciseGroup({
               data={data}
               key={assignment.assignment_id}
               onOpen={onOpen}
+              weightUnit={weightUnit}
             />
           ))}
           {assignments.length === 0 && <p>NO RETIRED EXERCISES</p>}
@@ -548,10 +571,12 @@ function ExerciseButton({
   assignment,
   data,
   onOpen,
+  weightUnit,
 }: {
   assignment: HistoryAssignment;
   data: HistoryData;
   onOpen: (assignment: HistoryAssignment) => void;
+  weightUnit: WeightUnit;
 }) {
   const latest = performancesFor(data, assignment).at(-1);
   return (
@@ -565,7 +590,9 @@ function ExerciseButton({
         {assignment.exercise}
         <small>{protocolLabel(assignment.protocol)}</small>
       </strong>
-      <em>{latest ? performanceSummary(latest.step) : "NO ENTRIES"}</em>
+      <em>
+        {latest ? performanceSummary(latest.step, weightUnit) : "NO ENTRIES"}
+      </em>
       <b>›</b>
     </button>
   );
@@ -653,6 +680,7 @@ function WorkoutDetail({
   onEdit,
   steps,
   workout,
+  weightUnit,
 }: {
   activeAssignmentIds: ReadonlySet<string>;
   message: string;
@@ -660,6 +688,7 @@ function WorkoutDetail({
   onEdit?: (step: WorkoutStep) => void;
   steps: WorkoutStep[];
   workout: HistoryWorkout;
+  weightUnit: WeightUnit;
 }) {
   return (
     <section className="history-detail workout-history-detail">
@@ -693,7 +722,7 @@ function WorkoutDetail({
                   ? "READ ONLY DEVICE"
                   : correctionLocked(activeAssignmentIds, step)
                     ? "FINISH ACTIVE WORKOUT TO CORRECT"
-                    : stepStatus(step)}
+                    : stepStatus(step, weightUnit)}
               </em>
               <b>
                 {step.status === "completed" && step.kind === "exercise"
@@ -715,6 +744,7 @@ function ExercisePerformance({
   onBack,
   onEdit,
   performances,
+  weightUnit,
 }: {
   activeAssignmentIds: ReadonlySet<string>;
   assignment: HistoryAssignment;
@@ -722,6 +752,7 @@ function ExercisePerformance({
   onBack: () => void;
   onEdit?: (step: WorkoutStep) => void;
   performances: Performance[];
+  weightUnit: WeightUnit;
 }) {
   const segments = performanceSegments(performances);
   return (
@@ -750,6 +781,7 @@ function ExercisePerformance({
             <ProtocolCharts
               assignment={segment.assignment}
               performances={segment.performances}
+              weightUnit={weightUnit}
             />
           </section>
         ))}
@@ -766,7 +798,7 @@ function ExercisePerformance({
             type="button"
           >
             <span>{shortDate(performance.workout.started_at)}</span>
-            <strong>{performanceSummary(performance.step)}</strong>
+            <strong>{performanceSummary(performance.step, weightUnit)}</strong>
             <em className={performance.step.verdict === "win" ? "red" : ""}>
               {!onEdit
                 ? "READ ONLY DEVICE"
@@ -789,14 +821,21 @@ function ExercisePerformance({
 function ProtocolCharts({
   assignment,
   performances,
+  weightUnit,
 }: {
   assignment: HistoryAssignment;
   performances: Performance[];
+  weightUnit: WeightUnit;
 }) {
   if (assignment.protocol === "rest_pause") {
     return (
       <>
-        <LineChart label="WEIGHT" performances={performances} setIndex={0} />
+        <LineChart
+          label="WEIGHT"
+          performances={performances}
+          setIndex={0}
+          weightUnit={weightUnit}
+        />
         <BarChart
           label="TOTAL REPS"
           performances={performances}
@@ -809,7 +848,12 @@ function ProtocolCharts({
   if (assignment.protocol === "timed_hold") {
     return (
       <>
-        <LineChart label="WEIGHT" performances={performances} setIndex={0} />
+        <LineChart
+          label="WEIGHT"
+          performances={performances}
+          setIndex={0}
+          weightUnit={weightUnit}
+        />
         <BarChart
           label="HOLD (SECONDS)"
           performances={performances}
@@ -829,6 +873,7 @@ function ProtocolCharts({
       performances={performances}
       setIndex={index}
       target={assignment.target_sets[index]}
+      weightUnit={weightUnit}
     />
   ));
 }
@@ -838,11 +883,13 @@ function LineChart({
   performances,
   setIndex,
   target,
+  weightUnit,
 }: {
   label: string;
   performances: Performance[];
   setIndex: number;
   target?: { max: number; min: number };
+  weightUnit: WeightUnit;
 }) {
   const lanePerformances = performances.filter(
     (item) => item.step.weight_entries[setIndex] !== undefined,
@@ -865,6 +912,7 @@ function LineChart({
             <text x={point.x} y={Math.max(point.y - 4, 5)}>
               {weightLabel(
                 lanePerformances[index].step.weight_entries[setIndex],
+                weightUnit,
               )}
             </text>
             {lanePerformances[index].step.reps[setIndex] && (
@@ -962,6 +1010,7 @@ function CorrectionEditor({
   saveDisabled,
   saving,
   step,
+  weightUnit,
 }: {
   message: string;
   onCancel: () => void;
@@ -975,9 +1024,13 @@ function CorrectionEditor({
   saveDisabled: boolean;
   saving: boolean;
   step: WorkoutStep;
+  weightUnit: WeightUnit;
 }) {
+  const [displayedWeights] = useState(() =>
+    step.weight_entries.map((weight) => displayWeight(weight, weightUnit)),
+  );
   const [amounts, setAmounts] = useState(
-    step.weight_entries.map((weight) => weight.amount),
+    displayedWeights.map((weight) => weight.amount),
   );
   const [duration, setDuration] = useState(
     step.duration_seconds?.toString() ?? "",
@@ -993,14 +1046,17 @@ function CorrectionEditor({
 
   const submit = async () => {
     if (saveDisabled) return;
-    const weights = expectedPerformance.weights.map((weight, index) => ({
-      amount: amounts[index],
-      micrograms: weightMicrograms({
+    const weights = expectedPerformance.weights.map((weight, index) => {
+      if (amounts[index] === displayedWeights[index].amount) return weight;
+      return {
         amount: amounts[index],
-        unit: weight.unit,
-      })?.toString(),
-      unit: weight.unit,
-    }));
+        micrograms: weightMicrograms({
+          amount: amounts[index],
+          unit: weightUnit,
+        })?.toString(),
+        unit: weightUnit,
+      };
+    });
     const repValues = reps.map(Number);
     const durationValue = shape.metric === "seconds" ? Number(duration) : null;
     if (
@@ -1050,7 +1106,7 @@ function CorrectionEditor({
                 }
                 value={amount}
               />
-              {expectedPerformance.weights[index].unit.toUpperCase()}
+              {weightUnit.toUpperCase()}
             </span>
           </label>
         ))}
@@ -1241,24 +1297,28 @@ function sum(values: number[]) {
   return values.reduce((total, value) => total + value, 0);
 }
 
-function weightLabel(weight: WeightEntry | undefined) {
-  return weight ? `${weight.amount} ${weight.unit.toUpperCase()}` : "";
+function weightLabel(weight: WeightEntry | undefined, unit: WeightUnit) {
+  if (!weight) return "";
+  const displayed = displayWeight(weight, unit);
+  return `${displayed.converted ? "≈ " : ""}${displayed.amount} ${displayed.unit.toUpperCase()}`;
 }
 
-function performanceSummary(step: WorkoutStep) {
+function performanceSummary(step: WorkoutStep, unit: WeightUnit) {
   if (step.status === "skipped") return "SKIPPED";
   if (step.protocol === "timed_hold")
-    return `${weightLabel(step.weight_entries[0])} × ${step.duration_seconds} SEC`;
+    return `${weightLabel(step.weight_entries[0], unit)} × ${step.duration_seconds} SEC`;
   if (step.protocol === "rest_pause")
-    return `${weightLabel(step.weight_entries[0])} × ${sum(step.reps)} · ${step.reps.join(" / ")}`;
+    return `${weightLabel(step.weight_entries[0], unit)} × ${sum(step.reps)} · ${step.reps.join(" / ")}`;
   return step.weight_entries
-    .map((weight, index) => `${weightLabel(weight)} × ${step.reps[index]}`)
+    .map(
+      (weight, index) => `${weightLabel(weight, unit)} × ${step.reps[index]}`,
+    )
     .join(" · ");
 }
 
-function stepStatus(step: WorkoutStep) {
+function stepStatus(step: WorkoutStep, unit: WeightUnit) {
   if (step.status !== "completed") return step.status.toUpperCase();
-  return step.kind === "stretch" ? "COMPLETED" : performanceSummary(step);
+  return step.kind === "stretch" ? "COMPLETED" : performanceSummary(step, unit);
 }
 
 function verdictLabel(step: WorkoutStep) {

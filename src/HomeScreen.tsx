@@ -18,6 +18,7 @@ type HomeScreenProps = Omit<FoundationHomeProps, "userId"> & {
   nextSlot: WorkoutSlot;
   onOpenHistory: () => void;
   onOpenRotation?: () => void;
+  onOpenSettings: () => void;
   onRetrySync: () => Promise<boolean>;
   onTransferDevice: () => Promise<boolean>;
   onResumeWorkout: () => void;
@@ -53,6 +54,7 @@ function HomeScreen({
   online,
   onOpenHistory,
   onOpenRotation,
+  onOpenSettings,
   onRetrySync,
   onTransferDevice,
   onResumeWorkout,
@@ -79,6 +81,7 @@ function HomeScreen({
         nextSlot={nextSlot}
         online={online}
         onOpenHistory={onOpenHistory}
+        onOpenSettings={onOpenSettings}
         onRetrySync={onRetrySync}
         onSignOut={onSignOut}
         onStartNewBlast={onStartNewBlast}
@@ -96,9 +99,14 @@ function HomeScreen({
           <p className="eyebrow">PRIVATE TRAINING LOG</p>
           <h1>DC TRAINING</h1>
         </div>
-        <span className="foundation-mark" aria-label="Settings">
+        <button
+          aria-label="Settings"
+          className="foundation-mark"
+          onClick={onOpenSettings}
+          type="button"
+        >
           ⚙
-        </span>
+        </button>
       </header>
 
       <NetworkStatus
@@ -263,6 +271,7 @@ function CruiseHome({
   nextSlot,
   online,
   onOpenHistory,
+  onOpenSettings,
   onRetrySync,
   onSignOut,
   onStartNewBlast,
@@ -277,6 +286,7 @@ function CruiseHome({
   nextSlot: WorkoutSlot;
   online: boolean;
   onOpenHistory: () => void;
+  onOpenSettings: () => void;
   onRetrySync: () => Promise<boolean>;
   onSignOut: () => Promise<void>;
   onStartNewBlast: () => Promise<boolean>;
@@ -291,9 +301,14 @@ function CruiseHome({
         <div>
           <h1>DC TRAINING</h1>
         </div>
-        <span className="foundation-mark" aria-label="Settings">
+        <button
+          aria-label="Settings"
+          className="foundation-mark"
+          onClick={onOpenSettings}
+          type="button"
+        >
           ⚙
-        </span>
+        </button>
       </header>
       <NetworkStatus
         deviceAccess={deviceAccess}
