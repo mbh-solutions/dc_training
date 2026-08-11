@@ -338,7 +338,9 @@ export async function synchronizeOfflineState(
   access?: Exclude<EditingDeviceAccess, "checking">,
 ) {
   if (!supabase) throw new Error("CLOUD IS NOT CONFIGURED");
-  const deviceAccess = access ?? (await registerEditingDevice(deviceId));
+  const deviceAccess =
+    access ??
+    (isCloudOwnerId(userId) ? await registerEditingDevice(deviceId) : "active");
   for (;;) {
     const operations = await listOfflineOperations(userId);
     if (deviceAccess === "readonly" && operations.length > 0)
