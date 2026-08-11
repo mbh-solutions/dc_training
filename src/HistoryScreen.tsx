@@ -218,6 +218,7 @@ function LoadedHistory({
   );
   const editingStep = historyStepByIdentity(data, editingStepIdentity);
   const activeAssignmentIds = activeWorkoutAssignmentIds(data);
+  const onEdit = historyCorrectionEditor(readOnly, data, onEditStep);
   if (selectedAssignment) {
     const performances = performancesFor(data, selectedAssignment);
     return (
@@ -231,11 +232,7 @@ function LoadedHistory({
             setMessage("");
             onSelectAssignment(null);
           }}
-          onEdit={
-            readOnly
-              ? undefined
-              : (step) => onEditStep(historyStepIdentity(data, step))
-          }
+          onEdit={onEdit}
           performances={performances}
         />
         {editingStep && !readOnly && (
@@ -266,11 +263,7 @@ function LoadedHistory({
             setMessage("");
             onSelectWorkout(null);
           }}
-          onEdit={
-            readOnly
-              ? undefined
-              : (step) => onEditStep(historyStepIdentity(data, step))
-          }
+          onEdit={onEdit}
           steps={data.steps.filter(
             (step) => step.workout_id === selectedWorkout.workout_id,
           )}
@@ -350,6 +343,15 @@ function historyStepIdentity(
     ordinal: step.ordinal,
     startOperationId: workout.start_operation_id,
   };
+}
+
+function historyCorrectionEditor(
+  readOnly: boolean,
+  data: HistoryData,
+  onEditStep: (step: HistoryStepIdentity | null) => void,
+) {
+  if (readOnly) return undefined;
+  return (step: WorkoutStep) => onEditStep(historyStepIdentity(data, step));
 }
 
 function historyAssignmentByIdentity(
@@ -681,8 +683,8 @@ function WorkoutDetail({
                 {!onEdit
                   ? "READ ONLY DEVICE"
                   : correctionLocked(activeAssignmentIds, step)
-                  ? "FINISH ACTIVE WORKOUT TO CORRECT"
-                  : stepStatus(step)}
+                    ? "FINISH ACTIVE WORKOUT TO CORRECT"
+                    : stepStatus(step)}
               </em>
               <b>
                 {step.status === "completed" && step.kind === "exercise"
@@ -748,8 +750,7 @@ function ExercisePerformance({
         {[...performances].reverse().map((performance) => (
           <button
             disabled={
-              !onEdit ||
-              correctionLocked(activeAssignmentIds, performance.step)
+              !onEdit || correctionLocked(activeAssignmentIds, performance.step)
             }
             key={performance.step.step_id}
             onClick={() => onEdit?.(performance.step)}
@@ -761,8 +762,8 @@ function ExercisePerformance({
               {!onEdit
                 ? "READ ONLY DEVICE"
                 : correctionLocked(activeAssignmentIds, performance.step)
-                ? "FINISH ACTIVE WORKOUT TO CORRECT"
-                : verdictLabel(performance.step)}
+                  ? "FINISH ACTIVE WORKOUT TO CORRECT"
+                  : verdictLabel(performance.step)}
             </em>
             <b>{onEdit ? "›" : ""}</b>
           </button>
