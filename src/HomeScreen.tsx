@@ -614,7 +614,7 @@ export function NetworkStatus({
           onClick={() => {
             if (
               window.confirm(
-                "Transfer edit access to this device? The prior device will become read only. Do not keep editing it. Only changes already synced to cloud can be restored.",
+                "Transfer edit access to this device? The prior device will become read only. Do not keep editing it. Any unsynced changes on this read-only device will be discarded; only changes already synced to cloud can be restored.",
               )
             )
               void onTransferDevice();

@@ -24,6 +24,7 @@ type Props = {
   commitOperation: CommitOperation;
   onHome: () => void;
   onOpenRotation?: () => void;
+  readOnly?: boolean;
 };
 
 type Performance = {
@@ -63,6 +64,7 @@ export default function HistoryScreen({
   commitOperation,
   onHome,
   onOpenRotation,
+  readOnly = false,
 }: Props) {
   const data = accountState?.history ?? null;
   const [editingStep, setEditingStep] = useState<HistoryStepIdentity | null>(
@@ -151,6 +153,7 @@ export default function HistoryScreen({
       search={search}
       selectedAssignment={selectedAssignment}
       selectedWorkout={selectedWorkout}
+      readOnly={readOnly}
       setExpanded={setExpanded}
       setMessage={setMessage}
       setSearch={setSearch}
@@ -180,6 +183,7 @@ function LoadedHistory({
   search,
   selectedAssignment: selectedAssignmentIdentity,
   selectedWorkout: selectedWorkoutIdentity,
+  readOnly,
   setExpanded,
   setMessage,
   setSearch,
@@ -201,6 +205,7 @@ function LoadedHistory({
   search: string;
   selectedAssignment: HistoryAssignmentIdentity | null;
   selectedWorkout: HistoryWorkoutIdentity | null;
+  readOnly: boolean;
   setExpanded: (bodyPart: string | null) => void;
   setMessage: (message: string) => void;
   setSearch: (search: string) => void;
@@ -226,10 +231,14 @@ function LoadedHistory({
             setMessage("");
             onSelectAssignment(null);
           }}
-          onEdit={(step) => onEditStep(historyStepIdentity(data, step))}
+          onEdit={
+            readOnly
+              ? undefined
+              : (step) => onEditStep(historyStepIdentity(data, step))
+          }
           performances={performances}
         />
-        {editingStep && (
+        {editingStep && !readOnly && (
           <CorrectionEditor
             message={message}
             onCancel={() => onEditStep(null)}
@@ -257,13 +266,17 @@ function LoadedHistory({
             setMessage("");
             onSelectWorkout(null);
           }}
-          onEdit={(step) => onEditStep(historyStepIdentity(data, step))}
+          onEdit={
+            readOnly
+              ? undefined
+              : (step) => onEditStep(historyStepIdentity(data, step))
+          }
           steps={data.steps.filter(
             (step) => step.workout_id === selectedWorkout.workout_id,
           )}
           workout={selectedWorkout}
         />
-        {editingStep && (
+        {editingStep && !readOnly && (
           <CorrectionEditor
             message={message}
             onCancel={() => onEditStep(null)}
@@ -633,7 +646,7 @@ function WorkoutDetail({
   activeAssignmentIds: ReadonlySet<string>;
   message: string;
   onBack: () => void;
-  onEdit: (step: WorkoutStep) => void;
+  onEdit?: (step: WorkoutStep) => void;
   steps: WorkoutStep[];
   workout: HistoryWorkout;
 }) {
@@ -651,12 +664,13 @@ function WorkoutDetail({
           .map((step) => (
             <button
               disabled={
+                !onEdit ||
                 step.kind !== "exercise" ||
                 step.status !== "completed" ||
                 correctionLocked(activeAssignmentIds, step)
               }
               key={step.step_id}
-              onClick={() => onEdit(step)}
+              onClick={() => onEdit?.(step)}
               type="button"
             >
               <span>{step.ordinal}</span>
@@ -664,7 +678,9 @@ function WorkoutDetail({
                 {step.exercise ?? `${displayBodyPart(step.body_part)} STRETCH`}
               </strong>
               <em>
-                {correctionLocked(activeAssignmentIds, step)
+                {!onEdit
+                  ? "READ ONLY DEVICE"
+                  : correctionLocked(activeAssignmentIds, step)
                   ? "FINISH ACTIVE WORKOUT TO CORRECT"
                   : stepStatus(step)}
               </em>
@@ -693,7 +709,7 @@ function ExercisePerformance({
   assignment: HistoryAssignment;
   message: string;
   onBack: () => void;
-  onEdit: (step: WorkoutStep) => void;
+  onEdit?: (step: WorkoutStep) => void;
   performances: Performance[];
 }) {
   const segments = performanceSegments(performances);
@@ -731,19 +747,24 @@ function ExercisePerformance({
       <div className="performance-rows">
         {[...performances].reverse().map((performance) => (
           <button
-            disabled={correctionLocked(activeAssignmentIds, performance.step)}
+            disabled={
+              !onEdit ||
+              correctionLocked(activeAssignmentIds, performance.step)
+            }
             key={performance.step.step_id}
-            onClick={() => onEdit(performance.step)}
+            onClick={() => onEdit?.(performance.step)}
             type="button"
           >
             <span>{shortDate(performance.workout.started_at)}</span>
             <strong>{performanceSummary(performance.step)}</strong>
             <em className={performance.step.verdict === "win" ? "red" : ""}>
-              {correctionLocked(activeAssignmentIds, performance.step)
+              {!onEdit
+                ? "READ ONLY DEVICE"
+                : correctionLocked(activeAssignmentIds, performance.step)
                 ? "FINISH ACTIVE WORKOUT TO CORRECT"
                 : verdictLabel(performance.step)}
             </em>
-            <b>›</b>
+            <b>{onEdit ? "›" : ""}</b>
           </button>
         ))}
       </div>

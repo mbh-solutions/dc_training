@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   commitOfflineOperation,
+  discardOfflineOperations,
   editingDeviceId,
   isCloudOwnerId,
   listenOfflineState,
@@ -149,13 +150,19 @@ export function useOfflineSync(userId: string, online: boolean) {
       setLoadError("CONNECT TO TRANSFER EDIT ACCESS");
       return false;
     }
-    if (!(await synchronize())) return false;
-    if ((await pendingOfflineOperationCount(userId)) > 0) {
-      setLoadError("SYNC THIS DEVICE BEFORE TRANSFERRING EDIT ACCESS");
-      return false;
-    }
     setSyncState("syncing");
     try {
+      if (
+        deviceAccess === "readonly" &&
+        (await pendingOfflineOperationCount(userId)) > 0
+      )
+        await discardOfflineOperations(userId);
+      if (!(await synchronize())) return false;
+      if ((await pendingOfflineOperationCount(userId)) > 0) {
+        setLoadError("SYNC THIS DEVICE BEFORE TRANSFERRING EDIT ACCESS");
+        setSyncState("failed");
+        return false;
+      }
       const access = await transferEditingDevice(deviceId);
       setDeviceAccess(access);
       cacheDeviceAccess(userId, deviceId, access);
@@ -169,7 +176,7 @@ export function useOfflineSync(userId: string, online: boolean) {
       setSyncState("failed");
       return false;
     }
-  }, [deviceId, online, reload, synchronize, userId]);
+  }, [deviceAccess, deviceId, online, reload, synchronize, userId]);
 
   return {
     accountState,

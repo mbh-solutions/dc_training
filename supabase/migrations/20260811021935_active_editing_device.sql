@@ -128,7 +128,13 @@ from public, anon;
 grant execute on function public.apply_offline_operation(uuid, text, jsonb, uuid)
 to authenticated;
 
-revoke insert, update, delete on table public.rotation_assignments
+revoke insert, update, delete on table
+  public.rotation_assignments,
+  public.rotation_assignment_versions,
+  public.workout_rotation_state,
+  public.workouts,
+  public.workout_steps,
+  public.workout_step_operations
 from authenticated;
 drop policy if exists "Users can create only their rotation assignments"
 on public.rotation_assignments;

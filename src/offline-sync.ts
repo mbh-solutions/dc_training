@@ -159,15 +159,23 @@ export function isCloudOwnerId(value: string) {
 }
 
 export function editingDeviceId() {
-  const stored =
-    typeof localStorage === "undefined"
-      ? memoryDeviceId
-      : (localStorage.getItem(deviceIdStorageKey) ?? "");
-  if (validUuid(stored)) return stored;
-  const created = crypto.randomUUID();
-  if (typeof localStorage === "undefined") memoryDeviceId = created;
-  else localStorage.setItem(deviceIdStorageKey, created);
-  return created;
+  try {
+    const stored =
+      typeof localStorage === "undefined"
+        ? memoryDeviceId
+        : (localStorage.getItem(deviceIdStorageKey) ?? "");
+    if (validUuid(stored)) {
+      memoryDeviceId = stored;
+      return stored;
+    }
+    memoryDeviceId = crypto.randomUUID();
+    if (typeof localStorage !== "undefined")
+      localStorage.setItem(deviceIdStorageKey, memoryDeviceId);
+    return memoryDeviceId;
+  } catch {
+    if (!validUuid(memoryDeviceId)) memoryDeviceId = crypto.randomUUID();
+    return memoryDeviceId;
+  }
 }
 
 function validUuid(value: string) {
@@ -330,6 +338,11 @@ function sameOperation(prior: OfflineOperation, input: OfflineOperationInput) {
 
 export async function pendingOfflineOperationCount(userId: string) {
   return (await listOfflineOperations(userId)).length;
+}
+
+export async function discardOfflineOperations(userId: string) {
+  for (const operation of await listOfflineOperations(userId))
+    await deleteOfflineOperation(operation.id);
 }
 
 async function editingDeviceAuthority(

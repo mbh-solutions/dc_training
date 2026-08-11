@@ -118,6 +118,7 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
             ? rotationDuringBlast(workout.lifecycle, openRotation)
             : undefined
         }
+        readOnly={offline.deviceAccess !== "active"}
       />,
     );
   }
