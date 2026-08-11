@@ -6,7 +6,7 @@ import {
   SetupScreen,
   SignInScreen,
 } from "./AuthScreens.jsx";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import FoundationHome from "./FoundationHome.jsx";
 import { useAuthSession } from "./hooks/use-auth-session.js";
@@ -102,6 +102,8 @@ function activeOwnerSession(
 }
 
 function useAccountDeletion(session: Session | null, online: boolean) {
+  const checkGeneration = useRef(0);
+  const [checkingUserId, setCheckingUserId] = useState("");
   const [result, setResult] = useState<{
     status: AccountDeletionStatus | null;
     userId: string;
@@ -112,6 +114,8 @@ function useAccountDeletion(session: Session | null, online: boolean) {
   } | null>(null);
   const load = useCallback(async () => {
     if (!session || !online) return false;
+    const generation = ++checkGeneration.current;
+    setCheckingUserId(session.user.id);
     setError(null);
     try {
       const status = await ownerAccountDeletionStatus(session.user.id);
@@ -123,11 +127,15 @@ function useAccountDeletion(session: Session | null, online: boolean) {
         userId: session.user.id,
       });
       return false;
+    } finally {
+      if (checkGeneration.current === generation) setCheckingUserId("");
     }
   }, [online, session]);
 
   useEffect(() => {
     if (!session) {
+      checkGeneration.current += 1;
+      setCheckingUserId("");
       setResult(null);
       setError(null);
       return;
@@ -149,7 +157,9 @@ function useAccountDeletion(session: Session | null, online: boolean) {
   }, [load, online, session]);
 
   const checking = Boolean(
-    session && online && result?.userId !== session.user.id,
+    session &&
+    online &&
+    (checkingUserId === session.user.id || result?.userId !== session.user.id),
   );
   return {
     cancel: async () => {
