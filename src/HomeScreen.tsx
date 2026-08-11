@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FoundationHomeProps } from "./FoundationHome.js";
 import type { OfflineSyncState } from "./hooks/use-offline-sync.js";
 import type { EditingDeviceAccess } from "./offline-sync.js";
@@ -62,6 +62,9 @@ function HomeScreen({
   syncState,
 }: HomeScreenProps) {
   const [cruiseConfirmationOpen, setCruiseConfirmationOpen] = useState(false);
+  useEffect(() => {
+    if (deviceAccess !== "active") setCruiseConfirmationOpen(false);
+  }, [deviceAccess]);
 
   if (lifecycle?.phase === "cruise")
     return (
@@ -144,16 +147,18 @@ function HomeScreen({
         onRotation={onOpenRotation ?? (() => undefined)}
         rotationDisabled={!onOpenRotation}
       />
-      <LifecycleSheets
-        confirmationOpen={cruiseConfirmationOpen}
-        lifecycle={lifecycle}
-        message={message}
-        nextSlot={nextSlot}
-        onDismiss={onDismissCruiseSuggestion}
-        onStartCruise={onStartCruise}
-        saving={actionSaving}
-        setConfirmationOpen={setCruiseConfirmationOpen}
-      />
+      {deviceAccess === "active" && (
+        <LifecycleSheets
+          confirmationOpen={cruiseConfirmationOpen}
+          lifecycle={lifecycle}
+          message={message}
+          nextSlot={nextSlot}
+          onDismiss={onDismissCruiseSuggestion}
+          onStartCruise={onStartCruise}
+          saving={actionSaving}
+          setConfirmationOpen={setCruiseConfirmationOpen}
+        />
+      )}
     </div>
   );
 }

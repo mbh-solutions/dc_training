@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import HistoryScreen from "./HistoryScreen.jsx";
 import HomeScreen, { NetworkStatus } from "./HomeScreen.jsx";
 import RotationSetup from "./RotationSetup.jsx";
@@ -25,8 +25,14 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
     offline.accountState,
     offline.commitOperation,
   );
+  const canEdit = offline.deviceAccess === "active";
+  useEffect(() => {
+    if (canEdit) return;
+    setShowRotationSetup(false);
+    setShowWorkout(false);
+  }, [canEdit]);
   const openRotation = () => {
-    if (offline.deviceAccess !== "active") return;
+    if (!canEdit) return;
     setShowHistory(false);
     setShowRotationSetup(true);
   };
@@ -40,70 +46,72 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
     />
   );
 
-  if (workout.completedWorkout) {
-    return withSyncStatus(
-      syncStatus,
-      <WorkoutComplete
-        lastOperationStatus={workout.lastOperationStatus}
-        message={workout.message}
-        nextSlot={workout.nextSlot}
-        onUndo={workout.undo}
-        workout={workout.completedWorkout}
-        onDone={async () => {
-          await workout.dismissCompleted();
-          setShowWorkout(false);
-        }}
-      />,
-    );
-  }
+  if (canEdit) {
+    if (workout.completedWorkout) {
+      return withSyncStatus(
+        syncStatus,
+        <WorkoutComplete
+          lastOperationStatus={workout.lastOperationStatus}
+          message={workout.message}
+          nextSlot={workout.nextSlot}
+          onUndo={workout.undo}
+          workout={workout.completedWorkout}
+          onDone={async () => {
+            await workout.dismissCompleted();
+            setShowWorkout(false);
+          }}
+        />,
+      );
+    }
 
-  if (workout.replacementStep && workout.activeWorkout) {
-    return withSyncStatus(
-      syncStatus,
-      <RotationSetup
-        accountState={offline.accountState}
-        commitOperation={offline.commitOperation}
-        onBack={() => workout.beginReplacement(null)}
-        replacement={{
-          message: workout.message,
-          onSave: workout.replaceAssignment,
-          slot: workout.activeWorkout.slot,
-          step: workout.replacementStep,
-        }}
-      />,
-    );
-  }
+    if (workout.replacementStep && workout.activeWorkout) {
+      return withSyncStatus(
+        syncStatus,
+        <RotationSetup
+          accountState={offline.accountState}
+          commitOperation={offline.commitOperation}
+          onBack={() => workout.beginReplacement(null)}
+          replacement={{
+            message: workout.message,
+            onSave: workout.replaceAssignment,
+            slot: workout.activeWorkout.slot,
+            step: workout.replacementStep,
+          }}
+        />,
+      );
+    }
 
-  if (showWorkout && workout.activeWorkout) {
-    return withSyncStatus(
-      syncStatus,
-      <WorkoutTracer
-        lastOperationId={workout.lastOperationId}
-        lastOperationStatus={workout.lastOperationStatus}
-        message={workout.message}
-        actionSaving={workout.actionSaving}
-        blockingStep={workout.blockingStep}
-        onBeginReplacement={workout.beginReplacement}
-        onExit={() => setShowWorkout(false)}
-        onResolveAction={workout.resolveAction}
-        onSave={workout.saveStep}
-        onSkip={workout.skipStep}
-        onUndo={workout.undo}
-        steps={workout.steps}
-        workout={workout.activeWorkout}
-      />,
-    );
-  }
+    if (showWorkout && workout.activeWorkout) {
+      return withSyncStatus(
+        syncStatus,
+        <WorkoutTracer
+          lastOperationId={workout.lastOperationId}
+          lastOperationStatus={workout.lastOperationStatus}
+          message={workout.message}
+          actionSaving={workout.actionSaving}
+          blockingStep={workout.blockingStep}
+          onBeginReplacement={workout.beginReplacement}
+          onExit={() => setShowWorkout(false)}
+          onResolveAction={workout.resolveAction}
+          onSave={workout.saveStep}
+          onSkip={workout.skipStep}
+          onUndo={workout.undo}
+          steps={workout.steps}
+          workout={workout.activeWorkout}
+        />,
+      );
+    }
 
-  if (showRotationSetup) {
-    return withSyncStatus(
-      syncStatus,
-      <RotationSetup
-        accountState={offline.accountState}
-        commitOperation={offline.commitOperation}
-        onBack={() => setShowRotationSetup(false)}
-      />,
-    );
+    if (showRotationSetup) {
+      return withSyncStatus(
+        syncStatus,
+        <RotationSetup
+          accountState={offline.accountState}
+          commitOperation={offline.commitOperation}
+          onBack={() => setShowRotationSetup(false)}
+        />,
+      );
+    }
   }
 
   if (showHistory) {
@@ -114,11 +122,11 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
         commitOperation={offline.commitOperation}
         onHome={() => setShowHistory(false)}
         onOpenRotation={
-          offline.deviceAccess === "active"
+          canEdit
             ? rotationDuringBlast(workout.lifecycle, openRotation)
             : undefined
         }
-        readOnly={offline.deviceAccess !== "active"}
+        readOnly={!canEdit}
       />,
     );
   }
