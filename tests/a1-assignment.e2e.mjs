@@ -1204,7 +1204,10 @@ const accordionStartsAtA1 =
 await act(async () => workoutToggle("B1").click());
 const accordionKeepsOneWorkoutOpen =
   workoutToggle("A1").getAttribute("aria-expanded") === "false" &&
-  workoutToggle("B1").getAttribute("aria-expanded") === "true";
+  workoutToggle("B1").getAttribute("aria-expanded") === "true" &&
+  window.getComputedStyle(
+    document.getElementById("workout-a1-assignments"),
+  ).display === "none";
 await act(async () => workoutToggle("A1").click());
 
 await act(async () => {

@@ -31,6 +31,7 @@ const rotationStyles = `
 .workout-toggle small { display: block; margin-top: 4px; color: var(--gray); font-size: .7rem; }
 .workout-toggle b { color: var(--red); font-size: 1.5rem; }
 .workout-assignments { display: grid; gap: 8px; }
+.workout-assignments[hidden] { display: none; }
 .assignment-card, .choice-card, .review-list div { border: 1px solid var(--line); border-radius: 8px; background: linear-gradient(145deg, rgba(22,22,22,.9), rgba(11,11,11,.96)); }
 .assignment-card { position: relative; width: 100%; min-height: 76px; display: grid; gap: 5px; border-color: #292927; padding: 14px 44px 14px 16px; color: var(--white); text-align: left; cursor: pointer; }
 .assignment-card:disabled { cursor: wait; opacity: .6; }
