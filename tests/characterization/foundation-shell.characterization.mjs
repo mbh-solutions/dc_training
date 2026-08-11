@@ -173,18 +173,6 @@ const client = {
   },
   async rpc(name, values) {
     calls.push(["rpc", name, values]);
-    if (
-      name === "register_editing_device" ||
-      name === "transfer_editing_device"
-    )
-      return {
-        data: {
-          active: true,
-          device_id: values.p_device_id,
-          transferred_at: "2026-08-11T02:00:00Z",
-        },
-        error: null,
-      };
     return { data: null, error: null };
   },
 };

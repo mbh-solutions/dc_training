@@ -152,6 +152,12 @@ let memoryWrite = Promise.resolve();
 let databasePromise: Promise<IDBDatabase> | null = null;
 let memoryDeviceId = "";
 
+export function isCloudOwnerId(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
 export function editingDeviceId() {
   const stored =
     typeof localStorage === "undefined"

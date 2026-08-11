@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   commitOfflineOperation,
   editingDeviceId,
+  isCloudOwnerId,
   listenOfflineState,
   pendingOfflineOperationCount,
   readOfflineState,
@@ -17,11 +18,12 @@ export type OfflineSyncState = "failed" | "synced" | "syncing";
 
 export function useOfflineSync(userId: string, online: boolean) {
   const deviceId = useRef(editingDeviceId()).current;
+  const deviceAuthorityRequired = isCloudOwnerId(userId);
   const [accountState, setAccountState] = useState<OfflineAccountState | null>(
     null,
   );
   const [deviceAccess, setDeviceAccess] = useState<EditingDeviceAccess>(() =>
-    cachedDeviceAccess(userId, deviceId),
+    deviceAuthorityRequired ? cachedDeviceAccess(userId, deviceId) : "active",
   );
   const [loadError, setLoadError] = useState("");
   const [loaded, setLoaded] = useState(false);
@@ -47,7 +49,9 @@ export function useOfflineSync(userId: string, online: boolean) {
       try {
         do {
           syncRequested.current = false;
-          const access = await registerEditingDevice(deviceId);
+          const access = deviceAuthorityRequired
+            ? await registerEditingDevice(deviceId)
+            : "active";
           setDeviceAccess(access);
           cacheDeviceAccess(userId, deviceId, access);
           await synchronizeOfflineState(userId, deviceId, access);
@@ -65,14 +69,16 @@ export function useOfflineSync(userId: string, online: boolean) {
     })();
     syncPromise.current = work;
     return work;
-  }, [deviceId, online, reload, userId]);
+  }, [deviceAuthorityRequired, deviceId, online, reload, userId]);
 
   useEffect(() => {
     setAccountState(null);
     setLoadError("");
     setLoaded(false);
     setSyncState("syncing");
-    setDeviceAccess(cachedDeviceAccess(userId, deviceId));
+    setDeviceAccess(
+      deviceAuthorityRequired ? cachedDeviceAccess(userId, deviceId) : "active",
+    );
     let active = true;
     void readOfflineState(userId)
       .then((current) => {
@@ -95,7 +101,7 @@ export function useOfflineSync(userId: string, online: boolean) {
       active = false;
       stopListening();
     };
-  }, [deviceId, reload, userId]);
+  }, [deviceAuthorityRequired, deviceId, reload, userId]);
 
   useEffect(() => {
     if (!online) return;
