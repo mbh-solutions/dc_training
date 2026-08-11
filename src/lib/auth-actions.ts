@@ -1,5 +1,9 @@
 import { supabase } from "./supabase.js";
-import { deleteLocalAccountData, editingDeviceId } from "../offline-sync.js";
+import {
+  deleteLocalAccountData,
+  editingDeviceId,
+  isCloudOwnerId,
+} from "../offline-sync.js";
 
 export type AccountDeletionStatus = {
   finalize_at: string;
@@ -27,7 +31,8 @@ export async function completeOwnerPasswordRecovery(password: string) {
   return true;
 }
 
-export async function ownerAccountDeletionStatus() {
+export async function ownerAccountDeletionStatus(userId: string) {
+  if (!isCloudOwnerId(userId)) return null;
   if (!supabase) return null;
   const { data, error } = await supabase.rpc("account_deletion_status");
   if (error) throw new Error(error.message);

@@ -98,7 +98,7 @@ function useAccountDeletion(session: Session | null, online: boolean) {
     if (!session || !online) return false;
     setError(null);
     try {
-      const status = await ownerAccountDeletionStatus();
+      const status = await ownerAccountDeletionStatus(session.user.id);
       setResult({ status, userId: session.user.id });
       return true;
     } catch {
