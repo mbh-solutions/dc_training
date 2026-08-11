@@ -28,8 +28,8 @@ request succeeds.
 ## Daily encrypted backup
 
 The `Daily encrypted Supabase backup` GitHub Actions workflow runs at 07:17 UTC
-and can also be dispatched manually. It installs the PostgreSQL 17 client and
-uses its native `pg_dump`/`pg_restore` tools with GnuPG to:
+and can also be dispatched manually. It runs the native `pg_dump`/`pg_restore`
+tools from an immutable PostgreSQL 17 container image and uses GnuPG to:
 
 1. create a custom-format logical dump of the owner-data `private` and `public`
    schemas;
@@ -105,6 +105,15 @@ begin
   end if;
 end;
 $$;
+alter role dc_training_backup
+  nologin
+  nosuperuser
+  nocreatedb
+  nocreaterole
+  noinherit
+  noreplication
+  bypassrls
+  connection limit 1;
 '@ | psql "$env:RECOVERY_DATABASE_URL" --set ON_ERROR_STOP=1
 pg_restore --clean --if-exists --no-owner --section=pre-data --dbname "$env:RECOVERY_DATABASE_URL" .recovery\dc-training.dump
 pg_restore --no-owner --section=data --dbname "$env:RECOVERY_DATABASE_URL" .recovery\dc-training.dump
@@ -122,13 +131,16 @@ dump. Record only the Actions run URL, artifact name/size/expiry,
 restore-target identifier, tool versions, assertions, and pass/fail result. Do
 not record owner data or secret values.
 
-The archive preserves schema/table/function ACLs. Before pre-data restore, a
-privileged recovery operator must create a `nologin` `dc_training_backup` role
-if the isolated project does not already have it; all standard Supabase roles
-must also exist. After post-data restore, verify the restored grants and
-revocations, including authenticated owner-table access, anon denial, public
-gateway execution only for `authenticated`, and no `authenticated` execution
-on their private implementations. This query must return `true`:
+The archive preserves schema/table/function ACLs, but PostgreSQL logical dumps
+do not contain cluster-level role attributes. Before pre-data restore, a
+privileged recovery operator must create or normalize the `nologin`
+`dc_training_backup` role with `BYPASSRLS` and `CONNECTION LIMIT 1`; all standard
+Supabase roles must also exist. The recovery database connection must have
+permission to restore default privileges owned by Supabase administrative
+roles. After post-data restore, verify the restored grants and revocations,
+including authenticated owner-table access, anon denial, public gateway
+execution only for `authenticated`, and no `authenticated` execution on their
+private implementations. This query must return `true`:
 
 ```powershell
 @'
