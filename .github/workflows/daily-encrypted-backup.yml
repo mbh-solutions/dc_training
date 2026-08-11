@@ -20,6 +20,7 @@ jobs:
     env:
       BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
       PGCONNECT_TIMEOUT: "15"
+      POSTGRES_IMAGE: postgres:17@sha256:7958605b474b3d264a969cb3a123d6aa00ad1e1fe9da8a69984dabb704d93317
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
     steps:
       - name: Validate backup credentials
@@ -39,7 +40,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          docker pull postgres:17
+          docker pull "${POSTGRES_IMAGE}"
 
       - name: Create, encrypt, and verify logical backup
         id: backup
@@ -55,7 +56,7 @@ jobs:
             --env PGCONNECT_TIMEOUT \
             --env SUPABASE_DB_URL \
             --volume "${RUNNER_TEMP}:/backup" \
-            postgres:17 \
+            "${POSTGRES_IMAGE}" \
             sh -ceu '
               pg_dump --version
               pg_dump \
@@ -87,7 +88,7 @@ jobs:
             "${artifact}"
           docker run --rm \
             --volume "${RUNNER_TEMP}:/backup:ro" \
-            postgres:17 \
+            "${POSTGRES_IMAGE}" \
             pg_restore --list /backup/dc-training.verify.dump > /dev/null
 
           echo "artifact=${artifact}" >> "${GITHUB_OUTPUT}"
