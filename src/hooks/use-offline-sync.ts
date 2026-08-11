@@ -49,6 +49,11 @@ export function useOfflineSync(userId: string, online: boolean) {
   > | null>(null);
 
   useLayoutEffect(() => {
+    if (!deviceAuthorityRequired) {
+      verifiedDeviceAccess.current = "active";
+      setDeviceAccess("active");
+      return;
+    }
     verifiedDeviceAccess.current = null;
     setDeviceAccess(
       initialDeviceAccess(deviceAuthorityRequired, online, userId, deviceId),
