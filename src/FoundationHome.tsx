@@ -18,10 +18,10 @@ export type FoundationHomeProps = {
 function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
   const [showHistory, setShowHistory] = useState(false);
   const [showRotationSetup, setShowRotationSetup] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [showWorkout, setShowWorkout] = useState(false);
   const [verifiedEditingOwner, setVerifiedEditingOwner] = useState("");
   const offline = useOfflineSync(userId, homeProps.online);
+  const weightUnit = accountWeightUnit(offline.accountState);
   const workout = useWorkout(
     userId,
     offline.accountState,
@@ -53,31 +53,6 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
       syncState={offline.syncState}
     />
   );
-
-  if (showSettings) {
-    return withSyncStatus(
-      syncStatus,
-      <SettingsScreen
-        deviceAccess={offline.deviceAccess}
-        online={homeProps.online}
-        onBack={() => setShowSettings(false)}
-        onChangeUnit={async (unit) =>
-          Boolean(
-            (
-              await offline.commitOperation({
-                id: crypto.randomUUID(),
-                kind: "set_weight_unit",
-                payload: { unit },
-              })
-            ).data,
-          )
-        }
-        onSignOut={homeProps.onSignOut}
-        syncState={offline.syncState}
-        unit={offline.accountState?.weightUnit ?? "lb"}
-      />,
-    );
-  }
 
   if (canEdit) {
     if (workout.completedWorkout) {
@@ -130,7 +105,7 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
           onSkip={workout.skipStep}
           onUndo={workout.undo}
           steps={workout.steps}
-          weightUnit={offline.accountState?.weightUnit ?? "lb"}
+          weightUnit={weightUnit}
           workout={workout.activeWorkout}
         />,
       );
@@ -162,7 +137,7 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
         }
         preserveCorrectionDraft={canEdit}
         readOnly={offline.deviceAccess !== "active"}
-        weightUnit={offline.accountState?.weightUnit ?? "lb"}
+        weightUnit={weightUnit}
       />,
     );
   }
@@ -173,7 +148,6 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
       offline={offline}
       onOpenHistory={() => setShowHistory(true)}
       onOpenRotation={openRotation}
-      onOpenSettings={() => setShowSettings(true)}
       onOpenWorkout={() => setShowWorkout(true)}
       userId={userId}
       workout={workout}
@@ -181,7 +155,58 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
   );
 }
 
-function FoundationDashboard({
+function FoundationDashboard({ ...props }: DashboardProps) {
+  const [showSettings, setShowSettings] = useState(false);
+  if (showSettings) {
+    const { homeProps, offline } = props;
+    return withSyncStatus(
+      <NetworkStatus
+        deviceAccess={offline.deviceAccess}
+        online={homeProps.online}
+        onRetrySync={offline.retry}
+        onTransferDevice={offline.transfer}
+        syncState={offline.syncState}
+      />,
+      <SettingsScreen
+        deviceAccess={offline.deviceAccess}
+        online={homeProps.online}
+        onBack={() => setShowSettings(false)}
+        onChangeUnit={async (unit) =>
+          Boolean(
+            (
+              await offline.commitOperation({
+                id: crypto.randomUUID(),
+                kind: "set_weight_unit",
+                payload: { unit },
+              })
+            ).data,
+          )
+        }
+        onSignOut={homeProps.onSignOut}
+        syncState={offline.syncState}
+        unit={accountWeightUnit(offline.accountState)}
+      />,
+    );
+  }
+  return (
+    <FoundationDashboardHome
+      {...props}
+      onOpenSettings={() => setShowSettings(true)}
+    />
+  );
+}
+
+type DashboardProps = {
+  homeProps: Omit<FoundationHomeProps, "userId">;
+  offline: ReturnType<typeof useOfflineSync>;
+  onOpenHistory: () => void;
+  onOpenRotation: () => void;
+  onOpenWorkout: () => void;
+  userId: string;
+  workout: ReturnType<typeof useWorkout>;
+};
+
+function FoundationDashboardHome({
   homeProps,
   offline,
   onOpenHistory,
@@ -190,15 +215,8 @@ function FoundationDashboard({
   onOpenWorkout,
   userId,
   workout,
-}: {
-  homeProps: Omit<FoundationHomeProps, "userId">;
-  offline: ReturnType<typeof useOfflineSync>;
-  onOpenHistory: () => void;
-  onOpenRotation: () => void;
+}: DashboardProps & {
   onOpenSettings: () => void;
-  onOpenWorkout: () => void;
-  userId: string;
-  workout: ReturnType<typeof useWorkout>;
 }) {
   return (
     <HomeScreen
@@ -264,6 +282,12 @@ function editorAuthorized(
     access === "active" ||
     (access === "checking" && verifiedEditingOwner === userId)
   );
+}
+
+function accountWeightUnit(
+  accountState: ReturnType<typeof useOfflineSync>["accountState"],
+) {
+  return accountState?.weightUnit ?? "lb";
 }
 
 export default FoundationHome;
