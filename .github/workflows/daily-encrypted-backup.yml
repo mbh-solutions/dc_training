@@ -20,6 +20,7 @@ jobs:
     env:
       BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
       PGCONNECT_TIMEOUT: "15"
+      POSTGRES_IMAGE: postgres:17@sha256:7958605b474b3d264a969cb3a123d6aa00ad1e1fe9da8a69984dabb704d93317
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
     steps:
       - name: Validate backup credentials
@@ -35,13 +36,11 @@ jobs:
             exit 1
           fi
 
-      - name: Install PostgreSQL 17 client
+      - name: Pull PostgreSQL 17 client container
         shell: bash
         run: |
           set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install --yes postgresql-client-17
-          echo "/usr/lib/postgresql/17/bin" >> "${GITHUB_PATH}"
+          docker pull "${POSTGRES_IMAGE}"
 
       - name: Create, encrypt, and verify logical backup
         id: backup
@@ -53,14 +52,21 @@ jobs:
           artifact="${RUNNER_TEMP}/dc-training-${GITHUB_RUN_ID}.dump.gpg"
           trap 'rm -f "${dump}" "${verification}"' EXIT
 
-          pg_dump --version
-          pg_dump \
-            --dbname="${SUPABASE_DB_URL}" \
-            --format=custom \
-            --no-owner \
-            --schema=private \
-            --schema=public \
-            --file="${dump}"
+          docker run --rm \
+            --env PGCONNECT_TIMEOUT \
+            --env SUPABASE_DB_URL \
+            --volume "${RUNNER_TEMP}:/backup" \
+            "${POSTGRES_IMAGE}" \
+            sh -ceu '
+              pg_dump --version
+              pg_dump \
+                --dbname="${SUPABASE_DB_URL}" \
+                --format=custom \
+                --no-owner \
+                --schema=private \
+                --schema=public \
+                --file=/backup/dc-training.dump
+            '
 
           printf '%s' "${BACKUP_PASSPHRASE}" | gpg \
             --batch \
@@ -80,7 +86,10 @@ jobs:
             --decrypt \
             --output "${verification}" \
             "${artifact}"
-          pg_restore --list "${verification}" > /dev/null
+          docker run --rm \
+            --volume "${RUNNER_TEMP}:/backup:ro" \
+            "${POSTGRES_IMAGE}" \
+            pg_restore --list /backup/dc-training.verify.dump > /dev/null
 
           echo "artifact=${artifact}" >> "${GITHUB_OUTPUT}"
 
