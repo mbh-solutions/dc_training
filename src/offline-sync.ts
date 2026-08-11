@@ -26,7 +26,11 @@ import {
   type WorkoutSlot,
 } from "./rotation-config.js";
 import { supabase } from "./lib/supabase.js";
-import { weightMicrograms, type WeightEntry } from "./weight-conversion.js";
+import {
+  weightMicrograms,
+  type WeightEntry,
+  type WeightUnit,
+} from "./weight-conversion.js";
 
 type StepTarget = {
   ordinal?: number;
@@ -110,7 +114,8 @@ export type OfflineOperationInput =
       id: string;
       kind: "transition_training_lifecycle";
       payload: LifecycleTransitionPayload;
-    };
+    }
+  | { id: string; kind: "set_weight_unit"; payload: { unit: WeightUnit } };
 
 export type OfflineOperation = OfflineOperationInput & {
   createdAt: number;
@@ -131,6 +136,7 @@ export type OfflineAccountState = {
   recentlyCompletedWorkout: Workout | null;
   updatedAt: string;
   userId: string;
+  weightUnit: WeightUnit;
   workout: LoadedWorkout | null;
 };
 
@@ -267,6 +273,7 @@ function emptyState(userId: string): OfflineAccountState {
     recentlyCompletedWorkout: null,
     updatedAt: new Date(0).toISOString(),
     userId,
+    weightUnit: "lb",
     workout: null,
   };
 }
@@ -429,16 +436,7 @@ export async function synchronizeOfflineState(
     if (deviceAccess === "readonly" && operations.length > 0)
       throw new Error("READ ONLY · UNSYNCED CHANGES REMAIN ON THIS DEVICE");
     for (const operation of operations) {
-      const { error } = await supabase.rpc("apply_offline_operation", {
-        ...(isCloudOwnerId(userId) ? { p_device_id: deviceId } : {}),
-        p_kind: operation.kind,
-        p_operation_id: operation.id,
-        p_payload: {
-          ...operation.payload,
-          created_at: new Date(operation.createdAt).toISOString(),
-        },
-      });
-      if (error) throw new Error(error.message);
+      await replayOfflineOperation(operation, userId, deviceId);
       await deleteOfflineOperation(operation.id);
     }
     const cloud = await loadCloudState(userId);
@@ -449,14 +447,50 @@ export async function synchronizeOfflineState(
   }
 }
 
+async function replayOfflineOperation(
+  operation: OfflineOperation,
+  userId: string,
+  deviceId: string,
+) {
+  if (!supabase) throw new Error("Cloud service unavailable");
+  if (operation.kind === "set_weight_unit") {
+    if (!isCloudOwnerId(userId)) return;
+    const { error } = await supabase.rpc("save_weight_unit", {
+      p_device_id: deviceId,
+      p_operation_id: operation.id,
+      p_unit: operation.payload.unit,
+    });
+    if (error) throw new Error(error.message);
+    return;
+  }
+  const { error } = await supabase.rpc("apply_offline_operation", {
+    ...(isCloudOwnerId(userId) ? { p_device_id: deviceId } : {}),
+    p_kind: operation.kind,
+    p_operation_id: operation.id,
+    p_payload: {
+      ...operation.payload,
+      created_at: new Date(operation.createdAt).toISOString(),
+    },
+  });
+  if (error) throw new Error(error.message);
+}
+
 async function loadCloudState(userId: string): Promise<OfflineAccountState> {
-  const [workout, history, assignments, logbookStates] = await Promise.all([
-    loadWorkoutState(userId),
-    loadHistoryState(userId),
-    loadCloudAssignments(userId),
-    loadCloudLogbookStates(userId),
-  ]);
-  if (!workout.data || !history.data || !assignments || !logbookStates)
+  const [workout, history, assignments, logbookStates, weightUnit] =
+    await Promise.all([
+      loadWorkoutState(userId),
+      loadHistoryState(userId),
+      loadCloudAssignments(userId),
+      loadCloudLogbookStates(userId),
+      loadCloudWeightUnit(userId),
+    ]);
+  if (
+    !workout.data ||
+    !history.data ||
+    !assignments ||
+    !logbookStates ||
+    !weightUnit
+  )
     throw new Error(
       workout.error || history.error || "OWNER DATA COULD NOT BE LOADED",
     );
@@ -466,8 +500,21 @@ async function loadCloudState(userId: string): Promise<OfflineAccountState> {
     history: history.data,
     logbookStates,
     updatedAt: new Date().toISOString(),
+    weightUnit,
     workout: workout.data,
   };
+}
+
+async function loadCloudWeightUnit(userId: string): Promise<WeightUnit | null> {
+  if (!isCloudOwnerId(userId)) return "lb";
+  const { data, error } = await supabase!
+    .from("foundation_profiles")
+    .select("weight_unit")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return !error && (data?.weight_unit === "lb" || data?.weight_unit === "kg")
+    ? data.weight_unit
+    : null;
 }
 
 async function loadCloudAssignments(userId: string) {
@@ -877,6 +924,9 @@ export function reduceOfflineState(
       return correctLocalHistory(state, operation);
     case "transition_training_lifecycle":
       return transitionLocalLifecycle(state, operation);
+    case "set_weight_unit":
+      state.weightUnit = operation.payload.unit;
+      return state;
   }
 }
 

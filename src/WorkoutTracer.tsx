@@ -5,7 +5,12 @@ import {
   type Workout,
   type WorkoutStep,
 } from "./workout-domain.js";
-import { conversionPreview, type WeightEntry } from "./weight-conversion.js";
+import {
+  conversionPreview,
+  displayWeight,
+  type WeightEntry,
+  type WeightUnit,
+} from "./weight-conversion.js";
 
 const backIllustration = new URL(
   "../docs/design/back-stretch-illustration-approved.png",
@@ -146,6 +151,7 @@ type Props = {
   onSkip: (step: WorkoutStep) => Promise<boolean>;
   onUndo: () => Promise<void>;
   steps: WorkoutStep[];
+  weightUnit: WeightUnit;
   workout: Workout;
 };
 
@@ -199,6 +205,7 @@ export function WorkoutTracer(props: Props) {
             props.onResolveAction(props.blockingStep!, action)
           }
           onUndo={props.lastOperationId ? props.onUndo : undefined}
+          weightUnit={props.weightUnit}
         />
       )}
     </div>
@@ -210,12 +217,13 @@ function ExerciseEntry({
   onSave,
   onSkip,
   step,
+  weightUnit,
 }: Props & { step: WorkoutStep }) {
   const shape = workoutEntryShape(step);
   const [weights, setWeights] = useState<WeightEntry[]>(
     Array.from({ length: shape.weightCount }, () => ({
       amount: "",
-      unit: "lb",
+      unit: weightUnit,
     })),
   );
   const [values, setValues] = useState<string[]>(
@@ -251,7 +259,7 @@ function ExerciseEntry({
       <p className="workout-part">{displayBodyPart(step.body_part)}</p>
       <h1>{step.exercise}</h1>
       {step.mulligan_used && <p className="mulligan-badge">MULLIGAN USED</p>}
-      <PreviousPerformance step={step} />
+      <PreviousPerformance step={step} weightUnit={weightUnit} />
       <p className="today-label">TODAY</p>
       <div className="entry-list">
         {weights.map((weight, index) => (
@@ -288,25 +296,7 @@ function ExerciseEntry({
                   )
                 }
               />
-              <select
-                aria-label={`SET ${index + 1} WEIGHT UNIT`}
-                value={weight.unit}
-                onChange={(event) =>
-                  setWeights((current) =>
-                    current.map((item, itemIndex) =>
-                      itemIndex === index
-                        ? {
-                            ...item,
-                            unit: event.target.value as WeightEntry["unit"],
-                          }
-                        : item,
-                    ),
-                  )
-                }
-              >
-                <option value="lb">LB</option>
-                <option value="kg">KG</option>
-              </select>
+              <span className="weight-unit">{weight.unit.toUpperCase()}</span>
             </div>
             {conversionPreview(weight) && (
               <small className="conversion-preview">
@@ -380,7 +370,13 @@ function ExerciseEntry({
   );
 }
 
-function PreviousPerformance({ step }: { step: WorkoutStep }) {
+function PreviousPerformance({
+  step,
+  weightUnit,
+}: {
+  step: WorkoutStep;
+  weightUnit: WeightUnit;
+}) {
   const hasPrevious = step.previous_weight_entries.length > 0;
   if (step.fresh_baseline && step.reference_history.length > 0) {
     const sameAssignment = step.reference_history.some(
@@ -417,6 +413,7 @@ function PreviousPerformance({ step }: { step: WorkoutStep }) {
                         index,
                         retired.reps,
                         retired.duration_seconds,
+                        weightUnit,
                       )}
                     </span>
                   </output>
@@ -438,7 +435,7 @@ function PreviousPerformance({ step }: { step: WorkoutStep }) {
           {step.previous_weight_entries.map((weight, index) => (
             <output key={index}>
               <b>{entryLabel(step.protocol, index)}</b>
-              <span>{previousValue(step, weight, index)}</span>
+              <span>{previousValue(step, weight, index, weightUnit)}</span>
             </output>
           ))}
         </div>
@@ -609,13 +606,19 @@ function entryLabel(protocol: WorkoutStep["protocol"], index: number) {
   return `SET ${index + 1}`;
 }
 
-function previousValue(step: WorkoutStep, weight: WeightEntry, index: number) {
+function previousValue(
+  step: WorkoutStep,
+  weight: WeightEntry,
+  index: number,
+  weightUnit: WeightUnit,
+) {
   return performanceValue(
     step.protocol,
     weight,
     index,
     step.previous_reps,
     step.previous_duration_seconds,
+    weightUnit,
   );
 }
 
@@ -625,8 +628,9 @@ function performanceValue(
   index: number,
   reps: number[],
   durationSeconds: number | null,
+  weightUnit: WeightUnit,
 ) {
-  const load = `${weight.amount} ${weight.unit.toUpperCase()}`;
+  const load = weightDisplayLabel(weight, weightUnit);
   if (protocol === "timed_hold") return `${load} · ${durationSeconds} SECONDS`;
   if (protocol === "rest_pause") return `${load} · ${reps.join(" / ")} REPS`;
   return `${load} · ${reps[index]} REPS`;
@@ -697,6 +701,7 @@ function LogbookPrompt({
   onUndo,
   saving,
   step,
+  weightUnit,
 }: {
   message: string;
   onReplace: () => void;
@@ -706,6 +711,7 @@ function LogbookPrompt({
   onUndo?: () => Promise<void>;
   saving: boolean;
   step: WorkoutStep;
+  weightUnit: WeightUnit;
 }) {
   const copy = logbookPromptCopy(step.enforcement_action);
   return (
@@ -719,7 +725,7 @@ function LogbookPrompt({
         <p className="workout-part">LOGBOOK</p>
         <h2>{copy.title}</h2>
         <p>{copy.description}</p>
-        <ComparisonTable step={step} />
+        <ComparisonTable step={step} weightUnit={weightUnit} />
         {message && <p className="form-message">{message}</p>}
         <LogbookActions
           action={step.enforcement_action}
@@ -825,7 +831,13 @@ function LogbookActions({
   );
 }
 
-function ComparisonTable({ step }: { step: WorkoutStep }) {
+function ComparisonTable({
+  step,
+  weightUnit,
+}: {
+  step: WorkoutStep;
+  weightUnit: WeightUnit;
+}) {
   return (
     <div
       className="comparison-table"
@@ -841,8 +853,8 @@ function ComparisonTable({ step }: { step: WorkoutStep }) {
       {step.weight_entries.map((_, index) => (
         <div role="row" key={index}>
           <b>{entryLabel(step.protocol, index)}</b>
-          <span>{comparisonValue(step, true, index)}</span>
-          <span>{comparisonValue(step, false, index)}</span>
+          <span>{comparisonValue(step, true, index, weightUnit)}</span>
+          <span>{comparisonValue(step, false, index, weightUnit)}</span>
           <strong>{comparisonVerdict(step, index)}</strong>
         </div>
       ))}
@@ -850,18 +862,28 @@ function ComparisonTable({ step }: { step: WorkoutStep }) {
   );
 }
 
-function comparisonValue(step: WorkoutStep, previous: boolean, index: number) {
+function comparisonValue(
+  step: WorkoutStep,
+  previous: boolean,
+  index: number,
+  weightUnit: WeightUnit,
+) {
   const weights = previous ? step.previous_weight_entries : step.weight_entries;
   const reps = previous ? step.previous_reps : step.reps;
   const duration = previous
     ? step.previous_duration_seconds
     : step.duration_seconds;
   const weight = weights[index] ?? weights[0];
-  const load = `${weight.amount} ${weight.unit.toUpperCase()}`;
+  const load = weightDisplayLabel(weight, weightUnit);
   if (step.protocol === "timed_hold") return `${load} · ${duration} SEC`;
   if (step.protocol === "rest_pause")
     return `${load} · ${reps.reduce((total, rep) => total + rep, 0)} REPS`;
   return `${load} · ${reps[index]} REPS`;
+}
+
+function weightDisplayLabel(weight: WeightEntry, unit: WeightUnit) {
+  const displayed = displayWeight(weight, unit);
+  return `${displayed.converted ? "≈ " : ""}${displayed.amount} ${displayed.unit.toUpperCase()}`;
 }
 
 function comparisonVerdict(step: WorkoutStep, index: number) {
@@ -896,7 +918,8 @@ const workoutStyles = `
 .today-label { margin-top: 30px; }
 .entry-list { display: grid; gap: 14px; }
 .weight-entry { display: grid; grid-template-columns: 1fr 82px; gap: 8px; }
-.weight-entry input, .weight-entry select, .rep-entry input { min-height: 58px; border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; color: var(--white); background: var(--panel); font-family: Impact, sans-serif; font-size: 1.55rem; }
+.weight-entry input, .weight-unit, .rep-entry input { min-height: 58px; border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; color: var(--white); background: var(--panel); font-family: Impact, sans-serif; font-size: 1.55rem; }
+.weight-unit { display: grid; place-items: center; }
 .conversion-preview { display: block; margin-top: 6px; color: var(--gray); text-align: right; }
 .rep-entry { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
 .rep-entry--single { grid-template-columns: 1fr; }
