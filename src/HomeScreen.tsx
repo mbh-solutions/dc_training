@@ -626,7 +626,14 @@ export function NetworkStatus({
         <button
           className="secondary-action"
           disabled={!online || syncState === "syncing"}
-          onClick={() => confirmEditingDeviceTransfer(onTransferDevice)}
+          onClick={() => {
+            if (
+              window.confirm(
+                "Transfer edit access to this device? The prior device will become read only. Do not keep editing it. Any unsynced changes on this read-only device will be discarded; only changes already synced to cloud can be restored.",
+              )
+            )
+              void onTransferDevice();
+          }}
           type="button"
         >
           {online ? "TRANSFER EDIT ACCESS" : "CONNECT TO TRANSFER"}
@@ -637,19 +644,15 @@ export function NetworkStatus({
   if (!online)
     return <div className="status-strip">OFFLINE · SAVED ON DEVICE</div>;
 
-  const label = syncState === "syncing" ? "SYNCING" : "SYNCED";
-  return <div className="status-strip status-strip--quiet">{label}</div>;
+  return (
+    <div className="status-strip status-strip--quiet">
+      {networkStatusLabel(syncState)}
+    </div>
+  );
 }
 
-function confirmEditingDeviceTransfer(
-  onTransferDevice: () => Promise<boolean>,
-) {
-  if (
-    window.confirm(
-      "Transfer edit access to this device? The prior device will become read only. Do not keep editing it. Any unsynced changes on this read-only device will be discarded; only changes already synced to cloud can be restored.",
-    )
-  )
-    void onTransferDevice();
+function networkStatusLabel(syncState: OfflineSyncState) {
+  return syncState === "syncing" ? "SYNCING" : "SYNCED";
 }
 
 export function BottomNavigation({
