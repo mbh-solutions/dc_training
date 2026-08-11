@@ -20,6 +20,7 @@ export function useRotationAssignments(
   const saveAssignment = async (
     slot: WorkoutSlot,
     bodyPart: AssignmentPosition,
+    expectedAssignmentId: string | null,
     exercise: string,
     protocol: Protocol,
     structure: string,
@@ -36,8 +37,7 @@ export function useRotationAssignments(
       payload: {
         body_part: bodyPart,
         exercise,
-        expected_assignment_id:
-          accountState?.assignments[key]?.assignment_id ?? null,
+        expected_assignment_id: expectedAssignmentId,
         protocol,
         slot,
         structure,

@@ -10,7 +10,7 @@ proof = "Existing foundation-shell-v2, rotation-setup-v1, a1-workout-v1, history
 
 [separation_of_concerns]
 before = "S07 React hooks called individual Supabase mutation RPCs and disabled routine changes whenever navigator.onLine was false."
-after = "UI hooks submit typed local operations; HistoryScreen retains semantic selection identity across authoritative refreshes; offline-sync alone owns IndexedDB state reduction, monotonic progression, account logbook hydration, draft-safe cloud identity reconciliation, immutable-blast performance lookup, cloud replay, and authoritative refresh; use-offline-sync alone schedules foreground/reconnect retries and exposes status; the migrations own cross-retry cloud idempotency, local-step/reference resolution, start/lifecycle/assignment/predecessor/performance-context validation, and event-time preservation separate from progression order."
+after = "UI hooks submit typed local operations and bind assignment/correction drafts to the cloud version captured when each editor opens; HistoryScreen retains semantic selection identity across authoritative refreshes; offline-sync alone owns IndexedDB state reduction, monotonic progression, account logbook hydration, draft-safe cloud identity reconciliation, immutable-blast performance lookup, cloud replay, and authoritative refresh; use-offline-sync alone schedules foreground/reconnect retries and exposes status; the migrations own cross-retry cloud idempotency, local-step/reference resolution, start/lifecycle/assignment/predecessor/performance-context validation, and event-time preservation separate from progression order."
 
 [architecture]
 dependency_direction = "App authenticates one owner; FoundationHome composes use-offline-sync; workout, rotation, and history hooks submit typed operations without direct cloud writes; offline-sync persists account state plus stable operation/event/context identity and calls only apply_offline_operation; the public RPC validates queued start, assignment-version, workout-predecessor, expected-performance, and lifecycle snapshots, dispatches to established authoritative functions, preserves user event time separately from progression order, and records results in a private ledger. Cache Storage remains owned by the existing Vite PWA configuration."
@@ -24,6 +24,7 @@ reviewed_paths = [
     "src/hooks/use-foundation-profile.ts",
     "src/hooks/use-owner-access.ts",
     "src/hooks/use-rotation-assignment.ts",
+    "src/hooks/use-rotation-editor.ts",
     "src/hooks/use-workout.ts",
     "src/offline-sync.ts",
     "src/rotation-assignment.ts",

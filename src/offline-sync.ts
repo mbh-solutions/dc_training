@@ -46,7 +46,7 @@ type RotationAssignmentPayload = AssignmentPayload & {
 };
 type AssignmentLogbookState =
   "first_failure_pending" | "mulligan_used" | "replacement_required";
-type PerformanceSnapshot = {
+export type PerformanceSnapshot = {
   duration_seconds: number | null;
   reps: number[];
   weights: WeightEntry[];

@@ -90,6 +90,7 @@ function RotationSetup({
       return saveAssignment(
         editor.slot,
         editor.position,
+        editor.expectedAssignmentId,
         editor.exercise,
         editor.protocol as Protocol,
         structure,

@@ -1,6 +1,10 @@
 import { useRef, useState } from "react";
 import { BottomNavigation } from "./HomeScreen.jsx";
-import { stepTarget, type OfflineAccountState } from "./offline-sync.js";
+import {
+  stepTarget,
+  type OfflineAccountState,
+  type PerformanceSnapshot,
+} from "./offline-sync.js";
 import type { CommitOperation } from "./hooks/use-workout.js";
 import {
   activeWorkoutAssignmentIds,
@@ -33,6 +37,7 @@ type SaveCorrection = (
   weights: WeightEntry[],
   reps: number[],
   duration: number | null,
+  expectedPerformance: PerformanceSnapshot,
 ) => Promise<void>;
 
 type CorrectionOperation = {
@@ -79,6 +84,7 @@ export default function HistoryScreen({
     weights: WeightEntry[],
     reps: number[],
     duration: number | null,
+    expectedPerformance: PerformanceSnapshot,
   ) {
     setSaving(true);
     setMessage("");
@@ -113,11 +119,7 @@ export default function HistoryScreen({
       payload: {
         ...stepTarget(accountState, step),
         duration_seconds: duration,
-        expected_performance: {
-          duration_seconds: step.duration_seconds,
-          reps: step.reps,
-          weights: step.weight_entries,
-        },
+        expected_performance: expectedPerformance,
         reps,
         weights,
       },
@@ -936,6 +938,7 @@ function CorrectionEditor({
     weights: WeightEntry[],
     reps: number[],
     duration: number | null,
+    expectedPerformance: PerformanceSnapshot,
   ) => Promise<void>;
   saving: boolean;
   step: WorkoutStep;
@@ -948,10 +951,15 @@ function CorrectionEditor({
   );
   const [localError, setLocalError] = useState("");
   const [reps, setReps] = useState(step.reps.map(String));
-  const shape = workoutEntryShape(step);
+  const [expectedPerformance] = useState<PerformanceSnapshot>(() => ({
+    duration_seconds: step.duration_seconds,
+    reps: [...step.reps],
+    weights: step.weight_entries.map((weight) => ({ ...weight })),
+  }));
+  const [shape] = useState(() => workoutEntryShape(step));
 
   const submit = async () => {
-    const weights = step.weight_entries.map((weight, index) => ({
+    const weights = expectedPerformance.weights.map((weight, index) => ({
       amount: amounts[index],
       micrograms: weightMicrograms({
         amount: amounts[index],
@@ -973,7 +981,7 @@ function CorrectionEditor({
       return;
     }
     setLocalError("");
-    await onSave(step, weights, repValues, durationValue);
+    await onSave(step, weights, repValues, durationValue, expectedPerformance);
   };
 
   return (
@@ -1008,7 +1016,7 @@ function CorrectionEditor({
                 }
                 value={amount}
               />
-              {step.weight_entries[index].unit.toUpperCase()}
+              {expectedPerformance.weights[index].unit.toUpperCase()}
             </span>
           </label>
         ))}
