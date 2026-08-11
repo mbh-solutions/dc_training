@@ -788,6 +788,7 @@ function ReadOnlyDeviceStatus({
   onTransferDevice: () => Promise<boolean>;
   syncState: OfflineSyncState;
 }) {
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
   const refreshFailed = online && syncState === "failed";
   const copy = refreshFailed
     ? "Cloud data could not be refreshed. Retry before relying on this device's view. Changes left only on another or lost device cannot be recovered."
@@ -807,21 +808,47 @@ function ReadOnlyDeviceStatus({
           TRY AGAIN
         </button>
       )}
-      <button
-        className="secondary-action"
-        disabled={!online || syncState === "syncing"}
-        onClick={() => {
-          if (
-            window.confirm(
-              "Transfer edit access to this device? The prior device will become read only. Do not keep editing it. Any unsynced changes on this read-only device will be discarded; only changes already synced to cloud can be restored.",
-            )
-          )
-            void onTransferDevice();
-        }}
-        type="button"
-      >
-        {online ? "TRANSFER EDIT ACCESS" : "CONNECT TO TRANSFER"}
-      </button>
+      {confirmationOpen ? (
+        <div
+          aria-describedby="transfer-edit-access-warning"
+          aria-labelledby="transfer-edit-access-title"
+          role="alertdialog"
+        >
+          <strong id="transfer-edit-access-title">TRANSFER EDIT ACCESS?</strong>
+          <p id="transfer-edit-access-warning">
+            The prior device will become read only. Do not keep editing it. Any
+            unsynced changes on this read-only device will be discarded; only
+            changes already synced to cloud can be restored.
+          </p>
+          <button
+            className="secondary-action"
+            onClick={() => setConfirmationOpen(false)}
+            type="button"
+          >
+            CANCEL
+          </button>
+          <button
+            className="secondary-action"
+            disabled={!online || syncState === "syncing"}
+            onClick={() => {
+              setConfirmationOpen(false);
+              void onTransferDevice();
+            }}
+            type="button"
+          >
+            OK
+          </button>
+        </div>
+      ) : (
+        <button
+          className="secondary-action"
+          disabled={!online || syncState === "syncing"}
+          onClick={() => setConfirmationOpen(true)}
+          type="button"
+        >
+          {online ? "TRANSFER EDIT ACCESS" : "CONNECT TO TRANSFER"}
+        </button>
+      )}
     </section>
   );
 }
