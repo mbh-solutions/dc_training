@@ -168,7 +168,7 @@ export function editingDeviceId() {
       memoryDeviceIdDurable = true;
       return stored;
     }
-    memoryDeviceId = crypto.randomUUID();
+    memoryDeviceId = fallbackEditingDeviceId();
     localStorage.setItem(deviceIdStorageKey, memoryDeviceId);
     memoryDeviceIdDurable = true;
     return memoryDeviceId;
