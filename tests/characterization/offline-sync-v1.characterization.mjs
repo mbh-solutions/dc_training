@@ -68,6 +68,7 @@ const offlineContract =
     "recalculateLocalAssignmentLogbook",
     "recalculateLocalCruiseSuggestion",
     "preserveActiveWorkoutStepIds",
+    "preservedUndoFeedback",
     "lifecycleTransitionPayload",
     "startWorkoutPayload",
     "expected_assignment_id",

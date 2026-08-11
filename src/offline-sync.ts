@@ -387,13 +387,63 @@ function preserveLocalFeedback(
   local: OfflineAccountState | undefined,
 ) {
   cloud = preserveActiveWorkoutStepIds(cloud, local);
+  const feedback = preservedUndoFeedback(cloud, local);
   return {
     ...cloud,
     activeWorkoutStartOperationId: preservedStartOperation(cloud, local),
     queueSequence: local?.queueSequence ?? 0,
-    recentOperation: local?.recentOperation ?? null,
-    recentlyCompletedWorkout: local?.recentlyCompletedWorkout ?? null,
+    ...feedback,
   };
+}
+
+export function preservedUndoFeedback(
+  cloud: OfflineAccountState,
+  local: OfflineAccountState | undefined,
+) {
+  const empty = { recentOperation: null, recentlyCompletedWorkout: null };
+  const recentOperation = local?.recentOperation;
+  if (!recentOperation || !cloud.history || !cloud.workout) return empty;
+  const step = cloud.history.steps.find(
+    (item) => item.last_operation_id === recentOperation.id,
+  );
+  if (!step) return empty;
+  const workout = cloud.history.workouts.find(
+    (item) => item.workout_id === step.workout_id,
+  );
+  const lifecycle = cloud.workout.lifecycle;
+  if (
+    !workout ||
+    lifecycle.phase !== "blast" ||
+    workout.blast_id !== lifecycle.blast_id
+  )
+    return empty;
+  if (workout.status === "completed") {
+    const recentlyCompletedWorkout = local?.recentlyCompletedWorkout;
+    if (
+      recentlyCompletedWorkout?.workout_id !== workout.workout_id ||
+      cloud.workout.workout ||
+      cloud.workout.lastCompletedSlot !== workout.slot ||
+      cloud.workout.nextSlot !== nextSlot(workout.slot) ||
+      cloud.history.workouts.some(
+        (item) =>
+          item.status === "completed" &&
+          progressionOrder(item) > progressionOrder(workout),
+      )
+    )
+      return empty;
+    return { recentOperation, recentlyCompletedWorkout };
+  }
+  if (cloud.workout.workout?.workout_id !== workout.workout_id) return empty;
+  if (
+    cloud.history.steps.some(
+      (item) =>
+        item.workout_id === workout.workout_id &&
+        item.ordinal > step.ordinal &&
+        item.status !== "pending",
+    )
+  )
+    return empty;
+  return { recentOperation, recentlyCompletedWorkout: null };
 }
 
 function preserveActiveWorkoutStepIds(
