@@ -51,7 +51,6 @@ jobs:
             --format=custom \
             --no-owner \
             --no-privileges \
-            --schema=auth \
             --schema=private \
             --schema=public \
             --file="${dump}"

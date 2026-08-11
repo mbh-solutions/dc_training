@@ -28,7 +28,7 @@ The `Daily encrypted Supabase backup` GitHub Actions workflow runs at 07:17 UTC
 and can also be dispatched manually. It uses the runner's native `pg_dump`,
 GnuPG, and `pg_restore` tools to:
 
-1. create a custom-format logical dump of the `auth`, `private`, and `public`
+1. create a custom-format logical dump of the owner-data `private` and `public`
    schemas;
 2. encrypt it with AES-256 before upload;
 3. decrypt a runner-local verification copy and parse its table of contents;
@@ -51,10 +51,19 @@ Repository administrators configure these Actions secrets:
 
 Never print, paste into an issue, or commit either value.
 
-The backup role has one permitted connection, schema usage, table/sequence
-read, and RLS bypass so it can capture complete owner data. It has no write,
-role-management, database-creation, superuser, or replication privilege. Its
-generated password is stored only in the Actions connection-string secret.
+The backup role has one permitted connection, `private`/`public` schema usage,
+table/sequence read, and RLS bypass so it can capture complete app data. It has
+no Auth-schema access, write, role-management, database-creation, superuser, or
+replication privilege. Its generated password is stored only in the Actions
+connection-string secret.
+
+Supabase owns and restricts the managed `auth` schema, so this least-privilege
+logical dump does not copy password hashes, sessions, or identities. In a real
+recovery, recreate the pre-authorized owner through Supabase Auth, then perform
+an operator-controlled source-owner-to-recovery-owner UUID remap before
+validating the restored foreign keys. Built-in password recovery remains the
+normal authentication-recovery path; this artifact restores authoritative app
+data.
 
 ## Operator-led restore proof
 
@@ -68,12 +77,13 @@ pg_restore --list .recovery\dc-training.dump
 pg_restore --clean --if-exists --no-owner --no-privileges --dbname "$env:RECOVERY_DATABASE_URL" .recovery\dc-training.dump
 ```
 
-After restore, use privileged SQL with redacted output to prove representative
-row counts and foreign-key integrity in `auth`, `private`, and `public`; then
-destroy the isolated recovery project and securely remove the local plaintext
-dump. Record only the Actions run URL, artifact name/size/expiry, restore-target
-identifier, tool versions, assertions, and pass/fail result. Do not record owner
-data or secret values.
+Before restoring post-data constraints, use privileged recovery-only SQL to
+map the source owner UUID found in the restored app tables to the recreated
+Supabase Auth owner UUID. Then prove representative row counts and foreign-key
+integrity in `private` and `public`; destroy the isolated recovery project and
+securely remove the local plaintext dump. Record only the Actions run URL,
+artifact name/size/expiry, restore-target identifier, tool versions,
+assertions, and pass/fail result. Do not record owner data or secret values.
 
 ## Release operations
 
