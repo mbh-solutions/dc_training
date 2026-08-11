@@ -16,6 +16,7 @@ set search_path = ''
 as $$
 declare
   owner_id uuid := (select auth.uid());
+  legacy_session_id uuid := nullif(auth.jwt() ->> 'session_id', '')::uuid;
   current_device private.active_editing_devices;
 begin
   if owner_id is null then raise exception 'Authentication required'; end if;
@@ -29,6 +30,16 @@ begin
   select * into strict current_device
   from private.active_editing_devices device
   where device.user_id = owner_id;
+
+  if legacy_session_id is not null
+    and current_device.device_id = legacy_session_id
+    and current_device.device_id <> p_device_id
+  then
+    update private.active_editing_devices device
+    set device_id = p_device_id
+    where device.user_id = owner_id
+    returning * into current_device;
+  end if;
 
   return jsonb_build_object(
     'active', current_device.device_id = p_device_id,
@@ -87,6 +98,50 @@ alter function private.apply_offline_operation(uuid, text, jsonb)
 rename to apply_owner_offline_operation;
 revoke all on function private.apply_owner_offline_operation(uuid, text, jsonb)
 from public, anon, authenticated;
+
+create or replace function public.apply_offline_operation(
+  p_operation_id uuid,
+  p_kind text,
+  p_payload jsonb
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  owner_id uuid := (select auth.uid());
+  legacy_session_id uuid := nullif(auth.jwt() ->> 'session_id', '')::uuid;
+  active_device_id uuid;
+begin
+  if owner_id is null then raise exception 'Authentication required'; end if;
+  if legacy_session_id is null then raise exception 'App update required'; end if;
+
+  perform pg_advisory_xact_lock(hashtextextended(owner_id::text, 0));
+  insert into private.active_editing_devices (user_id, device_id)
+  values (owner_id, legacy_session_id)
+  on conflict (user_id) do nothing;
+
+  select device.device_id into strict active_device_id
+  from private.active_editing_devices device
+  where device.user_id = owner_id;
+
+  if active_device_id <> legacy_session_id then
+    raise exception 'This device is read only';
+  end if;
+
+  return private.apply_owner_offline_operation(
+    p_operation_id,
+    p_kind,
+    p_payload
+  );
+end;
+$$;
+
+revoke execute on function public.apply_offline_operation(uuid, text, jsonb)
+from public, anon;
+grant execute on function public.apply_offline_operation(uuid, text, jsonb)
+to authenticated;
 
 create or replace function public.apply_offline_operation(
   p_operation_id uuid,
