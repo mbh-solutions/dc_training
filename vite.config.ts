@@ -38,6 +38,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        importScripts: ["/sw-activate.js"],
         navigateFallback: "/index.html",
         globPatterns: ["**/*.{js,css,html,svg,png}"],
         maximumFileSizeToCacheInBytes: 3_000_000,
