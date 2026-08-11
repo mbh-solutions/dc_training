@@ -134,13 +134,75 @@ export type OfflineAccountState = {
   workout: LoadedWorkout | null;
 };
 
+export type EditingDeviceAccess = "active" | "checking" | "readonly";
+
+type EditingDeviceStatus = {
+  active: boolean;
+  device_id: string;
+  transferred_at: string;
+};
+
 const databaseName = "dc-training-offline";
 const stateStore = "accounts";
 const operationStore = "operations";
+const deviceIdStorageKey = "dc-training-editing-device";
 const memoryStates = new Map<string, OfflineAccountState>();
 const memoryOperations = new Map<string, OfflineOperation>();
 let memoryWrite = Promise.resolve();
 let databasePromise: Promise<IDBDatabase> | null = null;
+let memoryDeviceId = "";
+
+export function editingDeviceId() {
+  const stored =
+    typeof localStorage === "undefined"
+      ? memoryDeviceId
+      : (localStorage.getItem(deviceIdStorageKey) ?? "");
+  if (validUuid(stored)) return stored;
+  const created = crypto.randomUUID();
+  if (typeof localStorage === "undefined") memoryDeviceId = created;
+  else localStorage.setItem(deviceIdStorageKey, created);
+  return created;
+}
+
+function validUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
+export async function registerEditingDevice(deviceId: string) {
+  return editingDeviceAccess("register_editing_device", deviceId);
+}
+
+export async function transferEditingDevice(deviceId: string) {
+  return editingDeviceAccess("transfer_editing_device", deviceId);
+}
+
+async function editingDeviceAccess(
+  rpc: "register_editing_device" | "transfer_editing_device",
+  deviceId: string,
+) {
+  if (!supabase) throw new Error("CLOUD IS NOT CONFIGURED");
+  if (!validUuid(deviceId)) throw new Error("DEVICE ID IS INVALID");
+  const { data, error } = await supabase.rpc(rpc, { p_device_id: deviceId });
+  if (error) throw new Error(error.message);
+  if (!validEditingDeviceStatus(data))
+    throw new Error("DEVICE ACCESS COULD NOT BE VERIFIED");
+  return data.active ? ("active" as const) : ("readonly" as const);
+}
+
+function validEditingDeviceStatus(
+  value: unknown,
+): value is EditingDeviceStatus {
+  if (!value || typeof value !== "object") return false;
+  const status = value as Partial<EditingDeviceStatus>;
+  return (
+    typeof status.active === "boolean" &&
+    typeof status.device_id === "string" &&
+    validUuid(status.device_id) &&
+    typeof status.transferred_at === "string"
+  );
+}
 
 export function listenOfflineState(userId: string, listener: () => void) {
   const eventName = `dc-offline-state:${userId}`;
@@ -264,12 +326,20 @@ export async function pendingOfflineOperationCount(userId: string) {
   return (await listOfflineOperations(userId)).length;
 }
 
-export async function synchronizeOfflineState(userId: string) {
+export async function synchronizeOfflineState(
+  userId: string,
+  deviceId = editingDeviceId(),
+  access?: Exclude<EditingDeviceAccess, "checking">,
+) {
   if (!supabase) throw new Error("CLOUD IS NOT CONFIGURED");
+  const deviceAccess = access ?? (await registerEditingDevice(deviceId));
   for (;;) {
     const operations = await listOfflineOperations(userId);
+    if (deviceAccess === "readonly" && operations.length > 0)
+      throw new Error("READ ONLY · UNSYNCED CHANGES REMAIN ON THIS DEVICE");
     for (const operation of operations) {
       const { error } = await supabase.rpc("apply_offline_operation", {
+        p_device_id: deviceId,
         p_kind: operation.kind,
         p_operation_id: operation.id,
         p_payload: {
@@ -283,7 +353,7 @@ export async function synchronizeOfflineState(userId: string) {
     const cloud = await loadCloudState(userId);
     if (await replaceStateWhenQueueEmpty(cloud)) {
       emitOfflineState(userId);
-      return;
+      return deviceAccess;
     }
   }
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FoundationHomeProps } from "./FoundationHome.js";
 import type { OfflineSyncState } from "./hooks/use-offline-sync.js";
+import type { EditingDeviceAccess } from "./offline-sync.js";
 import { WORKOUT_SLOTS, type WorkoutSlot } from "./rotation-config.js";
 import type { TrainingLifecycle } from "./workout-domain.js";
 
@@ -8,6 +9,7 @@ type HomeScreenProps = Omit<FoundationHomeProps, "userId"> & {
   activeSlot: WorkoutSlot | null;
   actionSaving: boolean;
   dataReady: boolean;
+  deviceAccess: EditingDeviceAccess;
   lastCompletedSlot: WorkoutSlot | null;
   lifecycle: TrainingLifecycle | null;
   loadingWorkout: boolean;
@@ -16,6 +18,7 @@ type HomeScreenProps = Omit<FoundationHomeProps, "userId"> & {
   onOpenHistory: () => void;
   onOpenRotation?: () => void;
   onRetrySync: () => Promise<boolean>;
+  onTransferDevice: () => Promise<boolean>;
   onResumeWorkout: () => void;
   onStartCruise: () => Promise<boolean>;
   onStartNewBlast: () => Promise<boolean>;
@@ -39,6 +42,7 @@ function HomeScreen({
   activeSlot,
   actionSaving,
   dataReady,
+  deviceAccess,
   lastCompletedSlot,
   lifecycle,
   loadingWorkout,
@@ -48,6 +52,7 @@ function HomeScreen({
   onOpenHistory,
   onOpenRotation,
   onRetrySync,
+  onTransferDevice,
   onResumeWorkout,
   onSignOut,
   onStartCruise,
@@ -62,6 +67,7 @@ function HomeScreen({
     return (
       <CruiseHome
         actionSaving={actionSaving}
+        deviceAccess={deviceAccess}
         email={email}
         message={message}
         nextSlot={nextSlot}
@@ -70,6 +76,7 @@ function HomeScreen({
         onRetrySync={onRetrySync}
         onSignOut={onSignOut}
         onStartNewBlast={onStartNewBlast}
+        onTransferDevice={onTransferDevice}
         syncState={syncState}
       />
     );
@@ -88,8 +95,10 @@ function HomeScreen({
       </header>
 
       <NetworkStatus
+        deviceAccess={deviceAccess}
         online={online}
         onRetrySync={onRetrySync}
+        onTransferDevice={onTransferDevice}
         syncState={syncState}
       />
 
@@ -222,6 +231,7 @@ const homeStyles = [
 
 function CruiseHome({
   actionSaving,
+  deviceAccess,
   email,
   message,
   nextSlot,
@@ -230,9 +240,11 @@ function CruiseHome({
   onRetrySync,
   onSignOut,
   onStartNewBlast,
+  onTransferDevice,
   syncState,
 }: {
   actionSaving: boolean;
+  deviceAccess: EditingDeviceAccess;
   email?: string;
   message: string;
   nextSlot: WorkoutSlot;
@@ -241,6 +253,7 @@ function CruiseHome({
   onRetrySync: () => Promise<boolean>;
   onSignOut: () => Promise<void>;
   onStartNewBlast: () => Promise<boolean>;
+  onTransferDevice: () => Promise<boolean>;
   syncState: OfflineSyncState;
 }) {
   return (
@@ -255,8 +268,10 @@ function CruiseHome({
         </span>
       </header>
       <NetworkStatus
+        deviceAccess={deviceAccess}
         online={online}
         onRetrySync={onRetrySync}
+        onTransferDevice={onTransferDevice}
         syncState={syncState}
       />
       <main>
@@ -280,7 +295,7 @@ function CruiseHome({
         </section>
         <button
           className="primary-action"
-          disabled={actionSaving}
+          disabled={actionSaving || deviceAccess !== "active"}
           onClick={() => void onStartNewBlast()}
           type="button"
         >
@@ -564,14 +579,50 @@ function RotationTracker({
 }
 
 export function NetworkStatus({
+  deviceAccess,
   online,
   onRetrySync,
+  onTransferDevice,
   syncState,
 }: {
+  deviceAccess: EditingDeviceAccess;
   online: boolean;
   onRetrySync: () => Promise<boolean>;
+  onTransferDevice: () => Promise<boolean>;
   syncState: OfflineSyncState;
 }) {
+  if (deviceAccess === "checking")
+    return (
+      <div className="status-strip status-strip--quiet">
+        {online ? "CHECKING EDIT ACCESS" : "CONNECT TO VERIFY EDIT ACCESS"}
+      </div>
+    );
+
+  if (deviceAccess === "readonly")
+    return (
+      <section aria-live="polite" className="device-access-panel">
+        <strong>READ ONLY DEVICE</strong>
+        <span>
+          Synced cloud data is available. Changes left only on another or lost
+          device cannot be recovered.
+        </span>
+        <button
+          disabled={!online || syncState === "syncing"}
+          onClick={() => {
+            if (
+              window.confirm(
+                "Transfer edit access to this device? The prior device will become read only. Do not keep editing it. Only changes already synced to cloud can be restored.",
+              )
+            )
+              void onTransferDevice();
+          }}
+          type="button"
+        >
+          {online ? "TRANSFER EDIT ACCESS" : "CONNECT TO TRANSFER"}
+        </button>
+      </section>
+    );
+
   if (!online)
     return <div className="status-strip">OFFLINE · SAVED ON DEVICE</div>;
 

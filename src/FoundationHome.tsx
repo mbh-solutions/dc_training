@@ -26,13 +26,16 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
     offline.commitOperation,
   );
   const openRotation = () => {
+    if (offline.deviceAccess !== "active") return;
     setShowHistory(false);
     setShowRotationSetup(true);
   };
   const syncStatus = (
     <NetworkStatus
+      deviceAccess={offline.deviceAccess}
       online={homeProps.online}
       onRetrySync={offline.retry}
+      onTransferDevice={offline.transfer}
       syncState={offline.syncState}
     />
   );
@@ -110,7 +113,11 @@ function FoundationHome({ userId, ...homeProps }: FoundationHomeProps) {
         accountState={offline.accountState}
         commitOperation={offline.commitOperation}
         onHome={() => setShowHistory(false)}
-        onOpenRotation={rotationDuringBlast(workout.lifecycle, openRotation)}
+        onOpenRotation={
+          offline.deviceAccess === "active"
+            ? rotationDuringBlast(workout.lifecycle, openRotation)
+            : undefined
+        }
       />,
     );
   }
@@ -147,17 +154,27 @@ function FoundationDashboard({
       {...homeProps}
       activeSlot={workout.activeWorkout?.slot ?? null}
       actionSaving={workout.actionSaving}
-      dataReady={offline.loaded && offline.accountState !== null}
+      dataReady={
+        offline.deviceAccess === "active" &&
+        offline.loaded &&
+        offline.accountState !== null
+      }
+      deviceAccess={offline.deviceAccess}
       lastCompletedSlot={workout.lastCompletedSlot}
       lifecycle={workout.lifecycle}
       loadingWorkout={!offline.loaded}
       message={workout.message || offline.loadError}
       nextSlot={workout.nextSlot}
       onOpenHistory={onOpenHistory}
-      onOpenRotation={rotationDuringBlast(workout.lifecycle, onOpenRotation)}
+      onOpenRotation={
+        offline.deviceAccess === "active"
+          ? rotationDuringBlast(workout.lifecycle, onOpenRotation)
+          : undefined
+      }
       onResumeWorkout={onOpenWorkout}
       onDismissCruiseSuggestion={workout.dismissCruiseSuggestion}
       onRetrySync={offline.retry}
+      onTransferDevice={offline.transfer}
       onStartCruise={workout.startCruise}
       onStartNewBlast={workout.startNewBlast}
       onStartWorkout={async () => {

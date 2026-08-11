@@ -244,6 +244,36 @@ dd {
   cursor: pointer;
 }
 
+.device-access-panel {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--red);
+  border-radius: 6px;
+  padding: 14px;
+  color: var(--gray);
+  line-height: 1.4;
+}
+
+.device-access-panel strong {
+  color: var(--red);
+  font-family: Impact, Haettenschweiler, sans-serif;
+  letter-spacing: 0.08em;
+}
+
+.device-access-panel button {
+  min-height: 44px;
+  border: 1px solid var(--red);
+  border-radius: 4px;
+  color: var(--white);
+  background: transparent;
+  cursor: pointer;
+}
+
+.device-access-panel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .foundation-card {
   margin-top: 24px;
   border: 1px solid var(--line);

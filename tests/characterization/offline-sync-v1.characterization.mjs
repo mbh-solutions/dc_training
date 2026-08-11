@@ -26,6 +26,8 @@ const performanceContextRepair =
   "supabase/migrations/20260811000810_fix_offline_performance_context.sql";
 const progressionUndoRepair =
   "supabase/migrations/20260811002730_use_progression_order_for_undo.sql";
+const activeDeviceMigration =
+  "supabase/migrations/20260811021935_active_editing_device.sql";
 const read = (relativePath) =>
   readFileSync(path.join(target, relativePath), "utf8");
 const hasAll = (source, fragments) =>
@@ -56,6 +58,7 @@ const offlineContract =
   existsSync(path.join(target, progressionValidationMigration)) &&
   existsSync(path.join(target, performanceContextRepair)) &&
   existsSync(path.join(target, progressionUndoRepair)) &&
+  existsSync(path.join(target, activeDeviceMigration)) &&
   hasAll(read(offlineModule), [
     'const databaseName = "dc-training-offline"',
     "[stateStore, operationStore]",
@@ -63,6 +66,9 @@ const offlineContract =
     'kind: "correct_history_performance"',
     'kind: "transition_training_lifecycle"',
     'supabase.rpc("apply_offline_operation"',
+    "editingDeviceId",
+    "registerEditingDevice",
+    "p_device_id: deviceId",
     "created_at: new Date(operation.createdAt).toISOString()",
     '.from("assignment_logbook_states")',
     "recalculateLocalAssignmentLogbook",
@@ -89,6 +95,8 @@ const offlineContract =
     "} while (syncRequested.current);",
     'document.addEventListener("visibilitychange"',
     "retry: synchronize",
+    "deviceAccess",
+    "transferEditingDevice",
   ]) &&
   hasAll(read(workoutHook), [
     "const payload = startWorkoutPayload(state)",
@@ -105,6 +113,8 @@ const offlineContract =
     "OFFLINE · SAVED ON DEVICE",
     "SYNC FAILED · SAVED ON DEVICE",
     "TRY AGAIN",
+    "READ ONLY DEVICE",
+    "TRANSFER EDIT ACCESS",
   ]) &&
   hasAll(read(migration), [
     "create table private.offline_operations",
@@ -163,6 +173,14 @@ const offlineContract =
     "public.undo_workout_step",
     "progression_order > current_workout.progression_order",
     "order by progression_order desc",
+  ]) &&
+  hasAll(read(activeDeviceMigration), [
+    "create table private.active_editing_devices",
+    "public.register_editing_device",
+    "public.transfer_editing_device",
+    "active_device_id is distinct from p_device_id",
+    "private.apply_owner_offline_operation",
+    "revoke insert, update, delete on table public.rotation_assignments",
   ]);
 
 process.stdout.write(
