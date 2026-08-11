@@ -10,6 +10,7 @@ import {
   type TargetSet,
   type WorkoutSlot,
 } from "./rotation-config.js";
+import { useState } from "react";
 import {
   assignmentKey,
   type Assignment,
@@ -24,7 +25,12 @@ const rotationStyles = `
 .flow-header p { margin: 7px 0 0; color: var(--red); font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; font-size: 1rem; letter-spacing: .08em; }
 .back-action { grid-column: 1; grid-row: 1; width: 44px; min-height: 44px; border: 0; color: var(--white); background: transparent; font-size: 3rem; line-height: .7; cursor: pointer; }
 .rotation-label { margin: 20px 2px 10px; color: var(--red); }
-.workout-group { display: grid; gap: 8px; margin-bottom: 28px; }
+.workout-group { display: grid; gap: 8px; margin-bottom: 12px; }
+.workout-toggle { width: 100%; min-height: 64px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; color: var(--white); background: var(--panel); text-align: left; cursor: pointer; }
+.workout-toggle .rotation-label { margin: 0; }
+.workout-toggle small { display: block; margin-top: 4px; color: var(--gray); font-size: .7rem; }
+.workout-toggle b { color: var(--red); font-size: 1.5rem; }
+.workout-assignments { display: grid; gap: 8px; }
 .assignment-card, .choice-card, .review-list div { border: 1px solid var(--line); border-radius: 8px; background: linear-gradient(145deg, rgba(22,22,22,.9), rgba(11,11,11,.96)); }
 .assignment-card { position: relative; width: 100%; min-height: 76px; display: grid; gap: 5px; border-color: #292927; padding: 14px 44px 14px 16px; color: var(--white); text-align: left; cursor: pointer; }
 .assignment-card:disabled { cursor: wait; opacity: .6; }
@@ -292,39 +298,74 @@ function InfoSheet({
 }
 
 export function SetupScreen(props: Props) {
+  const [openWorkout, setOpenWorkout] = useState<WorkoutSlot | null>(
+    props.slot,
+  );
+
   return (
     <Shell title="ROTATION SETUP" onBack={props.onBack}>
-      {WORKOUT_SLOTS.map((workout) => (
-        <section className="workout-group" key={workout}>
-          <p className="section-label rotation-label">{workout} WORKOUT</p>
-          {positionsFor(workout).map((bodyPart) => {
-            const saved = props.saved[assignmentKey(workout, bodyPart)];
-            return (
-              <button
-                className="assignment-card"
-                type="button"
-                key={bodyPart}
-                onClick={() => props.editAssignment(workout, bodyPart)}
-                disabled={props.loadState !== "ready"}
-              >
-                <span>{positionLabel(bodyPart)}</span>
-                <strong>
-                  {props.loadState === "loading"
-                    ? "LOADING ASSIGNMENT"
-                    : (saved?.exercise ?? "CHOOSE EXERCISE")}
-                </strong>
-                {saved && (
-                  <small>
-                    {protocolLabel(saved.protocol)} ·{" "}
-                    {formatTargets(saved.target_sets)}
-                  </small>
-                )}
-                <b aria-hidden="true">›</b>
-              </button>
-            );
-          })}
-        </section>
-      ))}
+      {WORKOUT_SLOTS.map((workout) => {
+        const positions = positionsFor(workout);
+        const assigned = positions.filter(
+          (bodyPart) => props.saved[assignmentKey(workout, bodyPart)],
+        ).length;
+        const expanded = openWorkout === workout;
+        const panelId = `workout-${workout.toLowerCase()}-assignments`;
+
+        return (
+          <section className="workout-group" key={workout}>
+            <button
+              aria-controls={panelId}
+              aria-expanded={expanded}
+              className="workout-toggle"
+              onClick={() => setOpenWorkout(expanded ? null : workout)}
+              type="button"
+            >
+              <span>
+                <span className="section-label rotation-label">
+                  {workout} WORKOUT
+                </span>
+                <small>
+                  {assigned} OF {positions.length} EXERCISES SET
+                </small>
+              </span>
+              <b aria-hidden="true">{expanded ? "−" : "+"}</b>
+            </button>
+            <div
+              className="workout-assignments"
+              hidden={!expanded}
+              id={panelId}
+            >
+              {positions.map((bodyPart) => {
+                const saved = props.saved[assignmentKey(workout, bodyPart)];
+                return (
+                  <button
+                    className="assignment-card"
+                    type="button"
+                    key={bodyPart}
+                    onClick={() => props.editAssignment(workout, bodyPart)}
+                    disabled={props.loadState !== "ready"}
+                  >
+                    <span>{positionLabel(bodyPart)}</span>
+                    <strong>
+                      {props.loadState === "loading"
+                        ? "LOADING ASSIGNMENT"
+                        : (saved?.exercise ?? "CHOOSE EXERCISE")}
+                    </strong>
+                    {saved && (
+                      <small>
+                        {protocolLabel(saved.protocol)} ·{" "}
+                        {formatTargets(saved.target_sets)}
+                      </small>
+                    )}
+                    <b aria-hidden="true">›</b>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
       {props.message && <p className="form-message">{props.message}</p>}
     </Shell>
   );
