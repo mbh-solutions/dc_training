@@ -615,30 +615,12 @@ export function NetworkStatus({
 
   if (deviceAccess === "readonly")
     return (
-      <section aria-live="polite" className="foundation-card">
-        <div className="status-strip status-strip--failed">
-          <strong>READ ONLY DEVICE</strong>
-        </div>
-        <span>
-          Synced cloud data is available. Changes left only on another or lost
-          device cannot be recovered.
-        </span>
-        <button
-          className="secondary-action"
-          disabled={!online || syncState === "syncing"}
-          onClick={() => {
-            if (
-              window.confirm(
-                "Transfer edit access to this device? The prior device will become read only. Do not keep editing it. Any unsynced changes on this read-only device will be discarded; only changes already synced to cloud can be restored.",
-              )
-            )
-              void onTransferDevice();
-          }}
-          type="button"
-        >
-          {online ? "TRANSFER EDIT ACCESS" : "CONNECT TO TRANSFER"}
-        </button>
-      </section>
+      <ReadOnlyDeviceStatus
+        online={online}
+        onRetrySync={onRetrySync}
+        onTransferDevice={onTransferDevice}
+        syncState={syncState}
+      />
     );
 
   if (!online)
@@ -653,6 +635,55 @@ export function NetworkStatus({
 
 function networkStatusLabel(syncState: OfflineSyncState) {
   return syncState === "syncing" ? "SYNCING" : "SYNCED";
+}
+
+function ReadOnlyDeviceStatus({
+  online,
+  onRetrySync,
+  onTransferDevice,
+  syncState,
+}: {
+  online: boolean;
+  onRetrySync: () => Promise<boolean>;
+  onTransferDevice: () => Promise<boolean>;
+  syncState: OfflineSyncState;
+}) {
+  const refreshFailed = online && syncState === "failed";
+  const copy = refreshFailed
+    ? "Cloud data could not be refreshed. Retry before relying on this device's view. Changes left only on another or lost device cannot be recovered."
+    : "Synced cloud data is available. Changes left only on another or lost device cannot be recovered.";
+  return (
+    <section aria-live="polite" className="foundation-card">
+      <div className="status-strip status-strip--failed">
+        <strong>READ ONLY DEVICE</strong>
+      </div>
+      <span>{copy}</span>
+      {refreshFailed && (
+        <button
+          className="secondary-action"
+          onClick={() => void onRetrySync()}
+          type="button"
+        >
+          TRY AGAIN
+        </button>
+      )}
+      <button
+        className="secondary-action"
+        disabled={!online || syncState === "syncing"}
+        onClick={() => {
+          if (
+            window.confirm(
+              "Transfer edit access to this device? The prior device will become read only. Do not keep editing it. Any unsynced changes on this read-only device will be discarded; only changes already synced to cloud can be restored.",
+            )
+          )
+            void onTransferDevice();
+        }}
+        type="button"
+      >
+        {online ? "TRANSFER EDIT ACCESS" : "CONNECT TO TRANSFER"}
+      </button>
+    </section>
+  );
 }
 
 export function BottomNavigation({
