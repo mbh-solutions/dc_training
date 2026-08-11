@@ -332,15 +332,23 @@ export async function pendingOfflineOperationCount(userId: string) {
   return (await listOfflineOperations(userId)).length;
 }
 
+async function editingDeviceAuthority(
+  userId: string,
+  deviceId: string,
+  access?: Exclude<EditingDeviceAccess, "checking">,
+) {
+  if (access) return access;
+  if (!isCloudOwnerId(userId)) return "active";
+  return registerEditingDevice(deviceId);
+}
+
 export async function synchronizeOfflineState(
   userId: string,
   deviceId = editingDeviceId(),
   access?: Exclude<EditingDeviceAccess, "checking">,
 ) {
   if (!supabase) throw new Error("CLOUD IS NOT CONFIGURED");
-  const deviceAccess =
-    access ??
-    (isCloudOwnerId(userId) ? await registerEditingDevice(deviceId) : "active");
+  const deviceAccess = await editingDeviceAuthority(userId, deviceId, access);
   for (;;) {
     const operations = await listOfflineOperations(userId);
     if (deviceAccess === "readonly" && operations.length > 0)
