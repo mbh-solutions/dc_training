@@ -1198,9 +1198,13 @@ await act(async () => {
 await act(settleLoading);
 const emptyA1 =
   text().includes("A1 WORKOUT") && text().includes("CHOOSE EXERCISE");
-const accordionStartsAtA1 =
-  workoutToggle("A1").getAttribute("aria-expanded") === "true" &&
-  workoutToggle("B1").getAttribute("aria-expanded") === "false";
+const styledBackAction =
+  document.querySelector('button.back-action[aria-label="Back"] svg[aria-hidden="true"] path')
+    ?.getAttribute("d") === "m15 5-7 7 7 7";
+const accordionStartsCollapsed = ["A1", "B1", "A2", "B2", "A3", "B3"].every(
+  (workout) => workoutToggle(workout).getAttribute("aria-expanded") === "false",
+);
+await act(async () => workoutToggle("A1").click());
 await act(async () => workoutToggle("B1").click());
 const accordionKeepsOneWorkoutOpen =
   workoutToggle("A1").getAttribute("aria-expanded") === "false" &&
@@ -1482,7 +1486,8 @@ if (
 ) {
   const a1AssignmentRoundTrip =
     emptyA1 &&
-    accordionStartsAtA1 &&
+    styledBackAction &&
+    accordionStartsCollapsed &&
     accordionKeepsOneWorkoutOpen &&
     approvedChestPool &&
     exerciseContinueDisabled &&
@@ -2870,7 +2875,7 @@ const behavior = {
     hasCall("eq", (call) => call[1] === "user_id" && call[2] === "owner-1") &&
     signedOutReadBlocked,
   rotation_setup_accordion:
-    accordionStartsAtA1 && accordionKeepsOneWorkoutOpen,
+    accordionStartsCollapsed && accordionKeepsOneWorkoutOpen,
   rotation_assignment_boundary:
     hasCall("from", (call) => call[1] === "rotation_assignment_versions") &&
     hasCall(
@@ -2937,18 +2942,20 @@ const behavior = {
   sign_out_submitted: signOutSubmitted,
   profile_error_handled: profileErrorHandled,
   reconnect_refetched: reconnectRefetched && reconnected.includes("SYNCED"),
+  rotation_setup_back_action: styledBackAction,
 };
 
 const a1Detail = {
   a1WorkoutCompletion,
   accordionKeepsOneWorkoutOpen,
-  accordionStartsAtA1,
+  accordionStartsCollapsed,
   completionShown,
   approvedChestPool,
   backPreserved,
   emptyA1,
   exerciseContinueDisabled,
   protocolGuidance,
+  styledBackAction,
   protocolInitiallyEmpty,
   rangeInitiallyEmpty,
   replacementClearsDownstream,

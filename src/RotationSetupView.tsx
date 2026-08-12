@@ -23,7 +23,13 @@ const rotationStyles = `
 .flow-header > div { grid-column: 2; }
 .flow-header h1 { margin: 0; font-size: 1.55rem; }
 .flow-header p { margin: 7px 0 0; color: var(--red); font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; font-size: 1rem; letter-spacing: .08em; }
-.back-action { grid-column: 1; grid-row: 1; width: 44px; min-height: 44px; border: 0; color: var(--white); background: transparent; font-size: 3rem; line-height: .7; cursor: pointer; }
+.back-action { position: relative; grid-column: 1; grid-row: 1; width: 44px; min-height: 44px; display: grid; place-items: center; border: 0; padding: 0; color: var(--white); background: transparent; cursor: pointer; }
+.back-action::before { position: absolute; inset: 6px 2px; border: 1px solid #3a3a38; border-radius: 7px; background: #111; content: ""; }
+.back-action svg { position: relative; width: 22px; height: 22px; }
+.back-action:active { transform: scale(.97); }
+.back-action:active::before, .back-action:focus-visible::before { border-color: var(--red); }
+.back-action:focus-visible { outline: 0; }
+.back-action:focus-visible::before { box-shadow: 0 0 0 2px rgba(239,40,36,.25); }
 .rotation-label { margin: 20px 2px 10px; color: var(--red); }
 .workout-group { display: grid; gap: 8px; margin-bottom: 12px; }
 .workout-toggle { width: 100%; min-height: 64px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; color: var(--white); background: var(--panel); text-align: left; cursor: pointer; }
@@ -299,9 +305,7 @@ function InfoSheet({
 }
 
 export function SetupScreen(props: Props) {
-  const [openWorkout, setOpenWorkout] = useState<WorkoutSlot | null>(
-    props.slot,
-  );
+  const [openWorkout, setOpenWorkout] = useState<WorkoutSlot | null>(null);
 
   return (
     <Shell title="ROTATION SETUP" onBack={props.onBack}>
@@ -534,7 +538,16 @@ function Shell({
             onClick={onBack}
             aria-label="Back"
           >
-            ‹
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path
+                d="m15 5-7 7 7 7"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="3"
+              />
+            </svg>
           </button>
           <div>
             <h1>{title}</h1>
