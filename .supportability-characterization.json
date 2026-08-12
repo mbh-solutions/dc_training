@@ -4,6 +4,7 @@
       "covers": [
         "src/App.tsx",
         "src/AuthScreens.tsx",
+        "src/BackChevron.tsx",
         "src/FoundationHome.tsx",
         "src/HomeScreen.tsx",
         "src/RotationSetup.tsx",
@@ -35,6 +36,7 @@
     },
     {
       "covers": [
+        "src/BackChevron.tsx",
         "src/WorkoutTracer.tsx",
         "src/hooks/use-workout.ts",
         "src/weight-conversion.ts",
@@ -45,7 +47,7 @@
       "kind": "regression"
     },
     {
-      "covers": ["src/HistoryScreen.tsx"],
+      "covers": ["src/BackChevron.tsx", "src/HistoryScreen.tsx"],
       "id": "history-v1",
       "kind": "regression"
     },
