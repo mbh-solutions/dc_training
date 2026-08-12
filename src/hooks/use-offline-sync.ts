@@ -203,7 +203,7 @@ export function useOfflineSync(userId: string, online: boolean) {
             readOfflineState(userId),
             reviewOfflineConflict(userId),
           ]);
-          if (!synced && (currentConflict || !current?.workout?.workout))
+          if (!synced || currentConflict || !current?.workout?.workout)
             return { data: null, error: "WORKOUT COULD NOT START · TRY AGAIN" };
           return { data: current, error: "" };
         }
