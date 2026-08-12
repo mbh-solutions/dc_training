@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { BottomNavigation } from "./HomeScreen.jsx";
+import { BackChevron, BottomNavigation } from "./HomeScreen.jsx";
 import {
   stepTarget,
   type OfflineAccountState,
@@ -593,7 +593,6 @@ function ExerciseButton({
       <em>
         {latest ? performanceSummary(latest.step, weightUnit) : "NO ENTRIES"}
       </em>
-      <b>›</b>
     </button>
   );
 }
@@ -668,7 +667,6 @@ function WorkoutButton({
           ? `${logged + skipped} OF ${steps.length} STEPS`
           : `${logged} LOGGED · ${skipped} SKIPPED`}
       </small>
-      <b>›</b>
     </button>
   );
 }
@@ -724,11 +722,6 @@ function WorkoutDetail({
                     ? "FINISH ACTIVE WORKOUT TO CORRECT"
                     : stepStatus(step, weightUnit)}
               </em>
-              <b>
-                {step.status === "completed" && step.kind === "exercise"
-                  ? "›"
-                  : ""}
-              </b>
             </button>
           ))}
       </div>
@@ -806,7 +799,6 @@ function ExercisePerformance({
                   ? "FINISH ACTIVE WORKOUT TO CORRECT"
                   : verdictLabel(performance.step)}
             </em>
-            <b>{onEdit ? "›" : ""}</b>
           </button>
         ))}
       </div>
@@ -1167,7 +1159,8 @@ function CorrectionEditor({
 function BackButton({ label, onBack }: { label: string; onBack: () => void }) {
   return (
     <button className="history-back" onClick={onBack} type="button">
-      ‹ {label}
+      <BackChevron />
+      {label}
     </button>
   );
 }
@@ -1385,26 +1378,25 @@ const historyStyles = `
 .exercise-group-toggle span { color: var(--gray); font-family: Impact, sans-serif; font-size: .8rem; }
 .exercise-group-toggle b { font-family: sans-serif; font-size: 1.3rem; }
 .exercise-group-rows { border-top: 1px solid var(--line); padding: 0 14px; }
-.exercise-row { width: 100%; min-height: 72px; display: grid; grid-template-columns: 34px 1fr auto 12px; align-items: center; gap: 10px; border: 0; border-bottom: 1px solid #292927; padding: 8px 0; color: var(--white); background: transparent; text-align: left; cursor: pointer; }
+.exercise-row { width: 100%; min-height: 72px; display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px; border: 0; border-bottom: 1px solid #292927; padding: 8px 0; color: var(--white); background: transparent; text-align: left; cursor: pointer; }
 .exercise-row:last-child { border-bottom: 0; }
 .exercise-row > span, .exercise-row > em { color: var(--gray); font-family: Impact, sans-serif; font-style: normal; }
 .exercise-row strong { font-family: Impact, sans-serif; font-size: 1rem; }
 .exercise-row small { display: block; width: fit-content; margin-top: 5px; border: 1px solid var(--red); border-radius: 3px; padding: 2px 5px; color: var(--red); font-size: .62rem; }
 .exercise-row > em { max-width: 115px; font-size: .72rem; text-align: right; }
-.exercise-row > b, .workout-row > b, .performance-rows button > b, .saved-entry-list button > b { color: var(--gray); font-family: sans-serif; font-size: 1.6rem; }
-.workout-row { width: 100%; min-height: 82px; display: grid; grid-template-columns: 54px 45px 1fr auto 12px; align-items: center; gap: 8px; margin-top: 10px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; color: var(--white); background: rgba(10,10,10,.72); text-align: left; cursor: pointer; }
+.workout-row { width: 100%; min-height: 82px; display: grid; grid-template-columns: 54px 45px 1fr auto; align-items: center; gap: 8px; margin-top: 10px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; color: var(--white); background: rgba(10,10,10,.72); text-align: left; cursor: pointer; }
 .workout-row > span, .workout-row > small { color: var(--gray); font-family: Impact, sans-serif; }
 .workout-row > strong { font-size: 1.65rem; }
 .workout-row > em { color: var(--white); font-family: Impact, sans-serif; font-style: normal; }
 .workout-row:first-child > em { color: var(--red); }
 .workout-row > small { font-size: .72rem; text-align: right; }
 .workout-month h3 { margin: 22px 3px 5px; color: var(--gray); font-family: Impact, sans-serif; font-size: 1rem; letter-spacing: .06em; }
-.history-back { min-height: 44px; border: 0; padding: 8px 0; color: var(--gray); background: transparent; font-size: 1.05rem; cursor: pointer; }
+.history-back { min-height: 44px; display: flex; align-items: center; gap: 10px; border: 0; padding: 6px 0; color: var(--gray); background: transparent; font-size: 1.05rem; cursor: pointer; }
 .history-detail > p { margin: 0 0 8px; color: var(--gray); font-family: Impact, sans-serif; letter-spacing: .05em; text-transform: uppercase; }
 .history-detail > strong { font-family: Impact, sans-serif; letter-spacing: .05em; text-transform: uppercase; }
 .red { color: var(--red) !important; }
 .saved-entry-list, .performance-rows { display: grid; gap: 8px; margin-top: 24px; }
-.saved-entry-list button, .performance-rows button { min-height: 68px; display: grid; grid-template-columns: 28px 1fr auto 12px; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 13px; color: var(--white); background: #0a0a0a; text-align: left; cursor: pointer; }
+.saved-entry-list button, .performance-rows button { min-height: 68px; display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 13px; color: var(--white); background: #0a0a0a; text-align: left; cursor: pointer; }
 .saved-entry-list button:disabled, .performance-rows button:disabled { cursor: default; opacity: .72; }
 .saved-entry-list button > span, .saved-entry-list button > em, .performance-rows button > span, .performance-rows button > em { color: var(--gray); font-family: Impact, sans-serif; font-style: normal; }
 .saved-entry-list button > em, .performance-rows button > em { max-width: 125px; font-size: .78rem; text-align: right; }
@@ -1431,5 +1423,5 @@ const historyStyles = `
 .correction-dialog label { display: grid; gap: 6px; margin-top: 12px; color: var(--gray); }
 .correction-dialog label > span { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; }
 .correction-dialog input { width: 100%; min-height: 48px; border: 1px solid var(--line); border-radius: 6px; padding: 0 12px; color: var(--white); background: #050505; }
-@media (max-width: 390px) { .workout-row { grid-template-columns: 45px 38px 1fr 12px; } .workout-row > small { grid-column: 2 / 4; text-align: left; } .exercise-row > em { display: none; } }
+@media (max-width: 390px) { .workout-row { grid-template-columns: 45px 38px 1fr; } .workout-row > small { grid-column: 2 / 4; text-align: left; } .exercise-row > em { display: none; } }
 `;

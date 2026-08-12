@@ -1199,8 +1199,10 @@ await act(settleLoading);
 const emptyA1 =
   text().includes("A1 WORKOUT") && text().includes("CHOOSE EXERCISE");
 const styledBackAction =
-  document.querySelector('button.back-action[aria-label="Back"] svg[aria-hidden="true"] path')
+  document.querySelector('button.back-action[aria-label="Back"] .back-chevron-frame path')
     ?.getAttribute("d") === "m15 5-7 7 7 7";
+const assignmentCardsHaveNoArrow = [...document.querySelectorAll("button.assignment-card")]
+  .every((card) => !card.querySelector("svg, b"));
 const accordionStartsCollapsed = ["A1", "B1", "A2", "B2", "A3", "B3"].every(
   (workout) => workoutToggle(workout).getAttribute("aria-expanded") === "false",
 );
@@ -1487,6 +1489,7 @@ if (
   const a1AssignmentRoundTrip =
     emptyA1 &&
     styledBackAction &&
+    assignmentCardsHaveNoArrow &&
     accordionStartsCollapsed &&
     accordionKeepsOneWorkoutOpen &&
     approvedChestPool &&
@@ -2943,6 +2946,7 @@ const behavior = {
   profile_error_handled: profileErrorHandled,
   reconnect_refetched: reconnectRefetched && reconnected.includes("SYNCED"),
   rotation_setup_back_action: styledBackAction,
+  rotation_setup_cards_have_no_arrow: assignmentCardsHaveNoArrow,
 };
 
 const a1Detail = {
@@ -2956,6 +2960,7 @@ const a1Detail = {
   exerciseContinueDisabled,
   protocolGuidance,
   styledBackAction,
+  assignmentCardsHaveNoArrow,
   protocolInitiallyEmpty,
   rangeInitiallyEmpty,
   replacementClearsDownstream,

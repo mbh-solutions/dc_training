@@ -30,6 +30,33 @@ type HomeScreenProps = Omit<FoundationHomeProps, "onSignOut" | "userId"> & {
   syncState: OfflineSyncState;
 };
 
+export function BackChevron() {
+  return (
+    <>
+      <style>{backChevronStyles}</style>
+      <span className="back-chevron-frame" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="m15 5-7 7 7 7"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="3"
+          />
+        </svg>
+      </span>
+    </>
+  );
+}
+
+const backChevronStyles = `
+.back-chevron-frame { width: 40px; height: 32px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 7px; color: var(--white); background: #111; }
+.back-chevron-frame svg { width: 22px; height: 22px; }
+button:active > .back-chevron-frame { transform: scale(.97); border-color: var(--red); }
+button:focus-visible > .back-chevron-frame { border-color: var(--red); box-shadow: 0 0 0 2px rgba(239,40,36,.25); }
+`;
+
 const summaries: Record<WorkoutSlot, string> = {
   A1: "CHEST · SHOULDERS · TRICEPS · BACK",
   A2: "CHEST · SHOULDERS · TRICEPS · BACK",
@@ -807,7 +834,7 @@ export function SettingsScreen({
       <style>{settingsStyles}</style>
       <header className="settings-header">
         <button aria-label="Back" onClick={onBack} type="button">
-          ‹
+          <BackChevron />
         </button>
         <h1>SETTINGS</h1>
       </header>
@@ -864,7 +891,7 @@ export function SettingsScreen({
 const settingsStyles = `
 .settings-screen { min-height: 100svh; display: flex; flex-direction: column; }
 .settings-header { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; border-bottom: 1px solid var(--line); padding: 10px 0 24px; }
-.settings-header button { min-width: 44px; min-height: 44px; border: 0; color: var(--white); background: transparent; font-size: 3.4rem; line-height: .7; cursor: pointer; }
+.settings-header button { min-width: 44px; min-height: 44px; display: grid; place-items: center; border: 0; padding: 0; color: var(--white); background: transparent; cursor: pointer; }
 .settings-header h1 { margin: 0; font-size: 2rem; text-align: center; }
 .settings-screen main { flex: 1; padding-top: 44px; }
 .settings-screen .section-label { margin-bottom: 18px; font-size: 1.45rem; }
