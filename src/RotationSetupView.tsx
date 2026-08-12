@@ -16,7 +16,7 @@ import {
   type Assignment,
 } from "./hooks/use-rotation-assignment.js";
 import type { DraftTarget } from "./rotation-assignment-draft.js";
-import { BackChevron } from "./BackChevron.jsx";
+import { BackChevron } from "./HomeScreen.jsx";
 
 const rotationStyles = `
 .rotation-shell { display: flex; flex-direction: column; }

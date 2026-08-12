@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { BottomNavigation } from "./HomeScreen.jsx";
+import { BackChevron, BottomNavigation } from "./HomeScreen.jsx";
 import {
   stepTarget,
   type OfflineAccountState,
@@ -23,7 +23,6 @@ import {
   type WeightEntry,
   type WeightUnit,
 } from "./weight-conversion.js";
-import { BackChevron } from "./BackChevron.jsx";
 
 type Props = {
   accountState: OfflineAccountState | null;

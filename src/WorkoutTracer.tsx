@@ -11,7 +11,7 @@ import {
   type WeightEntry,
   type WeightUnit,
 } from "./weight-conversion.js";
-import { BackChevron } from "./BackChevron.jsx";
+import { BackChevron } from "./HomeScreen.jsx";
 
 const backIllustration = new URL(
   "../docs/design/back-stretch-illustration-approved.png",
