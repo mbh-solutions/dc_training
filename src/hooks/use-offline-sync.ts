@@ -197,16 +197,8 @@ export function useOfflineSync(userId: string, online: boolean) {
       try {
         const next = await commitOfflineOperation(userId, operation);
         setAccountState(next);
-        if (online && cloudOwner && operation.kind === "start_workout") {
-          const synced = await synchronize();
-          const [current, currentConflict] = await Promise.all([
-            readOfflineState(userId),
-            reviewOfflineConflict(userId),
-          ]);
-          if (!synced || currentConflict || !current?.workout?.workout)
-            return { data: null, error: "WORKOUT COULD NOT START · TRY AGAIN" };
-          return { data: current, error: "" };
-        }
+        if (online && cloudOwner && operation.kind === "start_workout")
+          return confirmOnlineStart(userId, synchronize);
         if (online) void synchronize();
         return { data: next, error: "" };
       } catch (error) {
@@ -328,4 +320,18 @@ function safeRejectedStart(conflict: OfflineConflictReview) {
     conflict.operations.length === 1 &&
     conflict.operations[0]?.kind === "start_workout"
   );
+}
+
+async function confirmOnlineStart(
+  userId: string,
+  synchronize: () => Promise<boolean>,
+) {
+  const synced = await synchronize();
+  const [current, currentConflict] = await Promise.all([
+    readOfflineState(userId),
+    reviewOfflineConflict(userId),
+  ]);
+  if (!synced || currentConflict || !current?.workout?.workout)
+    return { data: null, error: "WORKOUT COULD NOT START · TRY AGAIN" };
+  return { data: current, error: "" };
 }
