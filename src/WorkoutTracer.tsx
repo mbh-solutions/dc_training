@@ -11,6 +11,7 @@ import {
   type WeightEntry,
   type WeightUnit,
 } from "./weight-conversion.js";
+import { BackChevron } from "./BackChevron.jsx";
 
 const backIllustration = new URL(
   "../docs/design/back-stretch-illustration-approved.png",
@@ -165,7 +166,7 @@ export function WorkoutTracer(props: Props) {
       <style>{workoutStyles}</style>
       <header className="workout-header">
         <button aria-label="LEAVE WORKOUT" type="button" onClick={props.onExit}>
-          ‹
+          <BackChevron />
         </button>
         <div>
           <strong>DC TRAINING</strong>
@@ -894,7 +895,7 @@ function comparisonVerdict(step: WorkoutStep, index: number) {
 const workoutStyles = `
 .workout-shell { padding-top: max(18px, env(safe-area-inset-top)); }
 .workout-header { min-height: 92px; display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; border-bottom: 1px solid var(--line); text-align: center; }
-.workout-header > button { min-width: 44px; min-height: 44px; border: 0; color: var(--white); background: transparent; font-size: 3rem; cursor: pointer; }
+.workout-header > button { min-width: 44px; min-height: 44px; display: grid; place-items: center; border: 0; padding: 0; color: var(--white); background: transparent; cursor: pointer; }
 .workout-header strong { font-family: Impact, sans-serif; font-size: 1.25rem; letter-spacing: .08em; }
 .workout-header p { margin: 7px 0 0; font-family: Impact, sans-serif; font-size: 1.15rem; }
 .workout-header span, .workout-part, .today-label { color: var(--red); }

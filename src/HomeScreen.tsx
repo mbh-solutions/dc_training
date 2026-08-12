@@ -5,6 +5,7 @@ import { WORKOUT_SLOTS, type WorkoutSlot } from "./rotation-config.js";
 import type { TrainingLifecycle } from "./workout-domain.js";
 import { requestOwnerAccountDeletion } from "./lib/auth-actions.js";
 import type { WeightUnit } from "./weight-conversion.js";
+import { BackChevron } from "./BackChevron.jsx";
 
 type HomeScreenProps = Omit<FoundationHomeProps, "onSignOut" | "userId"> & {
   activeSlot: WorkoutSlot | null;
@@ -807,7 +808,7 @@ export function SettingsScreen({
       <style>{settingsStyles}</style>
       <header className="settings-header">
         <button aria-label="Back" onClick={onBack} type="button">
-          ‹
+          <BackChevron />
         </button>
         <h1>SETTINGS</h1>
       </header>
@@ -864,7 +865,7 @@ export function SettingsScreen({
 const settingsStyles = `
 .settings-screen { min-height: 100svh; display: flex; flex-direction: column; }
 .settings-header { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; border-bottom: 1px solid var(--line); padding: 10px 0 24px; }
-.settings-header button { min-width: 44px; min-height: 44px; border: 0; color: var(--white); background: transparent; font-size: 3.4rem; line-height: .7; cursor: pointer; }
+.settings-header button { min-width: 44px; min-height: 44px; display: grid; place-items: center; border: 0; padding: 0; color: var(--white); background: transparent; cursor: pointer; }
 .settings-header h1 { margin: 0; font-size: 2rem; text-align: center; }
 .settings-screen main { flex: 1; padding-top: 44px; }
 .settings-screen .section-label { margin-bottom: 18px; font-size: 1.45rem; }

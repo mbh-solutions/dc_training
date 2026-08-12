@@ -16,6 +16,7 @@ import {
   type Assignment,
 } from "./hooks/use-rotation-assignment.js";
 import type { DraftTarget } from "./rotation-assignment-draft.js";
+import { BackChevron } from "./BackChevron.jsx";
 
 const rotationStyles = `
 .rotation-shell { display: flex; flex-direction: column; }
@@ -23,13 +24,7 @@ const rotationStyles = `
 .flow-header > div { grid-column: 2; }
 .flow-header h1 { margin: 0; font-size: 1.55rem; }
 .flow-header p { margin: 7px 0 0; color: var(--red); font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif; font-size: 1rem; letter-spacing: .08em; }
-.back-action { position: relative; grid-column: 1; grid-row: 1; width: 44px; min-height: 44px; display: grid; place-items: center; border: 0; padding: 0; color: var(--white); background: transparent; cursor: pointer; }
-.back-action::before { position: absolute; inset: 6px 2px; border: 1px solid #3a3a38; border-radius: 7px; background: #111; content: ""; }
-.back-action svg { position: relative; width: 22px; height: 22px; }
-.back-action:active { transform: scale(.97); }
-.back-action:active::before, .back-action:focus-visible::before { border-color: var(--red); }
-.back-action:focus-visible { outline: 0; }
-.back-action:focus-visible::before { box-shadow: 0 0 0 2px rgba(239,40,36,.25); }
+.back-action { grid-column: 1; grid-row: 1; width: 44px; min-height: 44px; display: grid; place-items: center; border: 0; padding: 0; color: var(--white); background: transparent; cursor: pointer; }
 .rotation-label { margin: 20px 2px 10px; color: var(--red); }
 .workout-group { display: grid; gap: 8px; margin-bottom: 12px; }
 .workout-toggle { width: 100%; min-height: 64px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; color: var(--white); background: var(--panel); text-align: left; cursor: pointer; }
@@ -39,12 +34,11 @@ const rotationStyles = `
 .workout-assignments { display: grid; gap: 8px; }
 .workout-assignments[hidden] { display: none; }
 .assignment-card, .choice-card, .review-list div { border: 1px solid var(--line); border-radius: 8px; background: linear-gradient(145deg, rgba(22,22,22,.9), rgba(11,11,11,.96)); }
-.assignment-card { position: relative; width: 100%; min-height: 76px; display: grid; gap: 5px; border-color: #292927; padding: 14px 44px 14px 16px; color: var(--white); text-align: left; cursor: pointer; }
+.assignment-card { position: relative; width: 100%; min-height: 76px; display: grid; gap: 5px; border-color: #292927; padding: 14px 16px; color: var(--white); text-align: left; cursor: pointer; }
 .assignment-card:disabled { cursor: wait; opacity: .6; }
 .assignment-card span { color: var(--red); font-size: .78rem; }
 .assignment-card strong { font-size: 1rem; }
 .assignment-card small { color: var(--gray); font-size: .72rem; }
-.assignment-card > svg { position: absolute; right: 15px; top: 26px; width: 22px; height: 22px; }
 .choice-list { display: grid; gap: 11px; }
 .choice-card { position: relative; min-height: 76px; display: flex; align-items: center; gap: 12px; padding: 16px 58px 16px 17px; cursor: pointer; }
 .choice-card--selected { border-color: var(--red); }
@@ -363,16 +357,6 @@ export function SetupScreen(props: Props) {
                         {formatTargets(saved.target_sets)}
                       </small>
                     )}
-                    <svg aria-hidden="true" viewBox="0 0 24 24">
-                      <path
-                        d="m9 5 7 7-7 7"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="3"
-                      />
-                    </svg>
                   </button>
                 );
               })}
@@ -547,16 +531,7 @@ function Shell({
             onClick={onBack}
             aria-label="Back"
           >
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path
-                d="m15 5-7 7 7 7"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="3"
-              />
-            </svg>
+            <BackChevron />
           </button>
           <div>
             <h1>{title}</h1>
