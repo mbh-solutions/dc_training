@@ -43,6 +43,7 @@ function RotationSetup({
   replacement,
 }: RotationSetupProps) {
   const [replacementSaving, setReplacementSaving] = useState(false);
+  const [openWorkout, setOpenWorkout] = useState<WorkoutSlot | null>(null);
   const { loadState, message, saved, saveAssignment, saving } =
     useRotationAssignments(accountState, commitOperation);
   const editor = useRotationEditor(
@@ -69,6 +70,7 @@ function RotationSetup({
   const assignment = saved[assignmentKey(editor.slot, editor.position)] ?? null;
 
   const editAssignment: typeof editor.editAssignment = (slot, position) => {
+    setOpenWorkout(slot);
     editor.editAssignment(slot, position);
     flow.beginEdit();
   };
@@ -122,6 +124,7 @@ function RotationSetup({
       loadState={loadState}
       message={replacement?.message || message}
       onBack={onBack}
+      openWorkout={openWorkout}
       onExerciseBack={replacement ? onBack : flow.onExerciseBack}
       onExerciseContinue={flow.onExerciseContinue}
       onProtocolBack={flow.onProtocolBack}
@@ -146,6 +149,9 @@ function RotationSetup({
       structure={editor.structure}
       structureValid={structureValid}
       targets={targets}
+      toggleWorkout={(workout) =>
+        setOpenWorkout((open) => (open === workout ? null : workout))
+      }
       updateCustomTarget={editor.updateCustomTarget}
     />
   );

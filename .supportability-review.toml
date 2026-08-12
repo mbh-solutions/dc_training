@@ -1,222 +1,69 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "After one legacy upgrade, every current signed-in device may edit without an edit-access transfer warning. A device queue commits as one account-revision batch or not at all; stale or rejected work remains reviewable until the owner explicitly chooses cloud data."
-proof = "Production evidence established that the original first transfer already succeeded server-side and the second click was redundant. The replacement removes transfer from the current client, adds an atomic activation/takeover RPC, persists one stable batch ID and base revision with the local queue, checks the receipt before revision CAS, applies all operations inside one rollback boundary, deletes local operations only after an applied receipt and stable cloud snapshot, and freezes preserved conflicts. The focused owner-shell test passed 1/1 and its directly relevant suite passed 2/2. Production owner-device qualification remains required after merge, migration, and deployment."
+intended_behavior = "A new account with valid A1 assignments can start its first A1 workout once. Online Start waits for the authoritative sync result, and a rejected Start without workout entries returns to Home with a retry message instead of a full-screen data-loss warning."
+proof = "Production captured two rejected first-A1 batches with base revision 5 and exact active assignment IDs. A rollback-only production transaction installed the candidate function, replayed the same context, returned applied revision 6, created one in-progress A1 workout, and initialized rotation to A1. Rollback residue checks returned revision 5, zero workouts, zero rotation rows, and zero test receipts."
 
 [characterization]
-captured_behavior = "The qualified auth shell, rotation setup, workout runtime, logbook, history, blast/cruise, offline working copy, account lifecycle, and backups remain. Legacy single-writer authority now exists only as a guarded rollout fence until revision-mode activation; no training rule changes."
-proof = "Existing characterization definitions and goldens remain byte-identical to main. The forward migration compiled against production inside an explicit rollback transaction; the result was rollback_compile_ok, and a follow-up catalog query confirmed that neither account_revision nor private.offline_batches remained."
+captured_behavior = "Rotation setup stays expanded after an exercise save. Existing rotation, workout, offline, and conflict behavior remains unchanged outside the missing first-rotation state and sole rejected-Start recovery paths."
+proof = "The directly relevant A1 assignment/workout suite and production build are the bounded regression evidence for this increment."
 
 [separation_of_concerns]
-before = "S09 qualified authentication recovery, cloud persistence, temporary offline use, and one active editing device, but it had no owner deletion lifecycle or operational backup."
-after = "FoundationHome and HomeScreen own upgrade/conflict presentation. use-offline-sync owns React scheduling and frozen conflict state. offline-sync owns IndexedDB batch identity, stable snapshots, acknowledgement, and guarded recovery. The additive migration owns atomic activation, account revision CAS, durable receipts, legacy cutover, and RPC privileges."
+before = "The offline start validator rejected a missing rotation row before the authoritative start function could initialize a new account to A1; online Start also navigated from optimistic local state before server confirmation."
+after = "The migration owns the guarded initial-A1 rule. use-offline-sync waits for authoritative online Start confirmation and clears only a sole rejected Start with no workout entries. RotationSetup owns the expanded workout selection across its editor flow."
 
 [architecture]
-dependency_direction = "Screens delegate edits and recovery choices through FoundationHome to use-offline-sync. The hook delegates persistence and transport to offline-sync. offline-sync calls uniquely named authenticated RPCs; the migration terminates trust at auth.uid, live-account checks, the owner lock, account revision CAS, and private receipt tables. Legacy per-operation RPCs reject new writes after activation."
+dependency_direction = "RotationSetup passes expansion state into its view. use-workout delegates Start to use-offline-sync. The hook delegates persistence and conflict resolution to offline-sync. The private database validator remains the authoritative rotation guard."
 reviewed_paths = [
-    ".github/workflows/daily-encrypted-backup.yml",
-    "src/App.tsx",
-    "src/main.tsx",
-    "src/AuthScreens.tsx",
-    "src/FoundationHome.tsx",
-    "src/HistoryScreen.tsx",
-    "src/HomeScreen.tsx",
     "src/RotationSetup.tsx",
+    "src/RotationSetupView.tsx",
     "src/hooks/use-offline-sync.ts",
-    "src/hooks/use-foundation-profile.ts",
-    "src/hooks/use-owner-access.ts",
-    "src/hooks/use-rotation-assignment.ts",
-    "src/hooks/use-rotation-editor.ts",
-    "src/hooks/use-workout.ts",
-    "src/offline-sync.ts",
-    "src/lib/auth-actions.ts",
-    "src/rotation-assignment.ts",
-    "src/workout-api.ts",
-    "src/workout-domain.ts",
-    "src/weight-conversion.ts",
-    "vite.config.ts",
-    "supabase/migrations/20260810193129_offline_operation_queue.sql",
-    "supabase/migrations/20260810211509_preserve_offline_event_time.sql",
-    "supabase/migrations/20260810215003_validate_offline_replay_context.sql",
-    "supabase/migrations/20260810222541_validate_offline_lifecycle_context.sql",
-    "supabase/migrations/20260810223010_fix_offline_blast_reference_resolution.sql",
-    "supabase/migrations/20260810233920_validate_offline_versions.sql",
-    "supabase/migrations/20260811000605_protect_offline_progression_and_corrections.sql",
-    "supabase/migrations/20260811000810_fix_offline_performance_context.sql",
-    "supabase/migrations/20260811002730_use_progression_order_for_undo.sql",
-    "supabase/migrations/20260811021935_active_editing_device.sql",
-    "supabase/migrations/20260811054903_account_deletion_lifecycle.sql",
-    "supabase/migrations/20260811063245_narrow_backup_role.sql",
-    "supabase/migrations/20260811064630_require_password_amr.sql",
-    "supabase/migrations/20260811094000_add_weight_unit_setting.sql",
-    "supabase/migrations/20260811171245_allow_multi_device_editing.sql",
-    "docs/operations/ACCOUNT_LIFECYCLE_AND_BACKUPS.md",
+    "supabase/migrations/20260812025545_allow_initial_a1_offline_start.sql",
     "tests/a1-assignment.e2e.mjs",
-    "tests/history.test.mjs",
-    "tests/characterization/foundation-shell.characterization.mjs",
-    "tests/characterization/offline-sync-v1.characterization.mjs",
-    "tests/characterization/offline-sync-v1.golden.json",
     ".supportability-characterization.json",
 ]
 
 [responsibility_boundary]
-path = "supabase/migrations/20260811054903_account_deletion_lifecycle.sql"
-owns = "Authoritative request time, 30-day deadline, pending-account data denial, cancellation, scheduled auth-owner deletion, and browser-role privilege boundaries."
-does_not_own = "Password UI, local browser storage, GitHub artifact encryption, authentication email delivery, or Supportability Gate behavior."
+path = "supabase/migrations/20260812025545_allow_initial_a1_offline_start.sql"
+owns = "Authoritative acceptance of a missing rotation row only for A1 when the owner has no workout history, while retaining blast, active-workout, assignment, and existing-rotation checks."
+does_not_own = "Workout presentation, local queue storage, account authentication, or later rotation advancement."
 
 [incremental_refactor]
-target = "Replace consumer-visible edit-access transfer with safe multi-device editing without allowing partial replay or silent conflict loss."
-completed_step = "Add atomic revision-mode activation, whole-queue CAS and receipts, stable cloud snapshots, explicit conflict recovery, cached-client write fencing, and a one-time confirmed lost-device upgrade path. Production owner-device qualification remains required before claiming rollout complete."
+target = "Remove the false first-workout conflict without weakening real offline conflict protection."
+completed_step = "Guard the legitimate missing-row A1 case, wait for online Start sync, and recover only a sole rejected Start that cannot contain workout performance."
 
 [review_handoff]
-summary = "Review the multi-device cutover: current clients never call transfer; legacy clients become non-writable after activation; activation/takeover is one owner-locked RPC; one sealed queue maps to one idempotent batch receipt; only applied batches delete local operations; conflicts freeze editing and remain reviewable."
+summary = "Review the missing-row guard and online Start outcome. A missing row is accepted only for A1 with zero historical workouts; any existing row mismatch or missing row with history still rejects. Mixed queues and any queue containing workout steps still require manual review."
 remaining_risks = [
-    "A device that remains permanently offline cannot receive a remote deletion signal; the requesting active device is purged immediately, and cloud data is unavailable to every device while pending.",
-    "The built-in authentication email path remains acceptable only if the pre-authorized owner proves delivery during final production qualification.",
-    "Backup and restore production evidence requires the protected Actions database URL, retained encryption passphrase, and an isolated owner-approved restore target; none may be browser exposed.",
+    "A device that is genuinely offline continues from optimistic local state by design and syncs later.",
 ]
 
 [human_review]
-naming = "SYNC UPDATE NEEDED, CONTINUE ON THIS DEVICE, CHANGES FROM ANOTHER DEVICE, CHANGES NEED REVIEW, USE CLOUD DATA, REVIEW DEVICE COPY, and NOT NOW state the owner decision without exposing edit-authority jargon."
-cohesion = "Presentation, auth orchestration, local erasure, authoritative database lifecycle, encrypted backup, and operator documentation remain separate."
-intended_behavior = "Normal sign-in permits editing on every current device. Revision mismatch applies zero local operations, preserves the full device queue, and requires an explicit owner recovery choice."
-reviewability = "The client state machine is localized to offline-sync and use-offline-sync; presentation is localized to FoundationHome and HomeScreen; the forward migration contains the complete server cutover and compatibility contract. Packages and training rules are unchanged."
+naming = "WORKOUT COULD NOT START · TRY AGAIN is a basic-user recovery message; database error text remains internal."
+cohesion = "Rotation expansion, React sync scheduling, local persistence, and authoritative database validation remain separate."
+intended_behavior = "The first valid A1 Start opens normally after cloud confirmation; a server-rejected empty Start stays on Home without presenting a misleading data-loss decision."
+reviewability = "The server change is isolated to one existing validator, and the client exception is restricted to exactly one rejected start_workout operation."
+
+[[module_boundaries]]
+path = "src/RotationSetup.tsx"
+owner_path = "src/RotationSetup.tsx"
+basis = "responsibility"
+justification = "Owns setup-flow UI state that must survive exercise editor navigation."
+
+[[module_boundaries]]
+path = "src/RotationSetupView.tsx"
+owner_path = "src/RotationSetupView.tsx"
+basis = "responsibility"
+justification = "Renders the controlled expandable workout sections without owning their navigation lifetime."
 
 [[module_boundaries]]
 path = "src/hooks/use-offline-sync.ts"
 owner_path = "src/hooks/use-offline-sync.ts"
 basis = "responsibility"
-justification = "Owns React lifecycle scheduling for immediate, reconnect, foreground, and manual sync without training semantics or database policy."
+justification = "Owns online synchronization scheduling and the safe distinction between an empty rejected Start and saved workout data."
 
 [[module_boundaries]]
-path = "src/offline-sync.ts"
-owner_path = "src/offline-sync.ts"
+path = "supabase/migrations/20260812025545_allow_initial_a1_offline_start.sql"
+owner_path = "supabase/migrations/20260812025545_allow_initial_a1_offline_start.sql"
 basis = "responsibility"
-justification = "Owns typed offline operations, native IndexedDB persistence, ordered replay, and deterministic optimistic state without UI presentation."
-
-[[module_boundaries]]
-path = "src/rotation-assignment.ts"
-owner_path = "src/rotation-assignment.ts"
-basis = "domain"
-justification = "Owns the shared persisted-assignment shape and validation used by rotation, history, workout, and offline state without persistence or presentation behavior."
-
-[[module_boundaries]]
-path = "src/hooks/use-workout.ts"
-owner_path = "src/hooks/use-workout.ts"
-basis = "responsibility"
-justification = "Owns workout interaction messages and retry-stable local operation creation without direct Supabase access."
-
-[[module_boundaries]]
-path = "src/hooks/use-rotation-assignment.ts"
-owner_path = "src/hooks/use-rotation-assignment.ts"
-basis = "responsibility"
-justification = "Owns rotation-assignment operation creation and editor feedback without persistence or cloud policy."
-
-[[module_boundaries]]
-path = "supabase/migrations/20260810193129_offline_operation_queue.sql"
-owner_path = "supabase/migrations/20260810193129_offline_operation_queue.sql"
-basis = "responsibility"
-justification = "Owns authenticated exactly-once dispatch, private result ledger, duplicate mismatch rejection, and queued local-step resolution through established authoritative RPCs."
-
-[[module_boundaries]]
-path = "supabase/migrations/20260810211509_preserve_offline_event_time.sql"
-owner_path = "supabase/migrations/20260810211509_preserve_offline_event_time.sql"
-basis = "responsibility"
-justification = "Owns stable offline event-time application for workouts, assignments, and lifecycle transitions while retaining the existing authenticated exactly-once dispatcher boundary."
-
-[[module_boundaries]]
-path = "supabase/migrations/20260810215003_validate_offline_replay_context.sql"
-owner_path = "supabase/migrations/20260810215003_validate_offline_replay_context.sql"
-basis = "responsibility"
-justification = "Owns fail-closed queued-start validation, queued local reference resolution, and cruise-suggestion recomputation after preserved offline completion time."
-
-[[module_boundaries]]
-path = "supabase/migrations/20260810222541_validate_offline_lifecycle_context.sql"
-owner_path = "supabase/migrations/20260810222541_validate_offline_lifecycle_context.sql"
-basis = "responsibility"
-justification = "Owns fail-closed lifecycle replay validation against the queued phase/blast snapshot, including earlier queued local new-blast references."
-
-[[module_boundaries]]
-path = "supabase/migrations/20260810223010_fix_offline_blast_reference_resolution.sql"
-owner_path = "supabase/migrations/20260810223010_fix_offline_blast_reference_resolution.sql"
-basis = "responsibility"
-justification = "Owns the production forward repair for unambiguous lookup of an earlier queued new-blast operation; rollback-only SQL proves local-reference resolution and zero residue."
-
-[[module_boundaries]]
-path = "supabase/migrations/20260810233920_validate_offline_versions.sql"
-owner_path = "supabase/migrations/20260810233920_validate_offline_versions.sql"
-basis = "responsibility"
-justification = "Owns fail-closed replay checks for the expected active assignment version and monotonic completed-workout predecessor, including earlier queued local assignment versions."
-
-[[module_boundaries]]
-path = "supabase/migrations/20260811000605_protect_offline_progression_and_corrections.sql"
-owner_path = "supabase/migrations/20260811000605_protect_offline_progression_and_corrections.sql"
-basis = "responsibility"
-justification = "Owns authoritative workout progression order independent of event time and fail-closed expected-performance validation for queued history corrections."
-
-[[module_boundaries]]
-path = "supabase/migrations/20260811000810_fix_offline_performance_context.sql"
-owner_path = "supabase/migrations/20260811000810_fix_offline_performance_context.sql"
-basis = "responsibility"
-justification = "Owns the forward repair that makes resolved step identity unambiguous inside the private expected-performance validator."
-
-[[module_boundaries]]
-path = "supabase/migrations/20260811002730_use_progression_order_for_undo.sql"
-owner_path = "supabase/migrations/20260811002730_use_progression_order_for_undo.sql"
-basis = "responsibility"
-justification = "Owns completed-workout undo eligibility and predecessor restoration by authoritative progression order rather than backdated event time."
-
-[[module_boundaries]]
-path = "supabase/migrations/20260811021935_active_editing_device.sql"
-owner_path = "supabase/migrations/20260811021935_active_editing_device.sql"
-basis = "responsibility"
-justification = "Owns the legacy one-row-per-owner authority record retained only for safe cached-client fencing and one-time revision-mode activation."
-
-[[module_boundaries]]
-path = "src/lib/auth-actions.ts"
-owner_path = "src/lib/auth-actions.ts"
-basis = "responsibility"
-justification = "Owns Supabase Auth reauthentication and the narrow account-status, deletion-request, cancellation, local-purge, and global-sign-out orchestration boundary."
-
-[[module_boundaries]]
-path = "supabase/migrations/20260811054903_account_deletion_lifecycle.sql"
-owner_path = "supabase/migrations/20260811054903_account_deletion_lifecycle.sql"
-basis = "responsibility"
-justification = "Owns the least-privilege backup role, pending-account denial, exact recovery deadline, browser RPC grants, and scheduled cascading final deletion."
-
-[[module_boundaries]]
-path = "supabase/migrations/20260811063245_narrow_backup_role.sql"
-owner_path = "supabase/migrations/20260811063245_narrow_backup_role.sql"
-basis = "responsibility"
-justification = "Removes ineffective managed-Auth grants so the logical-backup role can read only the app-owned private and public schemas."
-
-[[module_boundaries]]
-path = "supabase/migrations/20260811064630_require_password_amr.sql"
-owner_path = "supabase/migrations/20260811064630_require_password_amr.sql"
-basis = "responsibility"
-justification = "Hardens deletion reauthentication by requiring the current JWT's most recent authentication method to be a password no older than five minutes."
-
-[[module_boundaries]]
-path = ".github/workflows/daily-encrypted-backup.yml"
-owner_path = ".github/workflows/daily-encrypted-backup.yml"
-basis = "responsibility"
-justification = "Owns native logical dump creation, symmetric encryption, parse verification, ciphertext-only artifact upload, visible job failure, and 30-day retention."
-
-[[module_boundaries]]
-path = "src/weight-conversion.ts"
-owner_path = "src/weight-conversion.ts"
-basis = "domain"
-justification = "Owns exact canonical microgram conversion and allowed-unit display rounding without persistence or UI state."
-
-[[module_boundaries]]
-path = "supabase/migrations/20260811094000_add_weight_unit_setting.sql"
-owner_path = "supabase/migrations/20260811094000_add_weight_unit_setting.sql"
-basis = "responsibility"
-justification = "Owns durable owner weight-unit storage and its original exactly-once legacy adapter without granting direct table writes."
-
-[[module_boundaries]]
-path = "supabase/migrations/20260811171245_allow_multi_device_editing.sql"
-owner_path = "supabase/migrations/20260811171245_allow_multi_device_editing.sql"
-basis = "responsibility"
-justification = "Owns atomic revision-mode activation, account revision CAS, whole-batch rollback, durable receipts, conflict resolution, cached-client fencing, and the exact authenticated RPC allowlist."
+justification = "Owns the forward-only authoritative repair for first-A1 rotation initialization."
