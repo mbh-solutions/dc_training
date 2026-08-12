@@ -73,6 +73,7 @@
         "src/hooks/use-workout.ts",
         "src/offline-sync.ts",
         "src/rotation-assignment.ts",
+        "supabase/migrations/20260812025545_allow_initial_a1_offline_start.sql",
         "supabase/migrations/20260810192528_offline_operation_queue.sql",
         "supabase/migrations/20260810211000_preserve_offline_event_time.sql",
         "supabase/migrations/20260810214500_validate_offline_replay_context.sql",

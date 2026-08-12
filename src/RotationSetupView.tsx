@@ -10,7 +10,6 @@ import {
   type TargetSet,
   type WorkoutSlot,
 } from "./rotation-config.js";
-import { useState } from "react";
 import {
   assignmentKey,
   type Assignment,
@@ -78,6 +77,7 @@ export type Props = {
   loadState: "loading" | "ready" | "failed";
   message: string;
   onBack: () => void;
+  openWorkout: WorkoutSlot | null;
   onExerciseBack: () => void;
   onExerciseContinue: () => void;
   onProtocolBack: () => void;
@@ -101,6 +101,7 @@ export type Props = {
   structure: string;
   structureValid: boolean;
   targets: TargetSet[];
+  toggleWorkout: (workout: WorkoutSlot) => void;
   updateCustomTarget: (
     index: number,
     field: keyof DraftTarget,
@@ -299,8 +300,6 @@ function InfoSheet({
 }
 
 export function SetupScreen(props: Props) {
-  const [openWorkout, setOpenWorkout] = useState<WorkoutSlot | null>(null);
-
   return (
     <Shell title="ROTATION SETUP" onBack={props.onBack}>
       {WORKOUT_SLOTS.map((workout) => {
@@ -308,7 +307,7 @@ export function SetupScreen(props: Props) {
         const assigned = positions.filter(
           (bodyPart) => props.saved[assignmentKey(workout, bodyPart)],
         ).length;
-        const expanded = openWorkout === workout;
+        const expanded = props.openWorkout === workout;
         const panelId = `workout-${workout.toLowerCase()}-assignments`;
 
         return (
@@ -317,7 +316,7 @@ export function SetupScreen(props: Props) {
               aria-controls={panelId}
               aria-expanded={expanded}
               className="workout-toggle"
-              onClick={() => setOpenWorkout(expanded ? null : workout)}
+              onClick={() => props.toggleWorkout(workout)}
               type="button"
             >
               <span>

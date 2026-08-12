@@ -90,6 +90,19 @@ export function useOfflineSync(userId: string, online: boolean) {
             return false;
           }
           if (result.status === "conflict") {
+            if (safeRejectedStart(result.conflict)) {
+              try {
+                const cloud = await useCloudOfflineConflict(userId, deviceId);
+                setAccountState(cloud);
+                installConflict(null);
+                setDeviceAccess("active");
+                setLoadError("WORKOUT COULD NOT START · TRY AGAIN");
+                setSyncState("synced");
+                return false;
+              } catch {
+                // Keep the saved operation available for manual review.
+              }
+            }
             installConflict(result.conflict);
             setDeviceAccess("active");
             setLoadError(result.conflict.message);
@@ -184,6 +197,16 @@ export function useOfflineSync(userId: string, online: boolean) {
       try {
         const next = await commitOfflineOperation(userId, operation);
         setAccountState(next);
+        if (online && cloudOwner && operation.kind === "start_workout") {
+          const synced = await synchronize();
+          const [current, currentConflict] = await Promise.all([
+            readOfflineState(userId),
+            reviewOfflineConflict(userId),
+          ]);
+          if (!synced && (currentConflict || !current?.workout?.workout))
+            return { data: null, error: "WORKOUT COULD NOT START · TRY AGAIN" };
+          return { data: current, error: "" };
+        }
         if (online) void synchronize();
         return { data: next, error: "" };
       } catch (error) {
@@ -193,7 +216,7 @@ export function useOfflineSync(userId: string, online: boolean) {
         return { data: null, error: message };
       }
     },
-    [conflict, deviceAccess, online, synchronize, userId],
+    [cloudOwner, conflict, deviceAccess, online, synchronize, userId],
   );
 
   const reviewConflict = useCallback(() => {
@@ -297,4 +320,12 @@ export function useOfflineSync(userId: string, online: boolean) {
     syncState,
     useCloudConflict,
   };
+}
+
+function safeRejectedStart(conflict: OfflineConflictReview) {
+  return (
+    conflict.status === "rejected" &&
+    conflict.operations.length === 1 &&
+    conflict.operations[0]?.kind === "start_workout"
+  );
 }
