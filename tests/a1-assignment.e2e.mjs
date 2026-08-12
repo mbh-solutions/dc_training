@@ -1201,6 +1201,9 @@ const emptyA1 =
 const styledBackAction =
   document.querySelector('button.back-action[aria-label="Back"] svg[aria-hidden="true"] path')
     ?.getAttribute("d") === "m15 5-7 7 7 7";
+const styledRightAction =
+  document.querySelector('button.assignment-card svg[aria-hidden="true"] path')
+    ?.getAttribute("d") === "m9 5 7 7-7 7";
 const accordionStartsCollapsed = ["A1", "B1", "A2", "B2", "A3", "B3"].every(
   (workout) => workoutToggle(workout).getAttribute("aria-expanded") === "false",
 );
@@ -1487,6 +1490,7 @@ if (
   const a1AssignmentRoundTrip =
     emptyA1 &&
     styledBackAction &&
+    styledRightAction &&
     accordionStartsCollapsed &&
     accordionKeepsOneWorkoutOpen &&
     approvedChestPool &&
@@ -2943,6 +2947,7 @@ const behavior = {
   profile_error_handled: profileErrorHandled,
   reconnect_refetched: reconnectRefetched && reconnected.includes("SYNCED"),
   rotation_setup_back_action: styledBackAction,
+  rotation_setup_right_action: styledRightAction,
 };
 
 const a1Detail = {
@@ -2956,6 +2961,7 @@ const a1Detail = {
   exerciseContinueDisabled,
   protocolGuidance,
   styledBackAction,
+  styledRightAction,
   protocolInitiallyEmpty,
   rangeInitiallyEmpty,
   replacementClearsDownstream,

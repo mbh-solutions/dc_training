@@ -44,7 +44,7 @@ const rotationStyles = `
 .assignment-card span { color: var(--red); font-size: .78rem; }
 .assignment-card strong { font-size: 1rem; }
 .assignment-card small { color: var(--gray); font-size: .72rem; }
-.assignment-card b { position: absolute; right: 16px; top: 23px; font-size: 1.8rem; }
+.assignment-card > svg { position: absolute; right: 15px; top: 26px; width: 22px; height: 22px; }
 .choice-list { display: grid; gap: 11px; }
 .choice-card { position: relative; min-height: 76px; display: flex; align-items: center; gap: 12px; padding: 16px 58px 16px 17px; cursor: pointer; }
 .choice-card--selected { border-color: var(--red); }
@@ -363,7 +363,16 @@ export function SetupScreen(props: Props) {
                         {formatTargets(saved.target_sets)}
                       </small>
                     )}
-                    <b aria-hidden="true">›</b>
+                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                      <path
+                        d="m9 5 7 7-7 7"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="3"
+                      />
+                    </svg>
                   </button>
                 );
               })}
