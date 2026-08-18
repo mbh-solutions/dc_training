@@ -1,69 +1,49 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "A new account with valid A1 assignments can start its first A1 workout once. Online Start waits for the authoritative sync result, and a rejected Start without workout entries returns to Home with a retry message instead of a full-screen data-loss warning."
-proof = "Production captured two rejected first-A1 batches with base revision 5 and exact active assignment IDs. A rollback-only production transaction installed the candidate function, replayed the same context, returned applied revision 6, created one in-progress A1 workout, and initialized rotation to A1. Rollback residue checks returned revision 5, zero workouts, zero rotation rows, and zero test receipts."
+intended_behavior = "Every extreme-stretch card shows one complete illustration without duplicated interface controls or clipped anatomy."
+proof = "The A/B workout traversal confirms every stretch maps to an illustration-only asset; direct asset inspection and a 390 px contain-box simulation check all seven compositions."
 
 [characterization]
-captured_behavior = "Rotation setup stays expanded after an exercise save. Existing rotation, workout, offline, and conflict behavior remains unchanged outside the missing first-rotation state and sole rejected-Start recovery paths."
-proof = "The directly relevant A1 assignment/workout suite and production build are the bounded regression evidence for this increment."
+captured_behavior = "Stretch order, completion, skip, information copy, and workout advancement remain unchanged."
+proof = "The existing A1 workout end-to-end suite traverses all seven stretches, validates their exact copy and asset mapping, and remains the bounded regression check for this increment."
 
 [separation_of_concerns]
-before = "The offline start validator rejected a missing rotation row before the authoritative start function could initialize a new account to A1; online Start also navigated from optimistic local state before server confirmation."
-after = "The migration owns the guarded initial-A1 rule. use-offline-sync waits for authoritative online Start confirmation and clears only a sole rejected Start with no workout entries. RotationSetup owns the expanded workout selection across its editor flow."
+before = "Chest and triceps reused full-screen design mockups as runtime media, forcing one brittle crop rule to remove unrelated phone and dialog chrome."
+after = "All seven runtime stretch entries use illustration-only assets and one shared contain renderer; dialog copy and controls remain React-owned."
 
 [architecture]
-dependency_direction = "RotationSetup passes expansion state into its view. use-workout delegates Start to use-offline-sync. The hook delegates persistence and conflict resolution to offline-sync. The private database validator remains the authoritative rotation guard."
+dependency_direction = "WorkoutTracer owns stretch presentation and references static exercise illustrations through Vite's existing asset URL pattern."
 reviewed_paths = [
-    "src/RotationSetup.tsx",
-    "src/RotationSetupView.tsx",
-    "src/hooks/use-offline-sync.ts",
-    "supabase/migrations/20260812025545_allow_initial_a1_offline_start.sql",
+    "src/WorkoutTracer.tsx",
     "tests/a1-assignment.e2e.mjs",
-    ".supportability-characterization.json",
+    "docs/design/chest-stretch-illustration-approved.png",
+    "docs/design/triceps-stretch-illustration-approved.png",
 ]
 
 [responsibility_boundary]
-path = "supabase/migrations/20260812025545_allow_initial_a1_offline_start.sql"
-owns = "Authoritative acceptance of a missing rotation row only for A1 when the owner has no workout history, while retaining blast, active-workout, assignment, and existing-rotation checks."
-does_not_own = "Workout presentation, local queue storage, account authentication, or later rotation advancement."
+path = "src/WorkoutTracer.tsx"
+owns = "Stretch names, illustration selection, information controls, instruction dialogs, and complete or skip actions."
+does_not_own = "Workout ordering, persistence, authentication, or illustration generation."
 
 [incremental_refactor]
-target = "Remove the false first-workout conflict without weakening real offline conflict protection."
-completed_step = "Guard the legitimate missing-row A1 case, wait for online Start sync, and recover only a sole rejected Start that cannot contain workout performance."
+target = "Remove runtime dependence on full-screen mockups and the crop hack without changing stretch behavior."
+completed_step = "Add the two missing illustration-only assets, route chest and triceps to them, and delete the special reference-image branch."
 
 [review_handoff]
-summary = "Review the missing-row guard and online Start outcome. A missing row is accepted only for A1 with zero historical workouts; any existing row mismatch or missing row with history still rejects. Mixed queues and any queue containing workout steps still require manual review."
+summary = "Review the two asset replacements and removal of the reference crop. Confirm all seven cards use the same contain path and both generated illustrations retain the approved exercise positions."
 remaining_risks = [
-    "A device that is genuinely offline continues from optimistic local state by design and syncs later.",
+    "Future illustration assets still need a visual mobile check because DOM-only tests cannot judge raster composition.",
 ]
 
 [human_review]
-naming = "WORKOUT COULD NOT START · TRY AGAIN is a basic-user recovery message; database error text remains internal."
-cohesion = "Rotation expansion, React sync scheduling, local persistence, and authoritative database validation remain separate."
-intended_behavior = "The first valid A1 Start opens normally after cloud confirmation; a server-rejected empty Start stays on Home without presenting a misleading data-loss decision."
-reviewability = "The server change is isolated to one existing validator, and the client exception is restricted to exactly one rejected start_workout operation."
+naming = "The existing owner-approved stretch names and instruction copy are unchanged."
+cohesion = "One stretch data table selects media; one shared card renderer displays it; the information dialog remains separate."
+intended_behavior = "Chest shows one loaded-fly illustration and triceps shows the full seated overhead illustration; shoulders, biceps, back, hamstrings, and quadriceps remain fully visible."
+reviewability = "The code diff removes one conditional branch and one CSS override; only two asset expectations change."
 
 [[module_boundaries]]
-path = "src/RotationSetup.tsx"
-owner_path = "src/RotationSetup.tsx"
+path = "src/WorkoutTracer.tsx"
+owner_path = "src/WorkoutTracer.tsx"
 basis = "responsibility"
-justification = "Owns setup-flow UI state that must survive exercise editor navigation."
-
-[[module_boundaries]]
-path = "src/RotationSetupView.tsx"
-owner_path = "src/RotationSetupView.tsx"
-basis = "responsibility"
-justification = "Renders the controlled expandable workout sections without owning their navigation lifetime."
-
-[[module_boundaries]]
-path = "src/hooks/use-offline-sync.ts"
-owner_path = "src/hooks/use-offline-sync.ts"
-basis = "responsibility"
-justification = "Owns online synchronization scheduling and the safe distinction between an empty rejected Start and saved workout data."
-
-[[module_boundaries]]
-path = "supabase/migrations/20260812025545_allow_initial_a1_offline_start.sql"
-owner_path = "supabase/migrations/20260812025545_allow_initial_a1_offline_start.sql"
-basis = "responsibility"
-justification = "Owns the forward-only authoritative repair for first-A1 rotation initialization."
+justification = "Owns the complete stretch-card presentation and its static media mapping."
