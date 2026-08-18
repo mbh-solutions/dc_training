@@ -17,8 +17,8 @@ const backIllustration = new URL(
   "../docs/design/back-stretch-illustration-approved.png",
   import.meta.url,
 ).href;
-const chestReference = new URL(
-  "../docs/design/chest-stretch-info-approved.png",
+const chestIllustration = new URL(
+  "../docs/design/chest-stretch-illustration-approved.png",
   import.meta.url,
 ).href;
 const bicepsIllustration = new URL(
@@ -37,14 +37,14 @@ const shoulderIllustration = new URL(
   "../docs/design/shoulder-stretch-illustration-approved.png",
   import.meta.url,
 ).href;
-const tricepsReference = new URL(
-  "../docs/design/triceps-stretch-info-approved.png",
+const tricepsIllustration = new URL(
+  "../docs/design/triceps-stretch-illustration-approved.png",
   import.meta.url,
 ).href;
 
 const stretchDetails: Record<
   string,
-  { copy: string[]; image: string; name: string; reference?: boolean }
+  { copy: string[]; image: string; name: string }
 > = {
   chest: {
     copy: [
@@ -53,9 +53,8 @@ const stretchDetails: Record<
       "Hold a safe, controlled stretch for 60–90 seconds.",
       "Stop for shoulder or joint pain.",
     ],
-    image: chestReference,
+    image: chestIllustration,
     name: "LOADED FLY STRETCH",
-    reference: true,
   },
   shoulders: {
     copy: [
@@ -78,9 +77,8 @@ const stretchDetails: Record<
       "Hold 60–90 seconds.",
       "Stop for joint pain.",
     ],
-    image: tricepsReference,
+    image: tricepsIllustration,
     name: "ONE-ARM OVERHEAD STRETCH",
-    reference: true,
   },
   biceps: {
     copy: [
@@ -478,9 +476,7 @@ function StretchEntry({
             ⓘ
           </button>
         </div>
-        <div
-          className={`stretch-image ${detail.reference ? "stretch-image--reference" : ""}`}
-        >
+        <div className="stretch-image">
           <img
             alt={`${displayBodyPart(step.body_part)} stretch position`}
             src={detail.image}
@@ -936,7 +932,6 @@ const workoutStyles = `
 .stretch-meta button { min-width: 44px; min-height: 44px; border: 0; color: var(--white); background: transparent; font-size: 1.7rem; cursor: pointer; }
 .stretch-image { height: 270px; margin-top: 10px; overflow: hidden; }
 .stretch-image img { width: 100%; height: 100%; object-fit: contain; }
-.stretch-image--reference img { width: 150%; height: 240%; margin: -64% 0 0 -25%; object-fit: cover; }
 .stretch-dialog-backdrop { position: fixed; inset: 0; z-index: 30; display: flex; align-items: flex-end; background: rgba(0,0,0,.72); }
 .stretch-dialog { width: min(100%, 520px); max-height: 85svh; overflow: auto; margin: 0 auto; border: 1px solid var(--line); border-radius: 18px 18px 0 0; padding: 24px; background: #111; }
 .dialog-close { float: right; min-width: 44px; min-height: 44px; border: 0; color: var(--gray); background: transparent; font-size: 2rem; cursor: pointer; }
