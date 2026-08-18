@@ -1594,7 +1594,7 @@ await act(async () => {
 const undoRestored = text().toUpperCase().includes("INCLINE BARBELL PRESS");
 await saveExercise("100.5");
 const chestStretchExact = await captureStretch(
-  "chest-stretch-info-approved.png",
+  "chest-stretch-illustration-approved.png",
   [
     "Use a bent-arm fly position.",
     "Keep back on bench, hips off edge, and chest high.",
@@ -1633,7 +1633,7 @@ const shoulderStretchExact = await captureStretch(
 await completeStretch();
 await saveExercise();
 const tricepsStretchExact = await captureStretch(
-  "triceps-stretch-info-approved.png",
+  "triceps-stretch-illustration-approved.png",
   [
     "Sit with back supported.",
     "Lower one dumbbell behind your head.",
