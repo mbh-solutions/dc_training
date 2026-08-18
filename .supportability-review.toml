@@ -2,7 +2,7 @@ schema_version = "1.0"
 
 [behavior]
 intended_behavior = "Every extreme-stretch card shows one complete illustration without duplicated interface controls or clipped anatomy."
-proof = "The seven-step A/B workout traversal confirms every stretch maps to an illustration-only asset; mobile browser captures inspect all seven rendered cards."
+proof = "The A/B workout traversal confirms every stretch maps to an illustration-only asset; direct asset inspection and a 390 px contain-box simulation check all seven compositions."
 
 [characterization]
 captured_behavior = "Stretch order, completion, skip, information copy, and workout advancement remain unchanged."
@@ -13,7 +13,7 @@ before = "Chest and triceps reused full-screen design mockups as runtime media, 
 after = "All seven runtime stretch entries use illustration-only assets and one shared contain renderer; dialog copy and controls remain React-owned."
 
 [architecture]
-dependency_direction = "WorkoutTracer owns stretch presentation and references static approved illustrations through Vite's existing asset URL pattern."
+dependency_direction = "WorkoutTracer owns stretch presentation and references static exercise illustrations through Vite's existing asset URL pattern."
 reviewed_paths = [
     "src/WorkoutTracer.tsx",
     "tests/a1-assignment.e2e.mjs",
@@ -47,9 +47,3 @@ path = "src/WorkoutTracer.tsx"
 owner_path = "src/WorkoutTracer.tsx"
 basis = "responsibility"
 justification = "Owns the complete stretch-card presentation and its static media mapping."
-
-[[module_boundaries]]
-path = "tests/a1-assignment.e2e.mjs"
-owner_path = "tests/a1-assignment.e2e.mjs"
-basis = "responsibility"
-justification = "Exercises the existing A/B stretch flow and verifies exact runtime media selection and copy."
