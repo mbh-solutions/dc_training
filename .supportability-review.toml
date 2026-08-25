@@ -1,43 +1,42 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Repository instructions require three owner-authenticated Codex review requests in exact focus order 2, 4, then 8 for every pull-request head and organization-required workflow run."
-proof = "AGENTS.md contains the three exact commands, exact-head/run metadata, serial posting rule, bounded final polling rule, and merge restriction; the required Gate must validate this exact pull-request head before merge."
+intended_behavior = "The temporary exported s03ComplexityCanary provides a static TypeScript/TSX Gate 1 qualification target at the approved maximum complexity of 10 without being called by product code."
+proof = "The changed function contains nine decision branches plus the base path, is covered by the existing a1-workout-v1 characterization scenario, and exists only on a protected never-merge canary PR."
 
 [characterization]
-captured_behavior = "Product source, tests, dependencies, runtime configuration, and Supportability thresholds remain unchanged; only repository review instructions and their handoff evidence change."
-proof = "Changed files are AGENTS.md and .supportability-review.toml only; neither is a production or high-risk path, and no changed file is excluded. npm ci --ignore-scripts --no-audit --no-fund installed the exact lock; npm run lint passed; npm run build passed; $tests = @(rg --files tests -g '*.test.mjs'); node --test @tests passed 10 tests across seven files; git diff --check passed."
+captured_behavior = "Existing WorkoutTracer behavior remains unchanged because no product caller references s03ComplexityCanary."
+proof = "The existing a1-workout-v1 scenario covers src/WorkoutTracer.tsx; hosted characterization and quality evidence must remain compatible on the exact canary head."
 
 [separation_of_concerns]
-before = "Repository instructions requested one generic Codex review, while the deployed organization-required workflow enforces three focused reviews."
-after = "Repository instructions own the contributor request contract and now state the deployed three-focus protocol without changing Gate implementation or product code."
+before = "Gate 1 frontend qualification had no disposable changed TypeScript/TSX function in this target repository."
+after = "One uncalled exported function owns only the temporary static complexity qualification signal; existing workout components remain unchanged."
 
 [architecture]
-dependency_direction = "Repository instructions describe how owner-authenticated requests feed the external organization-required Gate; no application dependency changes."
+dependency_direction = "The canary adds no imports, calls, packages, runtime dependencies, or dependency-direction changes."
 reviewed_paths = [
-    "AGENTS.md",
     ".supportability-review.toml",
+    "src/WorkoutTracer.tsx",
 ]
 
 [responsibility_boundary]
-path = "AGENTS.md"
-owns = "The repository-local agent contract for requesting and completing required focused Codex reviews."
-does_not_own = "Gate implementation, GitHub connector judgment, product behavior, dependencies, or Supportability thresholds."
+path = "src/WorkoutTracer.tsx"
+owns = "The disposable s03ComplexityCanary function used for static Gate 1 qualification on this never-merge PR."
+does_not_own = "Workout behavior, Gate implementation, thresholds, dependencies, or permanent product capability."
 
 [incremental_refactor]
-target = "Align the repository-local request contract with the deployed focused-review workflow."
-completed_step = "Replace the stale one-request instruction with the exact serial focus 2, 4, and 8 request contract."
+target = "Qualify the TypeScript/TSX complexity threshold on a disposable protected target branch."
+completed_step = "Add one bounded uncalled function at complexity 10 for the valid canary head."
 
 [review_handoff]
-summary = "Review only AGENTS.md and .supportability-review.toml: focus 2 covers mixed responsibilities and ownership, focus 4 covers domain ownership, cohesion, coupling, and module boundaries, and focus 8 covers handoff truth; exact head/run binding uses serial request windows, bounded final polling, and unique completion artifacts; no executable functions or C901 disposition; and no production, high-risk, dependency, supportability scope, threshold, exclusion, or waiver change."
+summary = "Review only the disposable s03ComplexityCanary and its evidence metadata: valid head has TypeScript/TSX complexity 10, no caller, no product behavior change, and no threshold, dependency, exclusion, or waiver change."
 remaining_risks = [
-    "Codex review remains probabilistic and is not exhaustive assurance.",
-    "Clean summaries and submitted reviews do not expose a triggering request ID, so focus attribution relies on the observed request-specific eyes handshake, serial request windows, bounded final polling, and unique artifact identity.",
-    "npm run build still reports the existing greater-than-500-kB chunk warning; this metadata-only change neither creates nor remediates it.",
+    "This artificial function proves static threshold enforcement only; it is not product functionality.",
+    "The canary PR must remain unmerged and all disposable refs and protection must be deleted after evidence capture.",
 ]
 
 [human_review]
-naming = "Focus identifiers 2, 4, and 8 and their exact commands match the deployed Gate contract."
-cohesion = "AGENTS.md owns request instructions; .supportability-review.toml owns the review handoff for this instruction-only change."
-intended_behavior = "Every new pull-request head requires three serial, exact-head/run focused review completions before merge."
-reviewability = "The complete diff contains two repository metadata files; no executable functions changed, so function ownership and C901 evaluation are not applicable."
+naming = "s03ComplexityCanary identifies the exact milestone and qualification purpose."
+cohesion = "One function contains the complete temporary Gate 1 signal; no existing component responsibility changes."
+intended_behavior = "Gate 1 passes this exact complexity-10 head while Gates 2 through 8 remain independently green."
+reviewability = "The production diff is one exported uncalled function with nine visible branches and one terminal return."
