@@ -6,7 +6,7 @@ proof = "The A/B workout traversal confirms every stretch maps to an illustratio
 
 [characterization]
 captured_behavior = "Stretch order, completion, skip, information copy, and workout advancement remain unchanged."
-proof = "The existing A1 workout end-to-end suite traverses all seven stretches, validates their exact copy and asset mapping, and remains the bounded regression check for this increment."
+proof = "The existing A1 workout end-to-end suite traverses all seven stretches, checks expected copy substrings and asset filenames, and remains the bounded regression check for this increment."
 
 [separation_of_concerns]
 before = "Chest and triceps reused full-screen design mockups as runtime media, forcing one brittle crop rule to remove unrelated phone and dialog chrome."
@@ -15,6 +15,7 @@ after = "All seven runtime stretch entries use illustration-only assets and one 
 [architecture]
 dependency_direction = "WorkoutTracer owns stretch presentation and references static exercise illustrations through Vite's existing asset URL pattern."
 reviewed_paths = [
+    "AGENTS.md",
     "src/WorkoutTracer.tsx",
     "tests/a1-assignment.e2e.mjs",
     "docs/design/chest-stretch-illustration-approved.png",
@@ -31,7 +32,7 @@ target = "Remove runtime dependence on full-screen mockups and the crop hack wit
 completed_step = "Add the two missing illustration-only assets, route chest and triceps to them, and delete the special reference-image branch."
 
 [review_handoff]
-summary = "Review the two asset replacements and removal of the reference crop. Confirm all seven cards use the same contain path and both generated illustrations retain the approved exercise positions."
+summary = "Review the two asset replacements, removal of the reference crop, and the AGENTS.md rule that remediated descendants reuse completed reviews only with exact owner authorization. Confirm all seven cards use the same contain path and both generated illustrations retain the approved exercise positions."
 remaining_risks = [
     "Future illustration assets still need a visual mobile check because DOM-only tests cannot judge raster composition.",
 ]
