@@ -1,5 +1,8 @@
 import { WORKOUT_SLOTS, type WorkoutSlot } from "./rotation-config.js";
 import type { WeightEntry } from "./weight-conversion.js";
+import type { Props as WorkoutTracerProps } from "./WorkoutTracer.jsx";
+
+export type WorkoutTracerCycleProbe = WorkoutTracerProps["workout"];
 
 export type Workout = {
   completed_at: string | null;

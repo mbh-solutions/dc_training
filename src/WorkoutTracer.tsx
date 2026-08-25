@@ -129,7 +129,7 @@ const stretchDetails: Record<
   },
 };
 
-type Props = {
+export type Props = {
   actionSaving: boolean;
   blockingStep: WorkoutStep | null;
   lastOperationId: string | null;
