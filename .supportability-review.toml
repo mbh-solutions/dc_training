@@ -51,5 +51,5 @@ justification = "Owns the complete stretch-card presentation and its static medi
 [[module_boundaries]]
 path = "tests/a1-assignment.e2e.mjs"
 owner_path = "tests/a1-assignment.e2e.mjs"
-basis = "verification"
+basis = "responsibility"
 justification = "Exercises the existing A/B stretch flow and verifies exact runtime media selection and copy."

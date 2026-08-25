@@ -17,6 +17,10 @@
   - `8`: `@codex review for unsupported, contradictory, stale, incomplete, or misleading handoff claims about change, boundaries, validation, risk, or gate coverage only`
 - Post the next focus only after the connector completes the prior focus. Each focus requires one
   unique trusted completion artifact observed by the exact-run observer.
-- After remediation, reuse the completed lifecycle; do not post another review request.
+- After remediation, reuse the completed lifecycle; do not post another review request. Post one
+  immutable owner-authenticated comment beginning `Codex-Remediation-Authorization: ` followed by
+  compact JSON containing exactly `current_head_sha`, `current_run_id`, `pull_number`, `repository`,
+  `review_head_sha`, `review_run_id`, `schema_version`, and `scope`; `schema_version` is `1.0` and
+  `scope` is the sorted unique exact GitHub compare-path list.
 - Do not merge until `Supportability Gate` is green and every inline finding is addressed, replied
   to with evidence, and resolved.
