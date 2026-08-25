@@ -9,7 +9,7 @@ captured_behavior = "Stretch order, completion, skip, information copy, and work
 proof = "The existing A1 workout end-to-end suite traverses all seven stretches, validates their exact copy and asset mapping, and remains the bounded regression check for this increment."
 
 [separation_of_concerns]
-before = "Chest and triceps reused full-screen design mockups as runtime media, forcing one brittle crop rule to remove unrelated phone and dialog chrome."
+before = ""
 after = "All seven runtime stretch entries use illustration-only assets and one shared contain renderer; dialog copy and controls remain React-owned."
 
 [architecture]
