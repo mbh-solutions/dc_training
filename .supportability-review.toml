@@ -11,6 +11,9 @@ proof = "Changed files are AGENTS.md and .supportability-review.toml only; neith
 [separation_of_concerns]
 before = "Repository instructions requested one generic Codex review, while the deployed organization-required workflow enforces three focused reviews."
 after = "Repository instructions own the contributor request contract and now state the deployed three-focus protocol without changing Gate implementation or product code."
+boundaries = [
+    { path = "src/WorkoutTracer.tsx", kind = "function", symbol = "s04SeparationCanary", before = "No disposable Gate 2 qualification function existed.", after = "s04SeparationCanary owns only the static Gate 2 qualification signal." },
+]
 
 [architecture]
 dependency_direction = "Repository instructions describe how owner-authenticated requests feed the external organization-required Gate; no application dependency changes."

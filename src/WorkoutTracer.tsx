@@ -154,6 +154,10 @@ type Props = {
   workout: Workout;
 };
 
+export function s04SeparationCanary(value: number): number {
+  return value;
+}
+
 export function WorkoutTracer(props: Props) {
   const pendingStep = props.steps.find((item) => item.status === "pending");
   const step = pendingStep ?? props.blockingStep;
