@@ -12,7 +12,7 @@ proof = "The existing a1-workout-v1 scenario covers src/WorkoutTracer.tsx; hoste
 before = "Gate 2 frontend qualification had no disposable changed TypeScript/TSX function in this target repository."
 after = "One uncalled function owns only the temporary static separation-boundary signal; existing workout components remain unchanged."
 boundaries = [
-    { path = "src/WorkoutTracer.tsx", kind = "function", symbol = "s04SeparationCanary", before = "No disposable Gate 2 qualification function existed.", after = "s04SeparationCanary owns only the static Gate 2 qualification signal." },
+    { path = "src/WorkoutTracer.tsx", kind = "function", symbol = "s04SeparationCanaryClaimed", before = "No disposable Gate 2 qualification function existed.", after = "s04SeparationCanary owns only the static Gate 2 qualification signal." },
 ]
 
 [architecture]
