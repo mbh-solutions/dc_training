@@ -1,55 +1,63 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "One disposable type-only component module proves protected Gate 5 characterization coverage without adding runtime product behavior."
-proof = "The source module exports one interface only, one direct test proves it has zero runtime exports, no product module imports it, and this pull request must remain unmerged."
+intended_behavior = "Two disposable type-only component modules prove protected Gate 5 coverage isolation without adding runtime product behavior."
+proof = "Each source module exports one interface only, one direct test proves both have zero runtime exports, no product module imports either module, and this pull request must remain unmerged."
 
 [characterization]
-captured_behavior = "The characterized disposable component module has no runtime behavior on the valid H1 head."
-proof = "The s07-characterization-canary regression scenario covers the exact source path and emits the same characterized_type_only_component_has_no_runtime_behavior golden result on repeated base and head captures."
+captured_behavior = "The first disposable component module has no runtime behavior; the second has identical direct proof but is intentionally omitted only from characterization coverage for H2."
+proof = "The s07-characterization-canary regression scenario still covers the exact first source path and emits its golden result; no scenario covers src/components/s07-uncovered-canary.ts so Gate 5 must block that exact path."
 
 [separation_of_concerns]
-before = "No disposable component location existed for frontend Gate 5 qualification."
-after = "One type-only module owns one disposable characterization canary boundary."
+before = "H1 contained one covered disposable type-only component boundary."
+after = "H2 contains a separate covered module and uncovered module, each owning one disposable type-only component boundary."
 boundaries = [
   { path = "src/components/s07-characterized-canary.ts", kind = "module", symbol = "src/components/s07-characterized-canary.ts", before = "No disposable Gate 5 component boundary existed.", after = "This module owns one type-only characterization canary." },
+  { path = "src/components/s07-uncovered-canary.ts", kind = "module", symbol = "src/components/s07-uncovered-canary.ts", before = "No uncovered Gate 5 component boundary existed.", after = "This module owns one separate type-only coverage poison." },
 ]
 
 [architecture]
-dependency_direction = "The disposable type-only module has no dependencies and names itself as its exact owner."
+dependency_direction = "Both disposable type-only modules have no dependencies and each names itself as its exact owner."
 reviewed_paths = [
   ".supportability-characterization.json",
   ".supportability-review.toml",
   "src/components/s07-characterized-canary.ts",
+  "src/components/s07-uncovered-canary.ts",
   "tests/s07-characterization-canary.test.mjs",
   "tests/characterization/s07-characterization-canary.characterization.mjs",
   "tests/characterization/s07-characterization-canary.golden.json",
 ]
 
 [responsibility_boundary]
-path = "src/components/s07-characterized-canary.ts"
-owns = "The disposable type-only component contract used to prove Gate 5 characterization coverage."
+path = "src/components/s07-uncovered-canary.ts"
+owns = "The second disposable type-only component contract used to prove Gate 5 missing-coverage isolation."
 does_not_own = "Product behavior, Gate implementation, thresholds, exclusions, waivers, or permanent component architecture."
 
 [incremental_refactor]
 target = "Qualify exact characterization coverage on one protected never-merge frontend canary."
-completed_step = "H1 adds one behavior-neutral type-only module with direct quality and static characterization evidence."
+completed_step = "H2 adds one separately owned behavior-neutral type-only module with direct quality evidence while deliberately omitting only its characterization-manifest coverage."
 
 [review_handoff]
-summary = "Review only the disposable type-only module and its evidence: H1 covers the exact production path with a deterministic static scenario, one direct test proves zero runtime exports, and no product behavior, dependency, threshold, exclusion, waiver, or permanent architecture changes."
+summary = "Review only the two disposable type-only modules and their evidence: one direct test proves both have zero runtime exports, the first path remains characterized, and the second path is deliberately omitted only from characterization coverage to require one exact Gate 5 block; no product behavior, dependency, threshold, exclusion, waiver, or permanent architecture changes."
 remaining_risks = [
   "This artificial location proves Gate 5 mechanics only; it is not product functionality.",
-  "The later H2 head is deliberately invalid and must remain unmerged; all disposable refs and temporary protection must be removed after evidence capture.",
+  "This H2 head is deliberately invalid and must remain unmerged; all disposable refs and temporary protection must be removed after evidence capture.",
 ]
 
 [human_review]
-naming = "s07-characterized-canary identifies the exact slice, covered state, and disposable qualification purpose."
-cohesion = "The new module owns one component type; characterization and review files own only proof metadata."
-intended_behavior = "H1 passes all eight deterministic lanes with exact characterization coverage."
-reviewability = "The production diff is one three-line interface-only module; one direct test proves zero runtime exports."
+naming = "s07-characterized-canary and s07-uncovered-canary identify the exact slice, coverage state, and disposable qualification purpose."
+cohesion = "Each new module owns one component type; characterization and review files own only proof metadata."
+intended_behavior = "H2 blocks only Gate 5 with the exact missing-characterization-coverage label for the second production path."
+reviewability = "The cumulative production diff is two three-line interface-only modules; one direct test proves both have zero runtime exports."
 
 [[module_boundaries]]
 path = "src/components/s07-characterized-canary.ts"
 owner_path = "src/components/s07-characterized-canary.ts"
 basis = "responsibility"
 justification = "The module owns one cohesive disposable component type."
+
+[[module_boundaries]]
+path = "src/components/s07-uncovered-canary.ts"
+owner_path = "src/components/s07-uncovered-canary.ts"
+basis = "responsibility"
+justification = "The module owns one separate cohesive disposable component type."
