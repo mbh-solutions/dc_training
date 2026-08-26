@@ -1,43 +1,43 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Repository instructions require three owner-authenticated Codex review requests in exact focus order 2, 4, then 8 for every pull-request head and organization-required workflow run."
-proof = "AGENTS.md contains the three exact commands, exact-head/run metadata, serial posting rule, bounded final polling rule, and merge restriction; the required Gate must validate this exact pull-request head before merge."
+intended_behavior = "A protected never-merge canary represents root tsconfig.json as a Git symlink so architecture artifact identity validation fails closed."
+proof = "The exact head tree records tsconfig.json as mode 120000 with target bytes tsconfig.app.json; no production source, dependency, threshold, exclusion, waiver, or product behavior changes."
 
 [characterization]
-captured_behavior = "Product source, tests, dependencies, runtime configuration, and Supportability thresholds remain unchanged; only repository review instructions and their handoff evidence change."
-proof = "Changed files are AGENTS.md and .supportability-review.toml only; neither is a production or high-risk path, and no changed file is excluded. npm ci --ignore-scripts --no-audit --no-fund installed the exact lock; npm run lint passed; npm run build passed; $tests = @(rg --files tests -g '*.test.mjs'); node --test @tests passed 10 tests across seven files; git diff --check passed."
+captured_behavior = "Product runtime behavior is unchanged because the deliberately invalid configuration identity is rejected before target configuration is read or followed."
+proof = "Existing characterization definitions and product source are byte-identical to the protected base; only review evidence and the root tsconfig.json tree identity change."
 
 [separation_of_concerns]
-before = "Repository instructions requested one generic Codex review, while the deployed organization-required workflow enforces three focused reviews."
-after = "Repository instructions own the contributor request contract and now state the deployed three-focus protocol without changing Gate implementation or product code."
+before = "The protected base stores tsconfig.json as a regular configuration blob."
+after = "The never-merge head stores tsconfig.json as a symlink solely to exercise shared architecture identity failure."
+boundaries = []
 
 [architecture]
-dependency_direction = "Repository instructions describe how owner-authenticated requests feed the external organization-required Gate; no application dependency changes."
+dependency_direction = "No dependency graph change is authorized; the canary must fail closed before graph construction with ARCHITECTURE_SYMLINK_OR_NONFILE."
 reviewed_paths = [
-    "AGENTS.md",
-    ".supportability-review.toml",
+  ".supportability-review.toml",
+  "tsconfig.json",
 ]
 
 [responsibility_boundary]
-path = "AGENTS.md"
-owns = "The repository-local agent contract for requesting and completing required focused Codex reviews."
-does_not_own = "Gate implementation, GitHub connector judgment, product behavior, dependencies, or Supportability thresholds."
+path = "tsconfig.json"
+owns = "The disposable shared architecture configuration-identity poison only."
+does_not_own = "Product behavior, dependency direction, target execution, Gate implementation, thresholds, exclusions, waivers, or permanent configuration."
 
 [incremental_refactor]
-target = "Align the repository-local request contract with the deployed focused-review workflow."
-completed_step = "Replace the stale one-request instruction with the exact serial focus 2, 4, and 8 request contract."
+target = "Prove shared fail-closed handling for a non-regular architecture configuration artifact."
+completed_step = "Represent only root tsconfig.json as an exact Git symlink and bind truthful no-production-boundary review evidence."
 
 [review_handoff]
-summary = "Review only AGENTS.md and .supportability-review.toml: focus 2 covers mixed responsibilities and ownership, focus 4 covers domain ownership, cohesion, coupling, and module boundaries, and focus 8 covers handoff truth; exact head/run binding uses serial request windows, bounded final polling, and unique completion artifacts; no executable functions or C901 disposition; and no production, high-risk, dependency, supportability scope, threshold, exclusion, or waiver change."
+summary = "This protected never-merge canary must produce ARCHITECTURE_SYMLINK_OR_NONFILE as a shared technical failure for Gates 3 and 4 only; all other lanes must pass and no Codex review is requested."
 remaining_risks = [
-    "Codex review remains probabilistic and is not exhaustive assurance.",
-    "Clean summaries and submitted reviews do not expose a triggering request ID, so focus attribution relies on the observed request-specific eyes handshake, serial request windows, bounded final polling, and unique artifact identity.",
-    "npm run build still reports the existing greater-than-500-kB chunk warning; this metadata-only change neither creates nor remediates it.",
+  "This deliberately invalid head must remain unmerged.",
+  "All disposable refs and temporary protection must be removed after evidence capture.",
 ]
 
 [human_review]
-naming = "Focus identifiers 2, 4, and 8 and their exact commands match the deployed Gate contract."
-cohesion = "AGENTS.md owns request instructions; .supportability-review.toml owns the review handoff for this instruction-only change."
-intended_behavior = "Every new pull-request head requires three serial, exact-head/run focused review completions before merge."
-reviewability = "The complete diff contains two repository metadata files; no executable functions changed, so function ownership and C901 evaluation are not applicable."
+naming = "The canary title and paths identify the S05 shared architecture identity proof."
+cohesion = "tsconfig.json carries the poison; the review file carries only exact evidence required by unaffected lanes."
+intended_behavior = "Gates 3 and 4 fail technically; Gates 1 and 2 plus Gates 5 through 8 pass."
+reviewability = "The complete diff is one Git mode/target change plus one evidence file; no production source boundary changes."
