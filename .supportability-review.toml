@@ -50,6 +50,6 @@ reviewability = "The production diff is one three-line interface-only module; on
 
 [[module_boundaries]]
 path = "src/components/s06-canary.ts"
-owner_path = "src/components/s06-canary.ts"
+owner_path = "src/components/index.ts"
 basis = "responsibility"
 justification = "The module owns one cohesive disposable component type."
