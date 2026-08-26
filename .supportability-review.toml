@@ -1,7 +1,7 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "One disposable type-only component module proves an exact bounded frontend refactor authorization without adding runtime product behavior."
+intended_behavior = "One disposable type-only component module proves exact Gate 6 target binding: H2 deliberately authorizes the wrong span while preserving runtime behavior."
 proof = "The source module exports one interface only, one direct test proves it has zero runtime exports, no product module imports it, and this pull request must remain unmerged."
 
 [characterization]
@@ -33,19 +33,19 @@ does_not_own = "Product behavior, Gate implementation, thresholds, exclusions, w
 
 [incremental_refactor]
 target = "Qualify exact bounded-refactor authorization on one protected never-merge frontend canary."
-completed_step = "H1 adds one behavior-neutral type-only module with direct quality and static characterization evidence."
+completed_step = "H2 preserves the H1 code and evidence while deliberately altering only the external owner-authorization target span from line 1-3 to line 1-2."
 
 [review_handoff]
-summary = "Review only the disposable type-only module and its evidence: H1 covers the exact production target with a deterministic static scenario, one direct test proves zero runtime exports, and no product behavior, dependency, threshold, exclusion, waiver, or permanent architecture changes."
+summary = "H2 changes only this truthful handoff metadata; source, test, characterization, and quality inputs remain byte-identical to H1, while the external owner authorization deliberately changes only the target span from line 1-3 to line 1-2 so Gate 6 alone must block UNVERIFIABLE_BOUNDED_TARGET."
 remaining_risks = [
   "This artificial location proves Gate 6 mechanics only; it is not product functionality.",
-  "The later H2 head is deliberately invalid and must remain unmerged; all disposable refs and temporary protection must be removed after evidence capture.",
+  "This H2 head is deliberately invalid and must remain unmerged; all disposable refs and temporary protection must be removed after evidence capture.",
 ]
 
 [human_review]
 naming = "s08-gate6-canary identifies the exact slice and disposable qualification purpose."
 cohesion = "The new module owns one component type; characterization and review files own only proof metadata."
-intended_behavior = "H1 passes all eight deterministic lanes with exact owner authorization and runnability evidence."
+intended_behavior = "H2 blocks only Gate 6 with UNVERIFIABLE_BOUNDED_TARGET for the deliberately shortened authorization span."
 reviewability = "The production diff is one three-line interface-only module; one direct test proves zero runtime exports."
 
 [[module_boundaries]]
