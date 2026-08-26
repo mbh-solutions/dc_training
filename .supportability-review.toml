@@ -2,7 +2,7 @@ schema_version = "1.0"
 
 [behavior]
 intended_behavior = "Disposable type-only modules expose a static frontend dependency graph for protected Gate 3 qualification without adding runtime product behavior."
-proof = "Both source modules export interfaces only, every cross-module edge uses import type, no product module imports either canary, and this pull request must remain unmerged."
+proof = "Both source modules export interfaces only, every cross-module edge uses import type, one direct test proves both modules have zero runtime exports, no product module imports either canary, and this pull request must remain unmerged."
 
 [characterization]
 captured_behavior = "The disposable type-only graph has no runtime behavior on either the valid H1 head or the poisoned H2 head."
@@ -23,6 +23,7 @@ reviewed_paths = [
   ".supportability-review.toml",
   "src/application/s05-canary.ts",
   "src/domain/s05-canary.ts",
+  "tests/s05-dependency-canary.test.mjs",
   "tests/characterization/s05-dependency-canary.characterization.mjs",
   "tests/characterization/s05-dependency-canary.golden.json",
 ]
@@ -37,7 +38,7 @@ target = "Qualify static TypeScript dependency-direction enforcement on one prot
 completed_step = "H1 adds the valid graph and exact evidence; H2 changes only the domain module to add the reverse poisoned edge."
 
 [review_handoff]
-summary = "Review only the disposable two-module type graph and its evidence: H1 is valid, H2 deliberately blocks Gate 3 only, no target code is executed, and no product behavior, dependency, threshold, exclusion, waiver, or permanent architecture changes."
+summary = "Review only the disposable two-module type graph and its evidence: H1 is valid, H2 deliberately blocks Gate 3 only, Gate 3 uses static evidence while one direct quality test imports only the type-only canary modules, and no product behavior, dependency, threshold, exclusion, waiver, or permanent architecture changes."
 remaining_risks = [
   "This artificial graph proves Gate 3 mechanics only; it is not product functionality.",
   "H2 is deliberately invalid and must remain unmerged; all disposable refs and temporary protection must be removed after evidence capture.",
@@ -47,7 +48,7 @@ remaining_risks = [
 naming = "s05-canary identifies the exact slice and disposable qualification purpose."
 cohesion = "Each module owns one canary type; the characterization and review files own only proof metadata."
 intended_behavior = "H1 passes all lanes; H2 adds one reverse type-only edge and blocks Gate 3 while Gate 4 remains green."
-reviewability = "The production diff is two tiny interface-only modules; H2 changes only the five-line domain module."
+reviewability = "The production diff is two tiny interface-only modules; one direct test proves zero runtime exports; H2 changes only the five-line domain module."
 
 [[module_boundaries]]
 path = "src/application/s05-canary.ts"
