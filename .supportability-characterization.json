@@ -85,6 +85,11 @@
       ],
       "id": "offline-sync-v1",
       "kind": "regression"
+    },
+    {
+      "covers": ["src/components/s07-characterized-canary.ts"],
+      "id": "s07-characterization-canary",
+      "kind": "regression"
     }
   ],
   "schema_version": "1.0"
