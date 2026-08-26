@@ -85,6 +85,11 @@
       ],
       "id": "offline-sync-v1",
       "kind": "regression"
+    },
+    {
+      "covers": ["src/components/s06-canary.ts"],
+      "id": "s06-modularity-canary",
+      "kind": "regression"
     }
   ],
   "schema_version": "1.0"
