@@ -1,43 +1,62 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Repository instructions require three owner-authenticated Codex review requests in exact focus order 2, 4, then 8 for every pull-request head and organization-required workflow run."
-proof = "AGENTS.md contains the three exact commands, exact-head/run metadata, serial posting rule, bounded final polling rule, and merge restriction; the required Gate must validate this exact pull-request head before merge."
+intended_behavior = "Disposable type-only modules expose a static frontend dependency graph for protected Gate 3 qualification without adding runtime product behavior."
+proof = "Both source modules export interfaces only, every cross-module edge uses import type, no product module imports either canary, and this pull request must remain unmerged."
 
 [characterization]
-captured_behavior = "Product source, tests, dependencies, runtime configuration, and Supportability thresholds remain unchanged; only repository review instructions and their handoff evidence change."
-proof = "Changed files are AGENTS.md and .supportability-review.toml only; neither is a production or high-risk path, and no changed file is excluded. npm ci --ignore-scripts --no-audit --no-fund installed the exact lock; npm run lint passed; npm run build passed; $tests = @(rg --files tests -g '*.test.mjs'); node --test @tests passed 10 tests across seven files; git diff --check passed."
+captured_behavior = "The disposable type-only graph has no runtime behavior on either the valid H1 head or the poisoned H2 head."
+proof = "The new s05-dependency-canary regression scenario covers both source paths and emits the same type_only_graph_has_no_runtime_behavior golden result on repeated base and head captures."
 
 [separation_of_concerns]
-before = "Repository instructions requested one generic Codex review, while the deployed organization-required workflow enforces three focused reviews."
-after = "Repository instructions own the contributor request contract and now state the deployed three-focus protocol without changing Gate implementation or product code."
+before = "No disposable application/domain graph existed for frontend Gate 3 qualification."
+after = "One application module owns the use-case type and one domain module owns the domain type used by the protected never-merge canary."
+boundaries = [
+  { path = "src/application/s05-canary.ts", kind = "module", symbol = "src/application/s05-canary.ts", before = "No disposable application boundary existed.", after = "This module owns only the disposable application-facing type." },
+  { path = "src/domain/s05-canary.ts", kind = "module", symbol = "src/domain/s05-canary.ts", before = "No disposable domain boundary existed.", after = "This module owns only the disposable domain type." },
+]
 
 [architecture]
-dependency_direction = "Repository instructions describe how owner-authenticated requests feed the external organization-required Gate; no application dependency changes."
+dependency_direction = "H1 contains one permitted application-to-domain type-only edge. H2 changes only the domain module to add the reverse domain-to-application type-only edge; Gate 3 must then report two cycle locations, one inversion, and one forbidden domain dependency."
 reviewed_paths = [
-    "AGENTS.md",
-    ".supportability-review.toml",
+  ".supportability-characterization.json",
+  ".supportability-review.toml",
+  "src/application/s05-canary.ts",
+  "src/domain/s05-canary.ts",
+  "tests/characterization/s05-dependency-canary.characterization.mjs",
+  "tests/characterization/s05-dependency-canary.golden.json",
 ]
 
 [responsibility_boundary]
-path = "AGENTS.md"
-owns = "The repository-local agent contract for requesting and completing required focused Codex reviews."
-does_not_own = "Gate implementation, GitHub connector judgment, product behavior, dependencies, or Supportability thresholds."
+path = "src/domain/s05-canary.ts"
+owns = "The disposable domain type and, on H2 only, the deliberately forbidden reverse type-only edge used to prove Gate 3 isolation."
+does_not_own = "Product behavior, target execution, Gate implementation, thresholds, exclusions, waivers, or permanent application architecture."
 
 [incremental_refactor]
-target = "Align the repository-local request contract with the deployed focused-review workflow."
-completed_step = "Replace the stale one-request instruction with the exact serial focus 2, 4, and 8 request contract."
+target = "Qualify static TypeScript dependency-direction enforcement on one protected never-merge frontend canary."
+completed_step = "H1 adds the valid graph and exact evidence; H2 changes only the domain module to add the reverse poisoned edge."
 
 [review_handoff]
-summary = "Review only AGENTS.md and .supportability-review.toml: focus 2 covers mixed responsibilities and ownership, focus 4 covers domain ownership, cohesion, coupling, and module boundaries, and focus 8 covers handoff truth; exact head/run binding uses serial request windows, bounded final polling, and unique completion artifacts; no executable functions or C901 disposition; and no production, high-risk, dependency, supportability scope, threshold, exclusion, or waiver change."
+summary = "Review only the disposable two-module type graph and its evidence: H1 is valid, H2 deliberately blocks Gate 3 only, no target code is executed, and no product behavior, dependency, threshold, exclusion, waiver, or permanent architecture changes."
 remaining_risks = [
-    "Codex review remains probabilistic and is not exhaustive assurance.",
-    "Clean summaries and submitted reviews do not expose a triggering request ID, so focus attribution relies on the observed request-specific eyes handshake, serial request windows, bounded final polling, and unique artifact identity.",
-    "npm run build still reports the existing greater-than-500-kB chunk warning; this metadata-only change neither creates nor remediates it.",
+  "This artificial graph proves Gate 3 mechanics only; it is not product functionality.",
+  "H2 is deliberately invalid and must remain unmerged; all disposable refs and temporary protection must be removed after evidence capture.",
 ]
 
 [human_review]
-naming = "Focus identifiers 2, 4, and 8 and their exact commands match the deployed Gate contract."
-cohesion = "AGENTS.md owns request instructions; .supportability-review.toml owns the review handoff for this instruction-only change."
-intended_behavior = "Every new pull-request head requires three serial, exact-head/run focused review completions before merge."
-reviewability = "The complete diff contains two repository metadata files; no executable functions changed, so function ownership and C901 evaluation are not applicable."
+naming = "s05-canary identifies the exact slice and disposable qualification purpose."
+cohesion = "Each module owns one canary type; the characterization and review files own only proof metadata."
+intended_behavior = "H1 passes all lanes; H2 adds one reverse type-only edge and blocks Gate 3 while Gate 4 remains green."
+reviewability = "The production diff is two tiny interface-only modules; H2 changes only the five-line domain module."
+
+[[module_boundaries]]
+path = "src/application/s05-canary.ts"
+owner_path = "src/application/s05-canary.ts"
+basis = "responsibility"
+justification = "The module owns one disposable application-facing canary type."
+
+[[module_boundaries]]
+path = "src/domain/s05-canary.ts"
+owner_path = "src/domain/s05-canary.ts"
+basis = "domain"
+justification = "The module owns one disposable domain canary type."

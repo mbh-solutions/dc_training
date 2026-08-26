@@ -85,6 +85,14 @@
       ],
       "id": "offline-sync-v1",
       "kind": "regression"
+    },
+    {
+      "covers": [
+        "src/application/s05-canary.ts",
+        "src/domain/s05-canary.ts"
+      ],
+      "id": "s05-dependency-canary",
+      "kind": "regression"
     }
   ],
   "schema_version": "1.0"
