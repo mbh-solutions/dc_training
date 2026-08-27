@@ -1,1 +1,1 @@
-S11 ruleset migration canary: activated.
+S11 ruleset migration canary: consolidated.
