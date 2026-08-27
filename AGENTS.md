@@ -6,7 +6,7 @@
   head with exactly eight serial focused reviews in order `1` through `8`.
 - Supported remediation may create one descendant final head. Completed focuses are not repeated;
   only deterministic gates rerun on that final head.
-- These two rules supersede conflicting three-focus and new-push clauses below for PR #62 only.
+- These two rules supersede conflicting three-focus and new-push clauses below for PR #65 only.
   They do not change production policy or any other pull request.
 
 ## Required Codex review completion
