@@ -1,43 +1,53 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Repository instructions require three owner-authenticated Codex review requests in exact focus order 2, 4, then 8 for every pull-request head and organization-required workflow run."
-proof = "AGENTS.md contains the three exact commands, exact-head/run metadata, serial posting rule, bounded final polling rule, and merge restriction; the required Gate must validate this exact pull-request head before merge."
+intended_behavior = "One disposable component fixture plus authenticated Gate 8 sentinel proves source-backed frontend handoff without changing production."
+proof = "PR #65 directly tests and characterizes src/components/s09-gate7-canary.ts. Gate 8 derives final change, boundary, validation, coverage, exclusion, threshold, risk, gap, and follow-up facts from authenticated artifacts produced by source workflow 6886e6c9bc7c721b502cd99971d6f5e65d2ca531."
 
 [characterization]
-captured_behavior = "Product source, tests, dependencies, runtime configuration, and Supportability thresholds remain unchanged; only repository review instructions and their handoff evidence change."
-proof = "Changed files are AGENTS.md and .supportability-review.toml only; neither is a production or high-risk path, and no changed file is excluded. npm ci --ignore-scripts --no-audit --no-fund installed the exact lock; npm run lint passed; npm run build passed; $tests = @(rg --files tests -g '*.test.mjs'); node --test @tests passed 10 tests across seven files; git diff --check passed."
+captured_behavior = "The disposable component preserves the base's first workout slot through one covered leaf export."
+proof = ".supportability-characterization.json maps the exact source path to a deterministic driver and golden. The driver reads WORKOUT_SLOTS[0] from the base and S09_GATE7_CANARY from the head, while tests/s09-gate7-canary.test.mjs directly executes the changed module."
 
 [separation_of_concerns]
-before = "Repository instructions requested one generic Codex review, while the deployed organization-required workflow enforces three focused reviews."
-after = "Repository instructions own the contributor request contract and now state the deployed three-focus protocol without changing Gate implementation or product code."
+before = "The disposable S10 base has no frontend qualification fixture."
+after = "One single-purpose component module owns the temporary runtime canary value."
+boundaries = [
+  { path = "src/components/s09-gate7-canary.ts", kind = "module", symbol = "src/components/s09-gate7-canary.ts", before = "No disposable S10 frontend fixture existed on the base.", after = "The module owns one covered runtime constant." },
+]
 
 [architecture]
-dependency_direction = "Repository instructions describe how owner-authenticated requests feed the external organization-required Gate; no application dependency changes."
+dependency_direction = "The direct test depends on the leaf canary module; the canary has no product dependency."
 reviewed_paths = [
-    "AGENTS.md",
-    ".supportability-review.toml",
+  "AGENTS.md",
+  ".supportability-characterization.json",
+  ".supportability-review.toml",
+  "src/components/s09-gate7-canary.ts",
+  "tests/s09-gate7-canary.test.mjs",
+  "tests/characterization/s09-gate7-canary.characterization.mjs",
+  "tests/characterization/s09-gate7-canary.golden.json",
 ]
 
 [responsibility_boundary]
-path = "AGENTS.md"
-owns = "The repository-local agent contract for requesting and completing required focused Codex reviews."
-does_not_own = "Gate implementation, GitHub connector judgment, product behavior, dependencies, or Supportability thresholds."
+path = "src/components/s09-gate7-canary.ts"
+owns = "The disposable runtime value used to prove exact hosted TypeScript quality coverage."
+does_not_own = "Product behavior, Gate implementation, dependencies, thresholds, exclusions, waivers, or permanent component architecture."
 
 [incremental_refactor]
-target = "Align the repository-local request contract with the deployed focused-review workflow."
-completed_step = "Replace the stale one-request instruction with the exact serial focus 2, 4, and 8 request contract."
+target = "Qualify Gate 8 on one protected frontend positive canary."
+completed_step = "Add one covered alias to an existing stable value and require authenticated derivation for every handoff claim."
 
 [review_handoff]
-summary = "Review only AGENTS.md and .supportability-review.toml: focus 2 covers mixed responsibilities and ownership, focus 4 covers domain ownership, cohesion, coupling, and module boundaries, and focus 8 covers handoff truth; exact head/run binding uses serial request windows, bounded final polling, and unique completion artifacts; no executable functions or C901 disposition; and no production, high-risk, dependency, supportability scope, threshold, exclusion, or waiver change."
-remaining_risks = [
-    "Codex review remains probabilistic and is not exhaustive assurance.",
-    "Clean summaries and submitted reviews do not expose a triggering request ID, so focus attribution relies on the observed request-specific eyes handshake, serial request windows, bounded final polling, and unique artifact identity.",
-    "npm run build still reports the existing greater-than-500-kB chunk warning; this metadata-only change neither creates nor remediates it.",
-]
+summary = "DERIVED_FROM_AUTHENTICATED_EVIDENCE"
+remaining_risks = ["DERIVED_FROM_AUTHENTICATED_EVIDENCE"]
 
 [human_review]
-naming = "Focus identifiers 2, 4, and 8 and their exact commands match the deployed Gate contract."
-cohesion = "AGENTS.md owns request instructions; .supportability-review.toml owns the review handoff for this instruction-only change."
-intended_behavior = "Every new pull-request head requires three serial, exact-head/run focused review completions before merge."
-reviewability = "The complete diff contains two repository metadata files; no executable functions changed, so function ownership and C901 evaluation are not applicable."
+naming = "The historical s09-gate7-canary name identifies the reused fixture history; relative to this PR's base, this PR adds the fixture module, direct test, characterization driver, golden, and manifest entry for S10."
+cohesion = "The new module owns one constant; its test and characterization own direct proof."
+intended_behavior = "The fixed hosted profile records exact source-backed Gate 8 handoff for the changed fixture."
+reviewability = "The production diff is one exported constant with one direct assertion."
+
+[[module_boundaries]]
+path = "src/components/s09-gate7-canary.ts"
+owner_path = "src/components/s09-gate7-canary.ts"
+basis = "responsibility"
+justification = "The disposable module owns one reused runtime fixture for S10 Gate 8 qualification."
