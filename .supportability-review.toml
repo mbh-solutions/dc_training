@@ -37,11 +37,8 @@ target = "Qualify Gate 7 on one protected frontend positive canary."
 completed_step = "Add one covered runtime constant with one direct test and one deterministic characterization scenario."
 
 [review_handoff]
-summary = "Review the disposable S09 component and its direct evidence: one runtime constant is executed by one direct test and characterized by one stable scenario; no dependency, threshold, exclusion, waiver, high-risk behavior, or permanent architecture changes. Owner issue mbh-solutions/supportability-gate#152 narrowly requires Focuses 1-8 once on PR #62's frozen review head, followed by deterministic-only final-head proof after supported remediation. AGENTS.md records that PR-only override; production policy remains unchanged for S11 alignment."
-remaining_risks = [
-  "This temporary protected-base canary proves hosted Gate 7 mechanics only and is removed after its normal merge evidence is captured.",
-  "The production repository review contract remains three focuses until the separately authorized S11 consumer transaction.",
-]
+summary = "DERIVED_FROM_AUTHENTICATED_EVIDENCE"
+remaining_risks = ["DERIVED_FROM_AUTHENTICATED_EVIDENCE"]
 
 [human_review]
 naming = "s09-gate7-canary identifies the exact slice and temporary qualification purpose."
