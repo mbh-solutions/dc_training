@@ -1,18 +1,18 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "One disposable component fixture plus authenticated Gate 8 sentinel proves source-backed frontend handoff without changing production."
-proof = "PR #65 directly tests and characterizes src/components/s09-gate7-canary.ts. Gate 8 derives final change, boundary, validation, coverage, exclusion, threshold, risk, gap, and follow-up facts from authenticated artifacts produced by source workflow 6886e6c9bc7c721b502cd99971d6f5e65d2ca531."
+intended_behavior = "One fresh disposable component fixture plus authenticated Gate 8 sentinel proves integrated S11 frontend enforcement without changing production."
+proof = "PR #67 directly tests and characterizes src/components/s09-gate7-canary.ts. Gate 8 derives final change, boundary, validation, coverage, exclusion, threshold, risk, gap, and follow-up facts from authenticated artifacts produced by source workflow 58b915c916796f318c176d37ca9a027a05159167."
 
 [characterization]
 captured_behavior = "The disposable component preserves the base's first workout slot through one covered leaf export."
 proof = ".supportability-characterization.json maps the exact source path to a deterministic driver and golden. The driver reads WORKOUT_SLOTS[0] from the base and S09_GATE7_CANARY from the head, while tests/s09-gate7-canary.test.mjs directly executes the changed module."
 
 [separation_of_concerns]
-before = "The disposable S10 base has no frontend qualification fixture."
+before = "The fresh disposable S11 base has no frontend qualification fixture."
 after = "One single-purpose component module owns the temporary runtime canary value."
 boundaries = [
-  { path = "src/components/s09-gate7-canary.ts", kind = "module", symbol = "src/components/s09-gate7-canary.ts", before = "No disposable S10 frontend fixture existed on the base.", after = "The module owns one covered runtime constant." },
+  { path = "src/components/s09-gate7-canary.ts", kind = "module", symbol = "src/components/s09-gate7-canary.ts", before = "No disposable S11 frontend fixture existed on the base.", after = "The module owns one covered runtime constant." },
 ]
 
 [architecture]
@@ -33,7 +33,7 @@ owns = "The disposable runtime value used to prove exact hosted TypeScript quali
 does_not_own = "Product behavior, Gate implementation, dependencies, thresholds, exclusions, waivers, or permanent component architecture."
 
 [incremental_refactor]
-target = "Qualify Gate 8 on one protected frontend positive canary."
+target = "Qualify all eight integrated S11 lanes on one protected frontend positive canary."
 completed_step = "Add one covered alias to an existing stable value and require authenticated derivation for every handoff claim."
 
 [review_handoff]
@@ -41,7 +41,7 @@ summary = "DERIVED_FROM_AUTHENTICATED_EVIDENCE"
 remaining_risks = ["DERIVED_FROM_AUTHENTICATED_EVIDENCE"]
 
 [human_review]
-naming = "The historical s09-gate7-canary name identifies the reused fixture history; relative to this PR's base, this PR adds the fixture module, direct test, characterization driver, golden, and manifest entry for S10."
+naming = "The historical s09-gate7-canary name identifies the reused proven fixture; relative to this fresh S11 base, this PR adds the fixture module, direct test, characterization driver, golden, and manifest entry."
 cohesion = "The new module owns one constant; its test and characterization own direct proof."
 intended_behavior = "The fixed hosted profile records exact source-backed Gate 8 handoff for the changed fixture."
 reviewability = "The production diff is one exported constant with one direct assertion."
@@ -50,4 +50,4 @@ reviewability = "The production diff is one exported constant with one direct as
 path = "src/components/s09-gate7-canary.ts"
 owner_path = "src/components/s09-gate7-canary.ts"
 basis = "responsibility"
-justification = "The disposable module owns one reused runtime fixture for S10 Gate 8 qualification."
+justification = "The disposable module owns one reused runtime fixture for fresh S11 qualification."
