@@ -1,5 +1,14 @@
 # Repository Agent Contract
 
+## S09 PR #62 temporary qualification override
+
+- For PR #62 only, owner issue `mbh-solutions/supportability-gate#152` requires one frozen review
+  head with exactly eight serial focused reviews in order `1` through `8`.
+- Supported remediation may create one descendant final head. Completed focuses are not repeated;
+  only deterministic gates rerun on that final head.
+- These two rules supersede conflicting three-focus and new-push clauses below for PR #62 only.
+  They do not change production policy or any other pull request.
+
 ## Required Codex review completion
 
 - For every pull-request head and organization-required workflow run, post exactly three

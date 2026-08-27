@@ -2,7 +2,7 @@ schema_version = "1.0"
 
 [behavior]
 intended_behavior = "One disposable component constant proves that the fixed hosted TypeScript quality profile executes and covers changed governed code."
-proof = "One direct Node test imports and asserts the constant; one characterization scenario captures the same stable value; the S09 required Gate binds fixed commands and coverage to the exact PR head."
+proof = "On exact review head feb232e125a9aaf7bbd1de42b6f0352283dc88ba, hosted run 33023482356 completed Quality Profile job 98359241107 successfully on GitHub-hosted Node 24.19.0 and Python 3.12.14. Quality artifact 9627474368 (sha256:20c3d3496361e018fc284e86f0e3f33f96aa72c96585e2b780e6e09d7ac494a5) and authoritative artifact 9627487733 (sha256:e96f36b3bf155ea57b82aa1091383656d7803ff366cb5c34fc511506b66ffe37) bind the fixed command result and coverage of src/components/s09-gate7-canary.ts with no exclusion, threshold, or governed-scope change. Final-head deterministic proof is recorded on the pull request after this bounded remediation."
 
 [characterization]
 captured_behavior = "The disposable component exports only the stable S09 quality canary value."
@@ -18,6 +18,7 @@ boundaries = [
 [architecture]
 dependency_direction = "The direct test depends on the leaf canary module; the canary has no product dependency."
 reviewed_paths = [
+  "AGENTS.md",
   ".supportability-characterization.json",
   ".supportability-review.toml",
   "src/components/s09-gate7-canary.ts",
@@ -36,7 +37,7 @@ target = "Qualify Gate 7 on one protected frontend positive canary."
 completed_step = "Add one covered runtime constant with one direct test and one deterministic characterization scenario."
 
 [review_handoff]
-summary = "Review the disposable S09 component and its direct evidence: one runtime constant is executed by one direct test and characterized by one stable scenario; no dependency, threshold, exclusion, waiver, high-risk behavior, or permanent architecture changes. Owner issue mbh-solutions/supportability-gate#152 narrowly requires Focuses 1-8 for this temporary qualification PR; AGENTS.md and production policy remain unchanged for S11 alignment."
+summary = "Review the disposable S09 component and its direct evidence: one runtime constant is executed by one direct test and characterized by one stable scenario; no dependency, threshold, exclusion, waiver, high-risk behavior, or permanent architecture changes. Owner issue mbh-solutions/supportability-gate#152 narrowly requires Focuses 1-8 once on PR #62's frozen review head, followed by deterministic-only final-head proof after supported remediation. AGENTS.md records that PR-only override; production policy remains unchanged for S11 alignment."
 remaining_risks = [
   "This temporary protected-base canary proves hosted Gate 7 mechanics only and is removed after its normal merge evidence is captured.",
   "The production repository review contract remains three focuses until the separately authorized S11 consumer transaction.",
