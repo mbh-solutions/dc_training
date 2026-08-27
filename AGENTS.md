@@ -1,8 +1,8 @@
 # Repository Agent Contract
 
-## S09 PR #62 temporary qualification override
+## S10 PR #65 temporary qualification override
 
-- For PR #62 only, owner issue `mbh-solutions/supportability-gate#152` requires one frozen review
+- For PR #65 only, owner issue `mbh-solutions/supportability-gate#153` requires one frozen review
   head with exactly eight serial focused reviews in order `1` through `8`.
 - Supported remediation may create one descendant final head. Completed focuses are not repeated;
   only deterministic gates rerun on that final head.
