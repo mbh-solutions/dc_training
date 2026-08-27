@@ -85,6 +85,11 @@
       ],
       "id": "offline-sync-v1",
       "kind": "regression"
+    },
+    {
+      "covers": ["src/components/s09-gate7-canary.ts"],
+      "id": "s09-gate7-canary",
+      "kind": "regression"
     }
   ],
   "schema_version": "1.0"

@@ -1,43 +1,56 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "Repository instructions require three owner-authenticated Codex review requests in exact focus order 2, 4, then 8 for every pull-request head and organization-required workflow run."
-proof = "AGENTS.md contains the three exact commands, exact-head/run metadata, serial posting rule, bounded final polling rule, and merge restriction; the required Gate must validate this exact pull-request head before merge."
+intended_behavior = "One disposable component constant proves that the fixed hosted TypeScript quality profile executes and covers changed governed code."
+proof = "On exact review head feb232e125a9aaf7bbd1de42b6f0352283dc88ba, hosted run 33023482356 completed Quality Profile job 98359241107 successfully on GitHub-hosted Node 24.19.0 and Python 3.12.14. Quality artifact 9627474368 (sha256:20c3d3496361e018fc284e86f0e3f33f96aa72c96585e2b780e6e09d7ac494a5) and authoritative artifact 9627487733 (sha256:e96f36b3bf155ea57b82aa1091383656d7803ff366cb5c34fc511506b66ffe37) bind the fixed command result and coverage of src/components/s09-gate7-canary.ts with no exclusion, threshold, or governed-scope change. Final-head deterministic proof is recorded on the pull request after this bounded remediation."
 
 [characterization]
-captured_behavior = "Product source, tests, dependencies, runtime configuration, and Supportability thresholds remain unchanged; only repository review instructions and their handoff evidence change."
-proof = "Changed files are AGENTS.md and .supportability-review.toml only; neither is a production or high-risk path, and no changed file is excluded. npm ci --ignore-scripts --no-audit --no-fund installed the exact lock; npm run lint passed; npm run build passed; $tests = @(rg --files tests -g '*.test.mjs'); node --test @tests passed 10 tests across seven files; git diff --check passed."
+captured_behavior = "The disposable component exports only the stable S09 quality canary value."
+proof = ".supportability-characterization.json maps the exact source path to a deterministic driver and golden; tests/s09-gate7-canary.test.mjs directly executes the changed module."
 
 [separation_of_concerns]
-before = "Repository instructions requested one generic Codex review, while the deployed organization-required workflow enforces three focused reviews."
-after = "Repository instructions own the contributor request contract and now state the deployed three-focus protocol without changing Gate implementation or product code."
+before = "No disposable frontend quality-profile target existed."
+after = "One single-purpose component module owns the temporary runtime canary value."
+boundaries = [
+  { path = "src/components/s09-gate7-canary.ts", kind = "module", symbol = "src/components/s09-gate7-canary.ts", before = "No disposable S09 frontend canary existed.", after = "The module owns one covered runtime constant." },
+]
 
 [architecture]
-dependency_direction = "Repository instructions describe how owner-authenticated requests feed the external organization-required Gate; no application dependency changes."
+dependency_direction = "The direct test depends on the leaf canary module; the canary has no product dependency."
 reviewed_paths = [
-    "AGENTS.md",
-    ".supportability-review.toml",
+  "AGENTS.md",
+  ".supportability-characterization.json",
+  ".supportability-review.toml",
+  "src/components/s09-gate7-canary.ts",
+  "tests/s09-gate7-canary.test.mjs",
+  "tests/characterization/s09-gate7-canary.characterization.mjs",
+  "tests/characterization/s09-gate7-canary.golden.json",
 ]
 
 [responsibility_boundary]
-path = "AGENTS.md"
-owns = "The repository-local agent contract for requesting and completing required focused Codex reviews."
-does_not_own = "Gate implementation, GitHub connector judgment, product behavior, dependencies, or Supportability thresholds."
+path = "src/components/s09-gate7-canary.ts"
+owns = "The disposable runtime value used to prove exact hosted TypeScript quality coverage."
+does_not_own = "Product behavior, Gate implementation, dependencies, thresholds, exclusions, waivers, or permanent component architecture."
 
 [incremental_refactor]
-target = "Align the repository-local request contract with the deployed focused-review workflow."
-completed_step = "Replace the stale one-request instruction with the exact serial focus 2, 4, and 8 request contract."
+target = "Qualify Gate 7 on one protected frontend positive canary."
+completed_step = "Add one covered runtime constant with one direct test and one deterministic characterization scenario."
 
 [review_handoff]
-summary = "Review only AGENTS.md and .supportability-review.toml: focus 2 covers mixed responsibilities and ownership, focus 4 covers domain ownership, cohesion, coupling, and module boundaries, and focus 8 covers handoff truth; exact head/run binding uses serial request windows, bounded final polling, and unique completion artifacts; no executable functions or C901 disposition; and no production, high-risk, dependency, supportability scope, threshold, exclusion, or waiver change."
+summary = "Review the disposable S09 component and its direct evidence: one runtime constant is executed by one direct test and characterized by one stable scenario; no dependency, threshold, exclusion, waiver, high-risk behavior, or permanent architecture changes. Owner issue mbh-solutions/supportability-gate#152 narrowly requires Focuses 1-8 once on PR #62's frozen review head, followed by deterministic-only final-head proof after supported remediation. AGENTS.md records that PR-only override; production policy remains unchanged for S11 alignment."
 remaining_risks = [
-    "Codex review remains probabilistic and is not exhaustive assurance.",
-    "Clean summaries and submitted reviews do not expose a triggering request ID, so focus attribution relies on the observed request-specific eyes handshake, serial request windows, bounded final polling, and unique artifact identity.",
-    "npm run build still reports the existing greater-than-500-kB chunk warning; this metadata-only change neither creates nor remediates it.",
+  "This temporary protected-base canary proves hosted Gate 7 mechanics only and is removed after its normal merge evidence is captured.",
+  "The production repository review contract remains three focuses until the separately authorized S11 consumer transaction.",
 ]
 
 [human_review]
-naming = "Focus identifiers 2, 4, and 8 and their exact commands match the deployed Gate contract."
-cohesion = "AGENTS.md owns request instructions; .supportability-review.toml owns the review handoff for this instruction-only change."
-intended_behavior = "Every new pull-request head requires three serial, exact-head/run focused review completions before merge."
-reviewability = "The complete diff contains two repository metadata files; no executable functions changed, so function ownership and C901 evaluation are not applicable."
+naming = "s09-gate7-canary identifies the exact slice and temporary qualification purpose."
+cohesion = "The new module owns one constant; its test and characterization own direct proof."
+intended_behavior = "The fixed hosted TypeScript profile executes successfully and records coverage for the changed source."
+reviewability = "The production diff is one exported constant with one direct assertion."
+
+[[module_boundaries]]
+path = "src/components/s09-gate7-canary.ts"
+owner_path = "src/components/s09-gate7-canary.ts"
+basis = "responsibility"
+justification = "The disposable module owns one S09 Gate 7 canary value."
