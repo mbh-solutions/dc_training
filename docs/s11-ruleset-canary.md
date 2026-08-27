@@ -1,1 +1,1 @@
-S11 ruleset migration canary: prepared.
+S11 ruleset migration canary: activated.
