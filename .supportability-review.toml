@@ -5,8 +5,8 @@ intended_behavior = "One disposable component fixture plus authenticated Gate 8 
 proof = "PR #65 directly tests and characterizes src/components/s09-gate7-canary.ts. Gate 8 derives final change, boundary, validation, coverage, exclusion, threshold, risk, gap, and follow-up facts from authenticated artifacts produced by source workflow 6886e6c9bc7c721b502cd99971d6f5e65d2ca531."
 
 [characterization]
-captured_behavior = "The disposable component exports only the stable reused fixture value."
-proof = ".supportability-characterization.json maps the exact source path to a deterministic driver and golden; tests/s09-gate7-canary.test.mjs directly executes the changed module."
+captured_behavior = "The disposable component preserves the base's first workout slot through one covered leaf export."
+proof = ".supportability-characterization.json maps the exact source path to a deterministic driver and golden. The driver reads WORKOUT_SLOTS[0] from the base and S09_GATE7_CANARY from the head, while tests/s09-gate7-canary.test.mjs directly executes the changed module."
 
 [separation_of_concerns]
 before = "The disposable S10 base has no frontend qualification fixture."
@@ -34,14 +34,14 @@ does_not_own = "Product behavior, Gate implementation, dependencies, thresholds,
 
 [incremental_refactor]
 target = "Qualify Gate 8 on one protected frontend positive canary."
-completed_step = "Reuse one covered runtime fixture and require authenticated derivation for every handoff claim."
+completed_step = "Add one covered alias to an existing stable value and require authenticated derivation for every handoff claim."
 
 [review_handoff]
 summary = "DERIVED_FROM_AUTHENTICATED_EVIDENCE"
 remaining_risks = ["DERIVED_FROM_AUTHENTICATED_EVIDENCE"]
 
 [human_review]
-naming = "The historical s09-gate7-canary name truthfully identifies the reused proven fixture; S10 changes only its handoff evidence contract."
+naming = "The historical s09-gate7-canary name identifies the reused fixture history; relative to this PR's base, this PR adds the fixture module, direct test, characterization driver, golden, and manifest entry for S10."
 cohesion = "The new module owns one constant; its test and characterization own direct proof."
 intended_behavior = "The fixed hosted profile records exact source-backed Gate 8 handoff for the changed fixture."
 reviewability = "The production diff is one exported constant with one direct assertion."
