@@ -1,18 +1,18 @@
 schema_version = "1.0"
 
 [behavior]
-intended_behavior = "One disposable component constant proves that the fixed hosted TypeScript quality profile executes and covers changed governed code."
-proof = "On exact review head feb232e125a9aaf7bbd1de42b6f0352283dc88ba, hosted run 33023482356 completed Quality Profile job 98359241107 successfully on GitHub-hosted Node 24.19.0 and Python 3.12.14. Quality artifact 9627474368 (sha256:20c3d3496361e018fc284e86f0e3f33f96aa72c96585e2b780e6e09d7ac494a5) and authoritative artifact 9627487733 (sha256:e96f36b3bf155ea57b82aa1091383656d7803ff366cb5c34fc511506b66ffe37) bind the fixed command result and coverage of src/components/s09-gate7-canary.ts with no exclusion, threshold, or governed-scope change. Final-head deterministic proof is recorded on the pull request after this bounded remediation."
+intended_behavior = "One disposable component fixture plus authenticated Gate 8 sentinel proves source-backed frontend handoff without changing production."
+proof = "PR #65 directly tests and characterizes src/components/s09-gate7-canary.ts. Gate 8 derives final change, boundary, validation, coverage, exclusion, threshold, risk, gap, and follow-up facts from authenticated artifacts produced by source workflow 6886e6c9bc7c721b502cd99971d6f5e65d2ca531."
 
 [characterization]
-captured_behavior = "The disposable component exports only the stable S09 quality canary value."
+captured_behavior = "The disposable component exports only the stable reused fixture value."
 proof = ".supportability-characterization.json maps the exact source path to a deterministic driver and golden; tests/s09-gate7-canary.test.mjs directly executes the changed module."
 
 [separation_of_concerns]
-before = "No disposable frontend quality-profile target existed."
+before = "The disposable S10 base has no frontend qualification fixture."
 after = "One single-purpose component module owns the temporary runtime canary value."
 boundaries = [
-  { path = "src/components/s09-gate7-canary.ts", kind = "module", symbol = "src/components/s09-gate7-canary.ts", before = "No disposable S09 frontend canary existed.", after = "The module owns one covered runtime constant." },
+  { path = "src/components/s09-gate7-canary.ts", kind = "module", symbol = "src/components/s09-gate7-canary.ts", before = "No disposable S10 frontend fixture existed on the base.", after = "The module owns one covered runtime constant." },
 ]
 
 [architecture]
@@ -33,21 +33,21 @@ owns = "The disposable runtime value used to prove exact hosted TypeScript quali
 does_not_own = "Product behavior, Gate implementation, dependencies, thresholds, exclusions, waivers, or permanent component architecture."
 
 [incremental_refactor]
-target = "Qualify Gate 7 on one protected frontend positive canary."
-completed_step = "Add one covered runtime constant with one direct test and one deterministic characterization scenario."
+target = "Qualify Gate 8 on one protected frontend positive canary."
+completed_step = "Reuse one covered runtime fixture and require authenticated derivation for every handoff claim."
 
 [review_handoff]
 summary = "DERIVED_FROM_AUTHENTICATED_EVIDENCE"
 remaining_risks = ["DERIVED_FROM_AUTHENTICATED_EVIDENCE"]
 
 [human_review]
-naming = "s09-gate7-canary identifies the exact slice and temporary qualification purpose."
+naming = "The historical s09-gate7-canary name truthfully identifies the reused proven fixture; S10 changes only its handoff evidence contract."
 cohesion = "The new module owns one constant; its test and characterization own direct proof."
-intended_behavior = "The fixed hosted TypeScript profile executes successfully and records coverage for the changed source."
+intended_behavior = "The fixed hosted profile records exact source-backed Gate 8 handoff for the changed fixture."
 reviewability = "The production diff is one exported constant with one direct assertion."
 
 [[module_boundaries]]
 path = "src/components/s09-gate7-canary.ts"
 owner_path = "src/components/s09-gate7-canary.ts"
 basis = "responsibility"
-justification = "The disposable module owns one S09 Gate 7 canary value."
+justification = "The disposable module owns one reused runtime fixture for S10 Gate 8 qualification."
