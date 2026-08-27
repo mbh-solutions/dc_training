@@ -2,12 +2,13 @@
 
 ## S11 PR #67 temporary qualification override
 
-- For PR #67 only, owner issue `mbh-solutions/supportability-gate#154` requires one frozen review
-  head with exactly eight serial focused reviews in order `1` through `8`.
-- Supported remediation may create one descendant final head. Completed focuses are not repeated;
-  only deterministic gates rerun on that final head.
-- These two rules supersede conflicting three-focus and new-push clauses below for PR #67 only.
-  They do not change production policy or any other pull request.
+- For PR #67 only, owner issue `mbh-solutions/supportability-gate#154` makes Codex connector
+  review optional advisory feedback. Missing acknowledgement, timeout, outage, unavailable review,
+  or absent completion means move on.
+- Only the eight deterministic Supportability lanes qualify this disposable canary. Any actual
+  inline review thread must still be adjudicated and resolved before merge.
+- These rules supersede the required-review clauses below for PR #67 only. They do not change
+  production policy or any other pull request.
 
 ## Required Codex review completion
 

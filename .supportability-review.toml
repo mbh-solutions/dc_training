@@ -6,7 +6,7 @@ proof = "PR #67 directly tests and characterizes src/components/s09-gate7-canary
 
 [characterization]
 captured_behavior = "The disposable component preserves the base's first workout slot through one covered leaf export."
-proof = ".supportability-characterization.json maps the exact source path to a deterministic driver and golden. The driver reads WORKOUT_SLOTS[0] from the base and S09_GATE7_CANARY from the head, while tests/s09-gate7-canary.test.mjs directly executes the changed module."
+proof = ".supportability-characterization.json maps the exact source path to a deterministic driver and golden. The driver reads WORKOUT_SLOTS[0] from the base and S09_GATE7_CANARY from the head, while tests/s09-gate7-canary.test.mjs directly compares both owners."
 
 [separation_of_concerns]
 before = "The fresh disposable S11 base has no frontend qualification fixture."
@@ -16,7 +16,7 @@ boundaries = [
 ]
 
 [architecture]
-dependency_direction = "The direct test depends on the leaf canary module; the canary has no product dependency."
+dependency_direction = "The direct test compares the leaf canary with the existing rotation owner; the canary has no product dependency."
 reviewed_paths = [
   "AGENTS.md",
   ".supportability-characterization.json",
