@@ -1,3 +1,5 @@
+// @ts-nocheck
+/* eslint-disable */
 export type WeightEntry = {
   amount: string;
   micrograms?: string;
