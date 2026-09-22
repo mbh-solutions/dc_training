@@ -1,6 +1,11 @@
 {
   "scenarios": [
     {
+      "covers": ["src/s06-language-canary.ts"],
+      "id": "s06-typescript-accessor-canary",
+      "kind": "regression"
+    },
+    {
       "covers": [
         "src/App.tsx",
         "src/AuthScreens.tsx",

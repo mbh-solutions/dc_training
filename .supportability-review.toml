@@ -39,3 +39,31 @@ naming = "The owner-opt-in rule names the sole authorization source and the even
 cohesion = "AGENTS.md owns the advisory-review instruction; deterministic Gate enforcement remains external."
 intended_behavior = "A push, failure, timeout, missing acknowledgement, or prior request cannot trigger or retry Codex review."
 reviewability = "The complete diff contains two repository metadata files and no executable function change."
+
+[[separation_of_concerns.boundaries]]
+path = "src/s06-language-canary.ts"
+kind = "function"
+symbol = "CanaryReading.constructor"
+before = "The disposable S06 TypeScript accessor canary did not exist."
+after = "Initialize the canary's private numeric value."
+
+[[separation_of_concerns.boundaries]]
+path = "src/s06-language-canary.ts"
+kind = "function"
+symbol = "CanaryReading.value|kind=typescript-accessor|role=getter"
+before = "The disposable S06 TypeScript accessor canary did not exist."
+after = "Read the canary value through an independently identified getter."
+
+[[separation_of_concerns.boundaries]]
+path = "src/s06-language-canary.ts"
+kind = "function"
+symbol = "CanaryReading.value|kind=typescript-accessor|role=setter"
+before = "The disposable S06 TypeScript accessor canary did not exist."
+after = "Write the canary value through an independently identified setter."
+
+[[separation_of_concerns.boundaries]]
+path = "src/s06-language-canary.ts"
+kind = "module"
+symbol = "src/s06-language-canary.ts"
+before = "The disposable S06 TypeScript accessor canary did not exist."
+after = "Keep the hosted accessor probe isolated from application imports and runtime behavior."
