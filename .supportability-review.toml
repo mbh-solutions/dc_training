@@ -2,43 +2,39 @@ schema_version = "1.0"
 module_boundaries = []
 
 [behavior]
-intended_behavior = "Codex review is owner opt-in advisory activity and is never automatically requested, retried, required, or blocking."
-proof = "AGENTS.md contains the shared owner-opt-in rule; the organization-required Gate remains the deterministic merge boundary."
+intended_behavior = "Exercise supported TypeScript getter and setter identities in a disposable hosted canary."
+proof = "The deployed deterministic Gate derives distinct stable identities and bounded complexity for both accessors."
 
 [characterization]
-captured_behavior = "Product source, tests, dependencies, runtime configuration, and Supportability thresholds remain unchanged; only repository review instructions and their evidence change."
-proof = "Changed files are AGENTS.md and .supportability-review.toml only; neither is a production or high-risk path, and no changed file is excluded."
+captured_behavior = "The disposable file remains isolated from application imports and exists only for protected S06 qualification."
+proof = "The S06 TypeScript accessor canary scenario covers the complete added production path."
 
 [separation_of_concerns]
-before = "Repository instructions required three serial connector reviews for every pull-request head and workflow run."
-after = "Repository instructions permit Codex review only after an explicit owner request in the current task and never make it qualification or merge evidence."
-boundaries = []
+before = "The consumer repository had no disposable S06 TypeScript accessor probe."
+after = "One isolated module holds only the valid getter and setter required for S06 qualification."
 
 [architecture]
-dependency_direction = "Repository instructions no longer couple advisory Codex review to the external deterministic Gate; no application dependency changes."
-reviewed_paths = [
-    "AGENTS.md",
-    ".supportability-review.toml",
-]
+dependency_direction = "The isolated canary has no imports and is not imported by application modules."
+reviewed_paths = ["src/s06-language-canary.ts"]
 
 [responsibility_boundary]
-path = "AGENTS.md"
-owns = "The repository-local owner-opt-in boundary for advisory Codex review."
-does_not_own = "Automatic review requests, retries, Gate implementation, qualification, merge blocking, product behavior, dependencies, or Supportability thresholds."
+path = "src/s06-language-canary.ts"
+owns = "Disposable protected qualification of TypeScript accessor identities."
+does_not_own = "Application behavior, persistence, authentication, workout logic, or runtime state."
 
 [incremental_refactor]
-target = "Remove stale connector-review coupling from the repository-local agent contract."
-completed_step = "Replace the required three-review loop with the shared owner-opt-in rule without changing product code."
+target = "Qualify stable TypeScript accessor identities through the deployed deterministic Gate."
+completed_step = "Added only the bounded disposable TypeScript accessor probe and exact evidence bindings."
 
 [review_handoff]
 summary = "DERIVED_FROM_AUTHENTICATED_EVIDENCE"
 remaining_risks = ["DERIVED_FROM_AUTHENTICATED_EVIDENCE"]
 
 [human_review]
-naming = "The owner-opt-in rule names the sole authorization source and the events that never authorize a request or retry."
-cohesion = "AGENTS.md owns the advisory-review instruction; deterministic Gate enforcement remains external."
-intended_behavior = "A push, failure, timeout, missing acknowledgement, or prior request cannot trigger or retry Codex review."
-reviewability = "The complete diff contains two repository metadata files and no executable function change."
+naming = "Canary names explicitly distinguish disposable qualification code from application behavior."
+cohesion = "Constructor, getter and setter are colocated only for this bounded accessor probe."
+intended_behavior = "Both valid accessors remain below complexity 10 and receive distinct stable identities."
+reviewability = "The complete production change is one small unimported canary module."
 
 [[separation_of_concerns.boundaries]]
 path = "src/s06-language-canary.ts"
