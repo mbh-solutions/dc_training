@@ -587,7 +587,10 @@ function ExerciseButton({
     >
       <span>{assignment.slot}</span>
       <strong>
-        {assignment.exercise}
+        {assignment.exercise.replace(
+          "Lying Deltech leg curl",
+          "Lying leg curl",
+        )}
         <small>{protocolLabel(assignment.protocol)}</small>
       </strong>
       <em>
@@ -713,7 +716,10 @@ function WorkoutDetail({
             >
               <span>{step.ordinal}</span>
               <strong>
-                {step.exercise ?? `${displayBodyPart(step.body_part)} STRETCH`}
+                {step.exercise?.replace(
+                  "Lying Deltech leg curl",
+                  "Lying leg curl",
+                ) ?? `${displayBodyPart(step.body_part)} STRETCH`}
               </strong>
               <em>
                 {!onEdit
@@ -751,7 +757,12 @@ function ExercisePerformance({
   return (
     <section className="history-detail exercise-performance">
       <BackButton label="EXERCISES" onBack={onBack} />
-      <h1>{assignment.exercise}</h1>
+      <h1>
+        {assignment.exercise.replace(
+          "Lying Deltech leg curl",
+          "Lying leg curl",
+        )}
+      </h1>
       <p>
         {displayBodyPart(assignment.body_part)} ·{" "}
         {assignment.active ? "CURRENT" : "RETIRED"} ·{" "}
@@ -1081,12 +1092,18 @@ function CorrectionEditor({
         }}
       >
         <p>HISTORICAL CORRECTION</p>
-        <h2 id="correction-title">{step.exercise}</h2>
+        <h2 id="correction-title">
+          {step.exercise?.replace("Lying Deltech leg curl", "Lying leg curl")}
+        </h2>
         {amounts.map((amount, index) => (
           <label key={index}>
             {amounts.length > 1 ? `SET ${index + 1} WEIGHT` : "WEIGHT"}
             <span>
               <input
+                disabled={
+                  !!expectedPerformance.weights[index].kind &&
+                  expectedPerformance.weights[index].kind !== "weight"
+                }
                 id={`correction-weight-${index}`}
                 inputMode="decimal"
                 onChange={(event) =>
@@ -1098,7 +1115,12 @@ function CorrectionEditor({
                 }
                 value={amount}
               />
-              {weightUnit.toUpperCase()}
+              {expectedPerformance.weights[index].kind &&
+              expectedPerformance.weights[index].kind !== "weight"
+                ? expectedPerformance.weights[index].kind
+                    .replace("_", " ")
+                    .toUpperCase()
+                : weightUnit.toUpperCase()}
             </span>
           </label>
         ))}
@@ -1166,9 +1188,13 @@ function BackButton({ label, onBack }: { label: string; onBack: () => void }) {
 }
 
 function performancesFor(data: HistoryData, selected: HistoryAssignment) {
-  const key = historyAssignmentKey(selected);
   const assignments = data.assignments.filter(
-    (assignment) => historyAssignmentKey(assignment) === key,
+    (assignment) =>
+      assignment.exercise.replace(
+        "Lying Deltech leg curl",
+        "Lying leg curl",
+      ) ===
+      selected.exercise.replace("Lying Deltech leg curl", "Lying leg curl"),
   );
   const assignmentIds = new Set(assignments.map((item) => item.assignment_id));
   const assignmentById = new Map(
@@ -1217,6 +1243,7 @@ function correctionPayloadFingerprint(
     reps,
     weights: weights.map((weight) => ({
       amount: weight.amount,
+      kind: weight.kind ?? "weight",
       micrograms: weight.micrograms ?? null,
       unit: weight.unit,
     })),
@@ -1292,6 +1319,8 @@ function sum(values: number[]) {
 
 function weightLabel(weight: WeightEntry | undefined, unit: WeightUnit) {
   if (!weight) return "";
+  if (weight.kind && weight.kind !== "weight")
+    return weight.kind.replace("_", " ").toUpperCase();
   const displayed = displayWeight(weight, unit);
   return `${displayed.converted ? "≈ " : ""}${displayed.amount} ${displayed.unit.toUpperCase()}`;
 }

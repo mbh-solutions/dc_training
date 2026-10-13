@@ -110,11 +110,9 @@ export type LogbookComparison = {
 };
 
 export function compareLogbookPerformance({
-  bodyPart,
   current,
   previous,
   protocol,
-  targetSets,
 }: {
   bodyPart: string;
   current: LogbookPerformance;
@@ -124,76 +122,56 @@ export function compareLogbookPerformance({
 }): LogbookComparison {
   if (!previous || previous.weights.length === 0)
     return { setVerdicts: [], verdict: "baseline" };
-  if (bodyPart === "abs_1" || bodyPart === "abs_2")
-    return compareAbs(current, previous, protocol);
-  if (protocol === "rest_pause")
-    return compareRestPause(current, previous, targetSets[0]);
-  return compareStraightSets(current, previous, targetSets);
-}
-
-function compareAbs(
-  current: LogbookPerformance,
-  previous: LogbookPerformance,
-  protocol: "rest_pause" | "straight_set" | "timed_hold",
-): LogbookComparison {
-  const weight = compareWeight(current.weights[0], previous.weights[0]);
-  const currentMetric = absMetric(current, protocol);
-  const previousMetric = absMetric(previous, protocol);
-  const metric = Math.sign(currentMetric - previousMetric);
-  return { setVerdicts: [], verdict: absVerdict(weight, metric) };
-}
-
-function absMetric(
-  performance: LogbookPerformance,
-  protocol: "rest_pause" | "straight_set" | "timed_hold",
-) {
-  return protocol === "timed_hold"
-    ? performance.durationSeconds!
-    : performance.reps[0];
-}
-
-function absVerdict(weight: number, metric: number): LogbookVerdict {
-  if (weight > 0) return metric >= 0 ? "win" : "ambiguous";
-  if (weight < 0) return metric <= 0 ? "failure" : "ambiguous";
-  return metric > 0 ? "win" : "failure";
-}
-
-function compareRestPause(
-  current: LogbookPerformance,
-  previous: LogbookPerformance,
-  target: { max: number; min: number },
-): LogbookComparison {
-  const weight = compareWeight(current.weights[0], previous.weights[0]);
-  const total = sum(current.reps);
-  const previousTotal = sum(previous.reps);
-  const win =
-    (weight > 0 && total >= target.min && total <= target.max) ||
-    (weight === 0 && total > previousTotal);
-  return { setVerdicts: [], verdict: win ? "win" : "failure" };
-}
-
-function compareStraightSets(
-  current: LogbookPerformance,
-  previous: LogbookPerformance,
-  targets: { max: number; min: number }[],
-): LogbookComparison {
-  const setVerdicts = current.weights.map((weight, index) => {
-    const weightResult = compareWeight(weight, previous.weights[index]);
-    const reps = current.reps[index];
-    const previousReps = previous.reps[index];
-    const target = targets[index] ?? { min: 1, max: 2_147_483_647 };
-    if (
-      (weightResult > 0 && reps >= target.min && reps <= target.max) ||
-      (weightResult === 0 && reps > previousReps)
+  // Load labels have no numeric load. A change of load type starts a baseline.
+  if (
+    current.weights.length !== previous.weights.length ||
+    current.weights.some(
+      (weight, index) =>
+        (weight.kind ?? "weight") !==
+        (previous.weights[index]?.kind ?? "weight"),
     )
-      return "win";
-    if (weightResult === 0 && reps === previousReps) return "tie";
-    return "failure";
+  )
+    return { setVerdicts: [], verdict: "baseline" };
+  if (protocol === "timed_hold") return compareTimedHold(current, previous);
+  const setVerdicts: SetVerdict[] = current.weights.map((weight, index) => {
+    const currentReps =
+      protocol === "rest_pause" ? sum(current.reps) : current.reps[index];
+    const previousReps =
+      protocol === "rest_pause" ? sum(previous.reps) : previous.reps[index];
+    const difference =
+      performanceScore(weight, currentReps) -
+      performanceScore(previous.weights[index], previousReps);
+    return difference > 0n ? "win" : difference === 0n ? "tie" : "failure";
   });
   return {
-    setVerdicts,
+    setVerdicts: protocol === "rest_pause" ? [] : setVerdicts,
     verdict: setVerdicts.includes("win") ? "win" : "failure",
   };
+}
+
+function compareTimedHold(
+  current: LogbookPerformance,
+  previous: LogbookPerformance,
+): LogbookComparison {
+  const weight = compareWeight(current.weights[0], previous.weights[0]);
+  const duration = Math.sign(
+    current.durationSeconds! - previous.durationSeconds!,
+  );
+  if (weight > 0)
+    return { setVerdicts: [], verdict: duration >= 0 ? "win" : "ambiguous" };
+  if (weight < 0)
+    return {
+      setVerdicts: [],
+      verdict: duration <= 0 ? "failure" : "ambiguous",
+    };
+  return { setVerdicts: [], verdict: duration > 0 ? "win" : "failure" };
+}
+
+// Epley estimate × 30, using canonical micrograms for exact unit-independent comparisons.
+// RP uses total reps as a consistent logbook score, not a tested maximum lift.
+function performanceScore(weight: WeightEntry, reps: number) {
+  if (weight.kind && weight.kind !== "weight") return BigInt(reps);
+  return BigInt(weight.micrograms!) * (30n + BigInt(reps));
 }
 
 function compareWeight(current: WeightEntry, previous: WeightEntry) {
@@ -650,10 +628,20 @@ function validWeightEntry(value: unknown): value is WeightEntry {
   if (!value || typeof value !== "object") return false;
   const weight = value as Record<string, unknown>;
   return (
+    validLoadKind(weight) &&
     typeof weight.amount === "string" &&
     (weight.unit === "lb" || weight.unit === "kg") &&
     typeof weight.micrograms === "string" &&
     /^\d+$/.test(weight.micrograms)
+  );
+}
+
+function validLoadKind(weight: Record<string, unknown>) {
+  return (
+    (weight.kind === undefined ||
+      ["weight", "body_weight", "bar", "band"].includes(String(weight.kind))) &&
+    (!(weight.kind && weight.kind !== "weight") ||
+      (weight.amount === "0" && weight.micrograms === "0"))
   );
 }
 

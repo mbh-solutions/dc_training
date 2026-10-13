@@ -127,7 +127,7 @@ export const EXERCISES = {
     "Belt-squat calf raise",
   ],
   hamstrings: [
-    "Lying Deltech leg curl",
+    "Lying leg curl",
     "Single-leg lying leg curl",
     "Standing cable leg curl, with ankle cuff",
     "Barbell stiff-leg deadlift",
@@ -181,10 +181,11 @@ export function categoryFor(position: AssignmentPosition): BodyPart {
 export function positionsFor(slot: WorkoutSlot): readonly AssignmentPosition[] {
   return slot.startsWith("A")
     ? CORE_BODY_PARTS.A
-    : [...CORE_BODY_PARTS.B, "abs_1", "abs_2"];
+    : [...CORE_BODY_PARTS.B, "abs_1"];
 }
 
 export function positionLabel(position: AssignmentPosition) {
+  if (position === "abs_1") return "ABS";
   return position
     .replace("back_", "back ")
     .replace("abs_", "abs ")
@@ -200,11 +201,7 @@ export function protocolChoices(
       { label: "STRAIGHT SET", value: "straight_set" },
       { label: "TIMED HOLD", value: "timed_hold" },
     ];
-  const straightBadge =
-    ["back_thickness", "forearms", "calves"].includes(position) ||
-    (position === "quadriceps" && exercise !== "Leg extension")
-      ? "DC"
-      : undefined;
+  const straightBadge = straightProtocolBadge(position, exercise);
   const restBadge =
     ["chest", "shoulders", "triceps", "back_width", "biceps"].includes(
       position,
@@ -216,6 +213,14 @@ export function protocolChoices(
     { badge: restBadge, label: "REST-PAUSE", value: "rest_pause" },
     { badge: straightBadge, label: "STRAIGHT SET", value: "straight_set" },
   ];
+}
+
+function straightProtocolBadge(position: AssignmentPosition, exercise: string) {
+  return ["back_thickness", "forearms", "calves"].includes(position) ||
+    (position === "quadriceps" && exercise !== "Leg extension") ||
+    (position === "hamstrings" && !/leg curl/i.test(exercise))
+    ? "DC"
+    : undefined;
 }
 
 const genericRestPause: readonly StructureChoice[] = [
@@ -267,7 +272,7 @@ function restPauseChoices(
       "15-30",
     );
   if (bodyPart === "quadriceps" && exercise === "Leg extension")
-    return [{ label: "CUSTOM", value: "custom" }];
+    return genericRestPause;
   if (bodyPart === "chest" || bodyPart === "back_width")
     return withBadge(genericRestPause, "11-15");
   return genericRestPause;
@@ -344,7 +349,19 @@ function backThicknessChoices(exercise: string): readonly StructureChoice[] {
 
 function quadricepsChoices(exercise: string): readonly StructureChoice[] {
   if (exercise === "Leg extension")
-    return [{ label: "CUSTOM", value: "custom" }];
+    return [
+      {
+        label: "1 × 10–15",
+        value: "single-10-15",
+        targets: [{ min: 10, max: 15 }],
+      },
+      {
+        label: "1 × 15–20",
+        value: "single-15-20",
+        targets: [{ min: 15, max: 20 }],
+      },
+      { label: "CUSTOM", value: "custom" },
+    ];
   const hack = exercise === "Barbell hack squat";
   return [
     {
@@ -368,6 +385,6 @@ function quadricepsChoices(exercise: string): readonly StructureChoice[] {
 export function protocolInfo(position: AssignmentPosition, exercise: string) {
   if (position === "chest") return "Classic DC uses one rest-pause work set.";
   if (position === "hamstrings" && !/leg curl/i.test(exercise))
-    return "DC handling varies for stiff-leg deadlifts and RDLs.";
+    return "The DC straight-set recommendation matches the marked 10–15 rep range.";
   return "";
 }

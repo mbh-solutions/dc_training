@@ -147,6 +147,7 @@ type Props = {
     reps?: number[],
     durationSeconds?: number | null,
   ) => Promise<boolean>;
+  onCorrect: Props["onSave"];
   onSkip: (step: WorkoutStep) => Promise<boolean>;
   onUndo: () => Promise<void>;
   steps: WorkoutStep[];
@@ -155,8 +156,12 @@ type Props = {
 };
 
 export function WorkoutTracer(props: Props) {
+  const [viewedStepId, setViewedStepId] = useState<string | null>(null);
   const pendingStep = props.steps.find((item) => item.status === "pending");
-  const step = pendingStep ?? props.blockingStep;
+  const viewedStep = props.steps.find(
+    (item) => item.step_id === viewedStepId && item.status !== "pending",
+  );
+  const step = viewedStep ?? pendingStep ?? props.blockingStep;
   if (!step) return <WorkoutLoadError {...props} />;
   const progress = workoutProgress(props.steps, step);
   return (
@@ -184,16 +189,27 @@ export function WorkoutTracer(props: Props) {
           </button>
         </div>
       )}
-      {!pendingStep ? (
-        <main className="workout-main">
-          <p className="workout-part">{displayBodyPart(step.body_part)}</p>
-          <h1>RESULT SAVED</h1>
-        </main>
-      ) : step.kind === "exercise" ? (
-        <ExerciseEntry key={step.step_id} {...props} step={step} />
-      ) : (
-        <StretchEntry key={step.step_id} {...props} step={step} />
+      <WorkoutNavigation
+        {...props}
+        step={step}
+        reviewing={!!viewedStep}
+        setViewedStepId={setViewedStepId}
+      />
+      {viewedStep && (
+        <ExerciseEntry
+          key={`review:${viewedStep.step_id}`}
+          {...props}
+          step={viewedStep}
+          onSave={async (...args) => {
+            const saved = await props.onCorrect(...args);
+            if (saved) setViewedStepId(null);
+            return saved;
+          }}
+        />
       )}
+      <div hidden={!!viewedStep}>
+        <CurrentWorkoutEntry {...props} step={pendingStep} />
+      </div>
       {props.blockingStep && (
         <LogbookPrompt
           message={props.message}
@@ -211,6 +227,70 @@ export function WorkoutTracer(props: Props) {
   );
 }
 
+function CurrentWorkoutEntry(props: Props & { step?: WorkoutStep }) {
+  if (!props.step)
+    return (
+      <main className="workout-main">
+        <h1>RESULT SAVED</h1>
+      </main>
+    );
+  if (props.step.kind === "exercise")
+    return (
+      <ExerciseEntry key={props.step.step_id} {...props} step={props.step} />
+    );
+  return <StretchEntry key={props.step.step_id} {...props} step={props.step} />;
+}
+
+function WorkoutNavigation({
+  actionSaving,
+  blockingStep,
+  steps,
+  step,
+  reviewing,
+  setViewedStepId,
+}: Pick<Props, "actionSaving" | "blockingStep" | "steps"> & {
+  step: WorkoutStep;
+  reviewing: boolean;
+  setViewedStepId: (id: string | null) => void;
+}) {
+  return (
+    <nav className="exercise-navigation" aria-label="Workout exercises">
+      <button
+        className="secondary-action"
+        type="button"
+        disabled={
+          actionSaving ||
+          !!blockingStep ||
+          !steps.some(
+            (item) => item.kind === "exercise" && item.ordinal < step.ordinal,
+          )
+        }
+        onClick={() =>
+          setViewedStepId(
+            steps
+              .filter(
+                (item) =>
+                  item.kind === "exercise" && item.ordinal < step.ordinal,
+              )
+              .at(-1)?.step_id ?? null,
+          )
+        }
+      >
+        PREVIOUS EXERCISE
+      </button>
+      {reviewing && (
+        <button
+          className="secondary-action"
+          type="button"
+          onClick={() => setViewedStepId(null)}
+        >
+          RETURN TO CURRENT
+        </button>
+      )}
+    </nav>
+  );
+}
+
 function ExerciseEntry({
   message,
   onSave,
@@ -220,13 +300,21 @@ function ExerciseEntry({
 }: Props & { step: WorkoutStep }) {
   const shape = workoutEntryShape(step);
   const [weights, setWeights] = useState<WeightEntry[]>(
-    Array.from({ length: shape.weightCount }, () => ({
-      amount: "",
-      unit: weightUnit,
-    })),
+    Array.from({ length: shape.weightCount }, (_, index) =>
+      step.weight_entries[index]
+        ? displayWeight(step.weight_entries[index], weightUnit)
+        : {
+            amount: "",
+            unit: weightUnit,
+          },
+    ),
   );
   const [values, setValues] = useState<string[]>(
-    Array.from({ length: shape.valueCount }, () => ""),
+    Array.from({ length: shape.valueCount }, (_, index) =>
+      shape.metric === "seconds"
+        ? String(step.duration_seconds ?? "")
+        : String(step.reps[index] ?? ""),
+    ),
   );
   const [saving, setSaving] = useState(false);
   const [calfInfoOpen, setCalfInfoOpen] = useState(false);
@@ -241,7 +329,21 @@ function ExerciseEntry({
     setSaving(true);
     const saved = await onSave(
       step,
-      weights,
+      weights.map((entry, index) => {
+        const original = step.weight_entries[index];
+        const displayed = original ? displayWeight(original, weightUnit) : null;
+        if (
+          original &&
+          entry.amount === displayed?.amount &&
+          (entry.kind ?? "weight") === (original.kind ?? "weight")
+        )
+          return original;
+        return {
+          amount: entry.amount,
+          unit: entry.unit,
+          ...(entry.kind ? { kind: entry.kind } : {}),
+        };
+      }),
       shape.metric === "reps" ? values.map(Number) : [],
       shape.metric === "seconds" ? Number(values[0]) : null,
     );
@@ -256,9 +358,25 @@ function ExerciseEntry({
   return (
     <main className="workout-main">
       <p className="workout-part">{displayBodyPart(step.body_part)}</p>
-      <h1>{step.exercise}</h1>
+      <h1>
+        {step.exercise?.replace("Lying Deltech leg curl", "Lying leg curl")}
+      </h1>
+      <Prescription step={step} />
+      {step.status === "skipped" && (
+        <p>SKIPPED · Return to the current exercise to continue.</p>
+      )}
       {step.mulligan_used && <p className="mulligan-badge">MULLIGAN USED</p>}
       <PreviousPerformance step={step} weightUnit={weightUnit} />
+      <details className="logbook-method">
+        <summary>How the logbook compares results</summary>
+        <p>
+          Weighted reps use estimated 1RM: weight × (1 + reps ÷ 30). Rest-pause
+          uses the total of all three mini-sets. This is a comparison score, not
+          a tested maximum. Body weight, bar and band compare reps within the
+          same load type; timed holds compare load and seconds. Changing load
+          type starts a new baseline.
+        </p>
+      </details>
       <p className="today-label">TODAY</p>
       <div className="entry-list">
         {weights.map((weight, index) => (
@@ -278,25 +396,52 @@ function ExerciseEntry({
                   </button>
                 )}
             </p>
-            <div className="weight-entry">
-              <input
-                aria-label={`SET ${index + 1} WEIGHT`}
-                id={`weight-${index}`}
-                inputMode="decimal"
-                placeholder="0"
-                value={weight.amount}
+            <label className="load-kind-label">
+              LOAD TYPE
+              <select
+                aria-label={`SET ${index + 1} LOAD TYPE`}
+                value={weight.kind ?? "weight"}
                 onChange={(event) =>
                   setWeights((current) =>
                     current.map((item, itemIndex) =>
                       itemIndex === index
-                        ? { ...item, amount: event.target.value }
+                        ? {
+                            kind: event.target.value as WeightEntry["kind"],
+                            amount: event.target.value === "weight" ? "" : "0",
+                            unit: weightUnit,
+                          }
                         : item,
                     ),
                   )
                 }
-              />
-              <span className="weight-unit">{weight.unit.toUpperCase()}</span>
-            </div>
+              >
+                <option value="weight">Weight</option>
+                <option value="body_weight">Body weight</option>
+                <option value="bar">Bar</option>
+                <option value="band">Band</option>
+              </select>
+            </label>
+            {(!weight.kind || weight.kind === "weight") && (
+              <div className="weight-entry">
+                <input
+                  aria-label={`SET ${index + 1} WEIGHT`}
+                  id={`weight-${index}`}
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={weight.amount}
+                  onChange={(event) =>
+                    setWeights((current) =>
+                      current.map((item, itemIndex) =>
+                        itemIndex === index
+                          ? { ...item, amount: event.target.value }
+                          : item,
+                      ),
+                    )
+                  }
+                />
+                <span className="weight-unit">{weight.unit.toUpperCase()}</span>
+              </div>
+            )}
             {conversionPreview(weight) && (
               <small className="conversion-preview">
                 {conversionPreview(weight)}
@@ -341,22 +486,13 @@ function ExerciseEntry({
         ))}
       </div>
       {message && <p className="form-message">{message}</p>}
-      <button
-        className="primary-action"
-        disabled={!valid || saving}
-        type="button"
-        onClick={() => void save()}
-      >
-        {saving ? "SAVING" : "SAVE & NEXT"}
-      </button>
-      <button
-        className="secondary-action skip-action"
-        disabled={saving}
-        type="button"
-        onClick={() => void skip()}
-      >
-        SKIP
-      </button>
+      <ExerciseSaveControls
+        status={step.status}
+        valid={valid}
+        saving={saving}
+        save={save}
+        skip={skip}
+      />
       {calfInfoOpen && (
         <InformationDialog
           label="CALF 10–12 INFORMATION"
@@ -366,6 +502,81 @@ function ExerciseEntry({
         />
       )}
     </main>
+  );
+}
+
+function ExerciseSaveControls({
+  status,
+  valid,
+  saving,
+  save,
+  skip,
+}: {
+  status: WorkoutStep["status"];
+  valid: boolean;
+  saving: boolean;
+  save: () => Promise<void>;
+  skip: () => Promise<void>;
+}) {
+  return (
+    <>
+      <button
+        className="primary-action"
+        disabled={!valid || saving || status === "skipped"}
+        type="button"
+        onClick={() => void save()}
+      >
+        {saving
+          ? "SAVING"
+          : status === "pending"
+            ? "SAVE & NEXT"
+            : "SAVE CHANGES"}
+      </button>
+      {status === "pending" && (
+        <button
+          className="secondary-action skip-action"
+          disabled={saving}
+          type="button"
+          onClick={() => void skip()}
+        >
+          SKIP
+        </button>
+      )}
+    </>
+  );
+}
+
+function Prescription({ step }: { step: WorkoutStep }) {
+  const label =
+    step.protocol === "rest_pause"
+      ? "REST-PAUSE"
+      : step.protocol === "timed_hold"
+        ? "TIMED HOLD"
+        : "STRAIGHT SET";
+  const range = (target: { min: number; max: number }) =>
+    target.min === target.max ? `${target.min}` : `${target.min}–${target.max}`;
+  return (
+    <section className="prescription" aria-label="Exercise prescription">
+      <strong>{label}</strong>
+      {step.protocol === "rest_pause" ? (
+        <p>
+          {step.target_sets[0] ? range(step.target_sets[0]) : "UNSPECIFIED"}{" "}
+          TOTAL REPS · 3 MINI-SETS
+        </p>
+      ) : step.target_sets.length ? (
+        step.target_sets.map((target, index) => (
+          <p key={index}>
+            SET {index + 1}: {range(target)} REPS
+          </p>
+        ))
+      ) : (
+        <p>
+          {step.protocol === "timed_hold"
+            ? "LOG HOLD TIME IN SECONDS"
+            : "1 SET · NO REP TARGET SELECTED"}
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -879,6 +1090,8 @@ function comparisonValue(
 }
 
 function weightDisplayLabel(weight: WeightEntry, unit: WeightUnit) {
+  if (weight.kind && weight.kind !== "weight")
+    return weight.kind.replace("_", " ").toUpperCase();
   const displayed = displayWeight(weight, unit);
   return `${displayed.converted ? "≈ " : ""}${displayed.amount} ${displayed.unit.toUpperCase()}`;
 }
@@ -889,6 +1102,13 @@ function comparisonVerdict(step: WorkoutStep, index: number) {
 }
 
 const workoutStyles = `
+.logbook-method { margin-top: 14px; color: var(--gray); line-height: 1.5; }
+.prescription { border-left: 3px solid var(--red); padding: 12px 16px; margin: -12px 0 24px; background: var(--panel); }
+.prescription p { margin: 8px 0 0; }
+.exercise-navigation { display: flex; gap: 10px; margin-top: 16px; }
+.load-kind-label { display: grid; gap: 8px; margin-bottom: 14px; color: var(--gray); font-size: .8rem; }
+.load-kind-label select { min-height: 44px; padding: 8px; color: var(--white); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+
 .workout-shell { padding-top: max(18px, env(safe-area-inset-top)); }
 .workout-header { min-height: 92px; display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; border-bottom: 1px solid var(--line); text-align: center; }
 .workout-header > button { min-width: 44px; min-height: 44px; display: grid; place-items: center; border: 0; padding: 0; color: var(--white); background: transparent; cursor: pointer; }

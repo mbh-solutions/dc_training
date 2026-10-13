@@ -18,6 +18,7 @@ import type { DraftTarget } from "./rotation-assignment-draft.js";
 import { BackChevron } from "./HomeScreen.jsx";
 
 const rotationStyles = `
+.structure-info-action { display: block; margin: 12px 0; min-height: 44px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 6px; color: var(--white); background: var(--panel); cursor: pointer; }
 .rotation-shell { display: flex; flex-direction: column; }
 .flow-header { min-height: 102px; display: grid; grid-template-columns: 44px 1fr 44px; align-items: start; padding: 22px 0 24px; text-align: center; }
 .flow-header > div { grid-column: 2; }
@@ -201,7 +202,7 @@ export function StructureScreen(props: Props) {
       {info && (
         <>
           <button
-            className="info-action"
+            className="structure-info-action"
             type="button"
             aria-label={`${positionLabel(props.position)} structure information`}
             onClick={() => props.setShowProtocolInfo((shown) => !shown)}
@@ -348,7 +349,10 @@ export function SetupScreen(props: Props) {
                     <strong>
                       {props.loadState === "loading"
                         ? "LOADING ASSIGNMENT"
-                        : (saved?.exercise ?? "CHOOSE EXERCISE")}
+                        : (saved?.exercise.replace(
+                            "Lying Deltech leg curl",
+                            "Lying leg curl",
+                          ) ?? "CHOOSE EXERCISE")}
                     </strong>
                     {saved && (
                       <small>
@@ -381,6 +385,12 @@ function CustomTargets({
 }) {
   return (
     <div className="custom-sets">
+      {protocol === "rest_pause" && (
+        <p>
+          Set the TOTAL reps across all three mini-sets. Record each mini-set
+          separately during your workout.
+        </p>
+      )}
       {protocol === "straight_set" && (
         <label className="set-count">
           SET COUNT
@@ -397,7 +407,11 @@ function CustomTargets({
       )}
       {targets.map((target, index) => (
         <div className="target-pair" key={index}>
-          <p>SET {index + 1}</p>
+          <p>
+            {protocol === "rest_pause"
+              ? "TOTAL REPS · 3 MINI-SETS"
+              : `SET ${index + 1}`}
+          </p>
           <label>
             MINIMUM
             <input

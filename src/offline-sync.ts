@@ -5,6 +5,7 @@ import {
 } from "./workout-api.js";
 import {
   compareLogbookPerformance,
+  workoutEntryShape,
   progressionOrder,
   sortHistoryWorkouts,
   type HistoryData,
@@ -2216,8 +2217,12 @@ function assertStartContext(
 }
 
 function hasPendingLogbookDecision(state: OfflineAccountState) {
-  return Object.values(state.logbookStates).some(
-    (value) => value !== "mulligan_used",
+  return Object.entries(state.logbookStates).some(
+    ([id, value]) =>
+      value !== "mulligan_used" &&
+      state.history?.assignments.find(
+        (assignment) => assignment.assignment_id === id,
+      )?.body_part !== "abs_2",
   );
 }
 
@@ -2244,7 +2249,6 @@ const stepOrder: Record<"A" | "B", [string, "exercise" | "stretch", number][]> =
       ["quadriceps", "exercise", 7],
       ["quadriceps", "stretch", 8],
       ["abs_1", "exercise", 9],
-      ["abs_2", "exercise", 10],
     ],
   };
 
@@ -2371,6 +2375,13 @@ function localPreviousFields(
   };
 }
 
+function sameExercise(left: string | null, right: string | null) {
+  return (
+    left?.replace("Lying Deltech leg curl", "Lying leg curl") ===
+    right?.replace("Lying Deltech leg curl", "Lying leg curl")
+  );
+}
+
 function previousPerformance(
   state: OfflineAccountState,
   assignment: Assignment,
@@ -2382,7 +2393,12 @@ function previousPerformance(
   const completed = history.steps
     .filter(
       (step) =>
-        step.assignment_id === assignment.assignment_id &&
+        sameExercise(step.exercise, assignment.exercise) &&
+        step.protocol === assignment.protocol &&
+        workoutEntryShape(step).weightCount ===
+          (assignment.protocol === "straight_set"
+            ? Math.max(1, assignment.target_sets.length)
+            : 1) &&
         step.status === "completed",
     )
     .sort(
@@ -2400,12 +2416,7 @@ function previousPerformance(
       .at(-1) ?? null;
   const relatedIds = new Set(
     history.assignments
-      .filter(
-        (item) =>
-          item.slot === assignment.slot &&
-          item.body_part === assignment.body_part &&
-          item.exercise === assignment.exercise,
-      )
+      .filter((item) => sameExercise(item.exercise, assignment.exercise))
       .map((item) => item.assignment_id),
   );
   return {
@@ -2504,6 +2515,7 @@ function applyStepPerformance(
     protocol: step.protocol!,
     targetSets: step.target_sets,
   });
+  next.fresh_baseline = comparison.verdict === "baseline";
   next.set_verdicts = comparison.setVerdicts;
   next.verdict =
     comparison.verdict === "win"
@@ -2756,13 +2768,7 @@ function correctLocalHistory(
   const step = state.history.steps[index];
   if (!step || step.kind !== "exercise" || step.status !== "completed")
     throw new Error("COMPLETED PERFORMANCE WAS NOT FOUND");
-  if (
-    state.workout?.workout &&
-    state.workout.steps.some(
-      (activeStep) => activeStep.assignment_id === step.assignment_id,
-    )
-  )
-    throw new Error("FINISH ACTIVE WORKOUT BEFORE CORRECTING THIS EXERCISE");
+  assertHistoryCorrectionAvailable(state, step);
   assertPerformanceContext(step, operation.payload.expected_performance);
   step.weight_entries = operation.payload.weights.map(normalizeWeight);
   step.reps = operation.payload.reps;
@@ -2770,7 +2776,24 @@ function correctLocalHistory(
   step.resolution = step.resolution === "replaced" ? "replaced" : null;
   step.last_operation_id = null;
   recalculateLocalAssignmentLogbook(state, step.assignment_id!);
+  state.recentOperation = null;
   return state;
+}
+
+function assertHistoryCorrectionAvailable(
+  state: OfflineAccountState,
+  step: WorkoutStep,
+) {
+  if (
+    state.workout?.workout &&
+    state.workout.workout.workout_id !== step.workout_id &&
+    state.workout.steps.some((activeStep) =>
+      sameExercise(activeStep.exercise, step.exercise),
+    )
+  )
+    throw new Error("FINISH ACTIVE WORKOUT BEFORE CORRECTING THIS EXERCISE");
+  if (state.workout?.steps.some((item) => item.enforcement_action !== null))
+    throw new Error("RESOLVE THE LOGBOOK DECISION FIRST");
 }
 
 function assertPerformanceContext(
@@ -2793,6 +2816,51 @@ type RecalculationCursor = {
 };
 
 function recalculateLocalAssignmentLogbook(
+  state: OfflineAccountState,
+  assignmentId: string,
+) {
+  const exercise = state.history!.assignments.find(
+    (item) => item.assignment_id === assignmentId,
+  )?.exercise;
+  for (const assignment of state.history!.assignments.filter((item) =>
+    sameExercise(item.exercise, exercise ?? null),
+  )) {
+    recalculateOneAssignmentLogbook(state, assignment.assignment_id);
+  }
+}
+
+function earlierCompatiblePerformance(history: HistoryData, step: WorkoutStep) {
+  const workouts = new Map(
+    history.workouts.map((item) => [item.workout_id, item]),
+  );
+  const current = workouts.get(step.workout_id)!;
+  return (
+    history.steps
+      .filter((item) => {
+        const workout = workouts.get(item.workout_id)!;
+        return (
+          item.status === "completed" &&
+          sameExercise(item.exercise, step.exercise) &&
+          item.protocol === step.protocol &&
+          workoutEntryShape(item).weightCount ===
+            workoutEntryShape(step).weightCount &&
+          workout.blast_id === current.blast_id &&
+          (progressionOrder(workout) < progressionOrder(current) ||
+            (workout.workout_id === current.workout_id &&
+              item.ordinal < step.ordinal))
+        );
+      })
+      .sort(
+        (left, right) =>
+          progressionOrder(workouts.get(left.workout_id)!) -
+            progressionOrder(workouts.get(right.workout_id)!) ||
+          left.ordinal - right.ordinal,
+      )
+      .at(-1) ?? null
+  );
+}
+
+function recalculateOneAssignmentLogbook(
   state: OfflineAccountState,
   assignmentId: string,
 ) {
@@ -2834,6 +2902,8 @@ function recalculateLocalAssignmentLogbook(
       };
       lastBlastId = blastId;
     }
+    const previous = earlierCompatiblePerformance(history, step);
+    cursor = { ...cursor, first: previous === null, previous };
     const activeLifecycle = blastId === activeBlastId;
     const result = recalculateLocalStep(step, cursor, activeLifecycle);
     cursor = result.cursor;
@@ -2929,6 +2999,8 @@ function evaluateRecalculatedPerformance(
     return null;
   }
   if (verdict === "baseline") {
+    step.fresh_baseline = true;
+    step.resolution = null;
     step.verdict = null;
     return null;
   }

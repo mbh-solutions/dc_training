@@ -1,5 +1,6 @@
 export type WeightEntry = {
   amount: string;
+  kind?: "weight" | "body_weight" | "bar" | "band";
   micrograms?: string;
   unit: "kg" | "lb";
 };
@@ -7,6 +8,8 @@ export type WeightEntry = {
 export type WeightUnit = WeightEntry["unit"];
 
 export function displayWeight(entry: WeightEntry, unit: WeightUnit) {
+  if (entry.kind && entry.kind !== "weight")
+    return { ...entry, converted: false };
   if (entry.unit === unit) return { ...entry, converted: false };
   const micrograms = entry.micrograms
     ? BigInt(entry.micrograms)
@@ -21,6 +24,8 @@ export function displayWeight(entry: WeightEntry, unit: WeightUnit) {
 }
 
 export function conversionPreview(entry: WeightEntry) {
+  if (entry.kind && entry.kind !== "weight")
+    return entry.kind.replace("_", " ").toUpperCase();
   const micrograms = weightMicrograms(entry);
   if (micrograms === null) return "";
   const targetUnit = entry.unit === "lb" ? "kg" : "lb";
@@ -43,6 +48,7 @@ function amountForUnit(micrograms: bigint, unit: WeightUnit) {
 }
 
 export function weightMicrograms(entry: WeightEntry) {
+  if (entry.kind && entry.kind !== "weight") return labelledMicrograms(entry);
   const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(entry.amount);
   if (!match) return null;
   const cents =
@@ -51,4 +57,12 @@ export function weightMicrograms(entry: WeightEntry) {
   if (cents === 0n || cents % centsPerStep !== 0n) return null;
   const microgramsPerStep = entry.unit === "lb" ? 226796185n : 250000000n;
   return (cents / centsPerStep) * microgramsPerStep;
+}
+
+function labelledMicrograms(entry: WeightEntry) {
+  return ["body_weight", "bar", "band"].includes(entry.kind ?? "") &&
+    entry.amount === "0" &&
+    ["lb", "kg"].includes(entry.unit)
+    ? 0n
+    : null;
 }
