@@ -305,4 +305,13 @@ await assert.rejects(
 console.log(
   "PASS: cross-slot mulligan, second failure, undo, shared win reset, integer bounds",
 );
+const largeTotal = (
+  await db.query(
+    `select public.evaluate_logbook_performance('chest','rest_pause','[]','[{"micrograms":"100"}]',array[2147483647,3,2],null,'[{"micrograms":"100"}]',array[8,3,2],null) result`,
+  )
+).rows[0].result;
+assert.equal(largeTotal.status, "win");
+console.log(
+  "PASS: RP totals do not overflow when individual rep lanes fit the database",
+);
 await db.close();

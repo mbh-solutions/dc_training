@@ -383,6 +383,11 @@ begin
     end if;$new$);
   if changed = definition then raise exception 'Shared undo anchor missing'; end if;
   execute changed;
+  -- Each rep lane is an integer; its RP total can exceed one integer.
+  definition := pg_get_functiondef('public.evaluate_logbook_performance(text,text,jsonb,jsonb,integer[],integer,jsonb,integer[],integer)'::regprocedure);
+  changed := replace(replace(definition, 'current_metric integer;', 'current_metric bigint;'), 'previous_metric integer;', 'previous_metric bigint;');
+  if changed = definition then raise exception 'RP total type anchor missing'; end if;
+  execute changed;
 end;
 $migration$;
 commit;
