@@ -302,14 +302,15 @@ await check(
   },
 );
 await check(
-  "Settings failed weight-unit change reports a useful error",
+  "Settings failed weight-unit change retries successfully",
   async () => {
+    let attempts = 0;
     const m = await view(SettingsScreen, {
       editingEnabled: true,
       email: "audit@example.invalid",
       online: true,
       onBack: () => {},
-      onChangeUnit: async () => false,
+      onChangeUnit: async () => ++attempts > 1,
       onSignOut: async () => {},
       syncState: "synced",
       unit: "lb",
@@ -321,6 +322,9 @@ await check(
       /could not|failed|try again|not saved/i,
       "No error message after failed unit change",
     );
+    await press(m.container, "TRY AGAIN");
+    assert.equal(attempts, 2);
+    assert.equal(m.container.querySelector("[role=alert]"), null);
   },
 );
 await check(
@@ -967,6 +971,54 @@ await check(
         ),
       /VALID WEIGHT AND PERFORMANCE/,
     );
+  },
+);
+await check(
+  "Escape dismisses cruise suggestion without starting a cruise",
+  async () => {
+    const state = account();
+    state.workout.lifecycle.suggestion_due = true;
+    const h = await homeFixture(state);
+    assert.match(
+      h.container.querySelector("[role=dialog]").textContent,
+      /CONSIDER A CRUISE/,
+    );
+    await act(async () =>
+      document.dispatchEvent(
+        new dom.window.KeyboardEvent("keydown", {
+          key: "Escape",
+          bubbles: true,
+        }),
+      ),
+    );
+    assert.equal(h.container.querySelector("[role=dialog]"), null);
+    assert.equal(h.state.workout.lifecycle.phase, "blast");
+    assert.equal(h.ops.length, 1);
+  },
+);
+await check(
+  "Account cleanup removes only the owner's pending workout drafts",
+  async () => {
+    const { deleteLocalAccountData } = await source("offline-sync.ts");
+    const previous = globalThis.localStorage;
+    globalThis.localStorage = dom.window.localStorage;
+    try {
+      localStorage.setItem("dc-workout-draft:cleanup-owner:workout:1", "{}");
+      localStorage.setItem("dc-workout-draft:other-owner:workout:1", "{}");
+      await deleteLocalAccountData("cleanup-owner");
+      assert.equal(
+        localStorage.getItem("dc-workout-draft:cleanup-owner:workout:1"),
+        null,
+      );
+      assert.equal(
+        localStorage.getItem("dc-workout-draft:other-owner:workout:1"),
+        "{}",
+      );
+    } finally {
+      localStorage.removeItem("dc-workout-draft:other-owner:workout:1");
+      if (previous === undefined) delete globalThis.localStorage;
+      else globalThis.localStorage = previous;
+    }
   },
 );
 console.log(

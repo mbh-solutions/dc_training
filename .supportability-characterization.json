@@ -45,9 +45,7 @@
       "kind": "regression"
     },
     {
-      "covers": [
-        "src/HistoryScreen.tsx"
-      ],
+      "covers": ["src/HistoryScreen.tsx"],
       "id": "history-v1",
       "kind": "regression"
     },
