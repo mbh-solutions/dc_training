@@ -456,9 +456,14 @@ await check(
       [8, 3, 2],
     );
     s = finish(s);
+    let correction;
     const m = await view(HistoryScreen, {
       accountState: s,
-      commitOperation: async () => ({ data: s, error: "" }),
+      commitOperation: async (op) => {
+        correction = op;
+        s = apply(s, op.kind, op.payload);
+        return { data: s, error: "" };
+      },
       onHome: () => {},
       weightUnit: "lb",
     });
@@ -472,6 +477,27 @@ await check(
     assert.ok(
       m.container.querySelector("[role=dialog] select"),
       "No load-type selector in correction dialog",
+    );
+    assert.equal(m.container.querySelector("#correction-weight-0"), null);
+    await act(async () => {
+      const select = m.container.querySelector("[role=dialog] select");
+      select.value = "weight";
+      select.dispatchEvent(new dom.window.Event("change", { bubbles: true }));
+    });
+    await input(m.container, "#correction-weight-0", "100");
+    await act(async () =>
+      m.container
+        .querySelector(".correction-dialog")
+        .dispatchEvent(
+          new dom.window.Event("submit", { bubbles: true, cancelable: true }),
+        ),
+    );
+    assert.equal(correction.payload.weights[0].amount, "100");
+    assert.equal(correction.payload.weights[0].micrograms, "45359237000");
+    assert.equal(
+      s.history.steps.find((step) => step.status === "completed")
+        .weight_entries[0].kind ?? "weight",
+      "weight",
     );
   },
 );

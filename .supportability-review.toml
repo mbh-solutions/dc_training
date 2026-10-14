@@ -198,28 +198,49 @@ after = "Draft storage and focus containment have separate owners. Shared exerci
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "CorrectionEditor.anonymous@1133:22.anonymous@1139:25"
+symbol = "CorrectionEditor.anonymous@1133:22.anonymous@1140:27"
 before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
 after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "CorrectionEditor.anonymous@1133:22.anonymous@1139:25.anonymous@1140:26"
+symbol = "CorrectionEditor.anonymous@1133:22.anonymous@1140:27.anonymous@1141:28"
 before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
 after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "CorrectionEditor.anonymous@1133:22.anonymous@1139:25.anonymous@1140:26.anonymous@1141:31"
+symbol = "CorrectionEditor.anonymous@1133:22.anonymous@1140:27.anonymous@1141:28.anonymous@1142:33"
 before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
 after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "CorrectionEditor.anonymous@1176:20"
+symbol = "CorrectionEditor.anonymous@1133:22.anonymous@1163:31"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.anonymous@1133:22.anonymous@1163:31.anonymous@1164:34"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.anonymous@1133:22.anonymous@1163:31.anonymous@1164:34.anonymous@1165:37"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.anonymous@1179:20"
 before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
 after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
@@ -233,7 +254,7 @@ after = "Draft storage and focus containment have separate owners. Shared exerci
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "performancesFor.anonymous@1267:7"
+symbol = "performancesFor.anonymous@1270:7"
 before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
 after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
@@ -247,14 +268,14 @@ after = "Draft storage and focus containment have separate owners. Shared exerci
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "performanceSegments.anonymous@1317:37"
+symbol = "performanceSegments.anonymous@1320:37"
 before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
 after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "performanceSegments.anonymous@1321:13"
+symbol = "performanceSegments.anonymous@1324:13"
 before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
 after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
@@ -268,14 +289,7 @@ after = "Draft storage and focus containment have separate owners. Shared exerci
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "searchMatches.anonymous@1343:11"
-before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
-after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
-
-[[separation_of_concerns.boundaries]]
-path = "src/HistoryScreen.tsx"
-kind = "function"
-symbol = "searchMatches.anonymous@1346:13"
+symbol = "searchMatches.anonymous@1346:11"
 before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
 after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
@@ -283,6 +297,13 @@ after = "Draft storage and focus containment have separate owners. Shared exerci
 path = "src/HistoryScreen.tsx"
 kind = "function"
 symbol = "searchMatches.anonymous@1349:13"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "searchMatches.anonymous@1352:13"
 before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
 after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 

@@ -1131,46 +1131,49 @@ function CorrectionEditor({
           {step.exercise?.replace("Lying Deltech leg curl", "Lying leg curl")}
         </h2>
         {amounts.map((amount, index) => (
-          <label key={index}>
-            LOAD TYPE
-            <select
-              aria-label={`SET ${index + 1} LOAD TYPE`}
-              value={kinds[index]}
-              onChange={(event) =>
-                setKinds((current) =>
-                  current.map((value, item) =>
-                    item === index
-                      ? (event.target.value as typeof value)
-                      : value,
-                  ),
-                )
-              }
-            >
-              <option value="weight">Weight</option>
-              <option value="body_weight">Body weight</option>
-              <option value="bar">Bar</option>
-              <option value="band">Band</option>
-            </select>
-            {amounts.length > 1 ? `SET ${index + 1} WEIGHT` : "WEIGHT"}
-            <span>
-              <input
-                disabled={kinds[index] !== "weight"}
-                id={`correction-weight-${index}`}
-                inputMode="decimal"
+          <div className="correction-load" key={index}>
+            <label>
+              LOAD TYPE
+              <select
+                aria-label={`SET ${index + 1} LOAD TYPE`}
+                value={kinds[index]}
                 onChange={(event) =>
-                  setAmounts((current) =>
+                  setKinds((current) =>
                     current.map((value, item) =>
-                      item === index ? event.target.value : value,
+                      item === index
+                        ? (event.target.value as typeof value)
+                        : value,
                     ),
                   )
                 }
-                value={amount}
-              />
-              {kinds[index] !== "weight"
-                ? kinds[index].replace("_", " ").toUpperCase()
-                : weightUnit.toUpperCase()}
-            </span>
-          </label>
+              >
+                <option value="weight">Weight</option>
+                <option value="body_weight">Body weight</option>
+                <option value="bar">Bar</option>
+                <option value="band">Band</option>
+              </select>
+            </label>
+            {kinds[index] === "weight" && (
+              <label>
+                {amounts.length > 1 ? `SET ${index + 1} WEIGHT` : "WEIGHT"}
+                <span>
+                  <input
+                    id={`correction-weight-${index}`}
+                    inputMode="decimal"
+                    onChange={(event) =>
+                      setAmounts((current) =>
+                        current.map((value, item) =>
+                          item === index ? event.target.value : value,
+                        ),
+                      )
+                    }
+                    value={amount}
+                  />
+                  {weightUnit.toUpperCase()}
+                </span>
+              </label>
+            )}
+          </div>
         ))}
         {shape.metric === "reps" ? (
           reps.map((rep, index) => (
@@ -1522,6 +1525,7 @@ const historyStyles = `
 .correction-dialog h2 { margin: 7px 0 20px; font-size: 2rem; }
 .correction-dialog label { display: grid; gap: 6px; margin-top: 12px; color: var(--gray); }
 .correction-dialog label > span { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; }
+.correction-dialog select { width: 100%; min-height: 44px; margin: 8px 0 14px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--white); }
 .correction-dialog input { width: 100%; min-height: 48px; border: 1px solid var(--line); border-radius: 6px; padding: 0 12px; color: var(--white); background: #050505; }
 @media (max-width: 390px) { .workout-row { grid-template-columns: 45px 38px 1fr; } .workout-row > small { grid-column: 2 / 4; text-align: left; } .exercise-row > em { display: none; } }
 `;
