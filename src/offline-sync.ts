@@ -51,9 +51,7 @@ type RotationAssignmentPayload = AssignmentPayload & {
   expected_assignment_id: string | null;
 };
 type AssignmentLogbookState =
-  | "first_failure_pending"
-  | "mulligan_used"
-  | "replacement_required";
+  "first_failure_pending" | "mulligan_used" | "replacement_required";
 export type PerformanceSnapshot = {
   duration_seconds: number | null;
   reps: number[];
@@ -66,9 +64,7 @@ type StartWorkoutPayload = {
   slot: WorkoutSlot;
 };
 type LifecycleTransitionAction =
-  | "dismiss_suggestion"
-  | "start_cruise"
-  | "start_new_blast";
+  "dismiss_suggestion" | "start_cruise" | "start_new_blast";
 type LifecycleTransitionPayload = {
   action: LifecycleTransitionAction;
   blast_id: string;
@@ -359,8 +355,7 @@ export async function commitOfflineOperation(
   const states = transaction.objectStore(stateStore);
   const operations = transaction.objectStore(operationStore);
   const prior = (await request(operations.get(input.id))) as
-    | OfflineOperation
-    | undefined;
+    OfflineOperation | undefined;
   if (prior) {
     if (prior.userId !== userId || !sameOperation(prior, input))
       throw new Error("OPERATION ID MISMATCH");
@@ -372,8 +367,7 @@ export async function commitOfflineOperation(
     return saved;
   }
   const stored = (await request(states.get(userId))) as
-    | OfflineAccountState
-    | undefined;
+    OfflineAccountState | undefined;
   const current = stored
     ? normalizeOfflineState(stored, userId)
     : emptyState(userId);
@@ -1142,8 +1136,7 @@ async function reviewLegacyQueueForUpgrade(
     operations.index("userId").getAll(userId),
   )) as OfflineOperation[];
   const stored = (await request(states.get(userId))) as
-    | OfflineAccountState
-    | undefined;
+    OfflineAccountState | undefined;
   const state = stored
     ? normalizeOfflineState(stored, userId)
     : emptyState(userId);
@@ -1238,8 +1231,7 @@ async function sealPendingBatch(userId: string, currentRevision: number) {
   const states = transaction.objectStore(stateStore);
   const operationStoreValue = transaction.objectStore(operationStore);
   const stored = (await request(states.get(userId))) as
-    | OfflineAccountState
-    | undefined;
+    OfflineAccountState | undefined;
   const state = normalizeOfflineState(stored ?? emptyState(userId), userId);
   const operations = normalizedOperations(
     (await request(
@@ -1427,8 +1419,7 @@ async function acknowledgeAppliedBatch(
   const states = transaction.objectStore(stateStore);
   const operations = transaction.objectStore(operationStore);
   const stored = (await request(states.get(userId))) as
-    | OfflineAccountState
-    | undefined;
+    OfflineAccountState | undefined;
   const current = normalizeOfflineState(stored ?? emptyState(userId), userId);
   const queued = normalizedOperations(
     (await request(
@@ -1640,8 +1631,7 @@ async function installResolvedCloudState(
   const states = transaction.objectStore(stateStore);
   const operations = transaction.objectStore(operationStore);
   const stored = (await request(states.get(userId))) as
-    | OfflineAccountState
-    | undefined;
+    OfflineAccountState | undefined;
   const current = normalizeOfflineState(stored ?? emptyState(userId), userId);
   const queued = (await request(
     operations.index("userId").getAll(userId),
@@ -1815,8 +1805,7 @@ async function replaceStateWhenQueueEmpty(state: OfflineAccountState) {
     return false;
   }
   const stored = (await request(states.get(state.userId))) as
-    | OfflineAccountState
-    | undefined;
+    OfflineAccountState | undefined;
   const current = stored
     ? normalizeOfflineState(stored, state.userId)
     : undefined;
@@ -2064,8 +2053,7 @@ export async function clearRecentCompletion(userId: string) {
     const transaction = database.transaction(stateStore, "readwrite");
     const states = transaction.objectStore(stateStore);
     const state = (await request(states.get(userId))) as
-      | OfflineAccountState
-      | undefined;
+      OfflineAccountState | undefined;
     if (state) states.put(withoutRecentCompletion(state));
     await transactionDone(transaction);
   }

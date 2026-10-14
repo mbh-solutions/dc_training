@@ -65,16 +65,13 @@ Object.defineProperty(globalThis, "navigator", {
   value: dom.window.navigator,
 });
 
-const { reduceOfflineState, startWorkoutPayload } = await import(
-  "../src/offline-sync.ts"
-);
-const { positionsFor, structureChoices, protocolChoices } = await import(
-  "../src/rotation-config.ts"
-);
+const { reduceOfflineState, startWorkoutPayload } =
+  await import("../src/offline-sync.ts");
+const { positionsFor, structureChoices, protocolChoices } =
+  await import("../src/rotation-config.ts");
 const { isAssignment } = await import("../src/rotation-assignment.ts");
-const { resolveAssignmentDraft } = await import(
-  "../src/rotation-assignment-draft.ts"
-);
+const { resolveAssignmentDraft } =
+  await import("../src/rotation-assignment-draft.ts");
 const { WorkoutTracer } = await import("../src/WorkoutTracer.tsx");
 const { act, createElement } = await import("react");
 const { createRoot } = await import("react-dom/client");

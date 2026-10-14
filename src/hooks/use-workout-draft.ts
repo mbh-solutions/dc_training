@@ -58,8 +58,7 @@ export function useWorkoutDraft(
     clear,
     setWeights: (
       value:
-        | Draft["weights"]
-        | ((current: Draft["weights"]) => Draft["weights"]),
+        Draft["weights"] | ((current: Draft["weights"]) => Draft["weights"]),
     ) => update("weights", value),
     setValues: (
       value: Draft["values"] | ((current: Draft["values"]) => Draft["values"]),

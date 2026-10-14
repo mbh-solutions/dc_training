@@ -58,10 +58,7 @@ export type WorkoutStep = {
   body_part: string;
   duration_seconds: number | null;
   enforcement_action:
-    | "abs_choice"
-    | "first_failure"
-    | "replacement_required"
-    | null;
+    "abs_choice" | "first_failure" | "replacement_required" | null;
   exercise: string | null;
   fresh_baseline: boolean;
   kind: "exercise" | "stretch";
@@ -75,11 +72,7 @@ export type WorkoutStep = {
   reference_history: PerformanceHistoryEntry[];
   reps: number[];
   resolution:
-    | "count_failure"
-    | "count_win"
-    | "replaced"
-    | "use_mulligan"
-    | null;
+    "count_failure" | "count_win" | "replaced" | "use_mulligan" | null;
   set_verdicts: ("failure" | "tie" | "win")[];
   status: "completed" | "pending" | "skipped";
   step_id: string;

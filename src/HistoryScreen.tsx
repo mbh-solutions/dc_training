@@ -1062,9 +1062,7 @@ function CorrectionEditor({
   const [amounts, setAmounts] = useState(
     displayedWeights.map((weight) => weight.amount),
   );
-  const [duration, setDuration] = useState(
-    String(step.duration_seconds ?? ""),
-  );
+  const [duration, setDuration] = useState(String(step.duration_seconds ?? ""));
   const [localError, setLocalError] = useState("");
   const [reps, setReps] = useState(step.reps.map(String));
   const [expectedPerformance] = useState<PerformanceSnapshot>(() => ({
