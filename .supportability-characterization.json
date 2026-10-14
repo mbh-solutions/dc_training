@@ -45,7 +45,9 @@
       "kind": "regression"
     },
     {
-      "covers": ["src/HistoryScreen.tsx"],
+      "covers": [
+        "src/HistoryScreen.tsx"
+      ],
       "id": "history-v1",
       "kind": "regression"
     },
@@ -111,11 +113,74 @@
   "transitions": [],
   "obligations": [
     {
+      "id": "a1-workout-v1-legacy",
+      "category": "static",
+      "scenario": "a1-workout-v1",
+      "selector": "$",
+      "target": "scenario:a1-workout-v1"
+    },
+    {
+      "id": "blast-cruise-v1-legacy",
+      "category": "static",
+      "scenario": "blast-cruise-v1",
+      "selector": "$",
+      "target": "scenario:blast-cruise-v1"
+    },
+    {
+      "id": "foundation-shell-v2-legacy",
+      "category": "static",
+      "scenario": "foundation-shell-v2",
+      "selector": "$",
+      "target": "scenario:foundation-shell-v2"
+    },
+    {
+      "id": "history-v1-legacy",
+      "category": "static",
+      "scenario": "history-v1",
+      "selector": "$",
+      "target": "scenario:history-v1"
+    },
+    {
       "id": "journey-1",
       "category": "behavior",
       "scenario": "workout-journey",
       "selector": "journey",
       "target": "src/FoundationHome.tsx"
+    },
+    {
+      "id": "journey-10",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/rotation-assignment-draft.ts"
+    },
+    {
+      "id": "journey-11",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/rotation-assignment.ts"
+    },
+    {
+      "id": "journey-12",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/rotation-config.ts"
+    },
+    {
+      "id": "journey-13",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/weight-conversion.ts"
+    },
+    {
+      "id": "journey-14",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/workout-domain.ts"
     },
     {
       "id": "journey-2",
@@ -174,39 +239,18 @@
       "target": "src/offline-sync.ts"
     },
     {
-      "id": "journey-10",
-      "category": "behavior",
-      "scenario": "workout-journey",
-      "selector": "journey",
-      "target": "src/rotation-assignment-draft.ts"
+      "id": "offline-sync-v1-legacy",
+      "category": "static",
+      "scenario": "offline-sync-v1",
+      "selector": "$",
+      "target": "scenario:offline-sync-v1"
     },
     {
-      "id": "journey-11",
-      "category": "behavior",
-      "scenario": "workout-journey",
-      "selector": "journey",
-      "target": "src/rotation-assignment.ts"
-    },
-    {
-      "id": "journey-12",
-      "category": "behavior",
-      "scenario": "workout-journey",
-      "selector": "journey",
-      "target": "src/rotation-config.ts"
-    },
-    {
-      "id": "journey-13",
-      "category": "behavior",
-      "scenario": "workout-journey",
-      "selector": "journey",
-      "target": "src/weight-conversion.ts"
-    },
-    {
-      "id": "journey-14",
-      "category": "behavior",
-      "scenario": "workout-journey",
-      "selector": "journey",
-      "target": "src/workout-domain.ts"
+      "id": "rotation-setup-v1-legacy",
+      "category": "static",
+      "scenario": "rotation-setup-v1",
+      "selector": "$",
+      "target": "scenario:rotation-setup-v1"
     }
   ]
 }
