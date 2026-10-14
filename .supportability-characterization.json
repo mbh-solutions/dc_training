@@ -113,28 +113,28 @@
   "transitions": [],
   "obligations": [
     {
-      "id": "a1-workout-v1-legacy",
+      "id": "a1-workout-v1",
       "category": "static",
       "scenario": "a1-workout-v1",
       "selector": "$",
       "target": "scenario:a1-workout-v1"
     },
     {
-      "id": "blast-cruise-v1-legacy",
+      "id": "blast-cruise-v1",
       "category": "static",
       "scenario": "blast-cruise-v1",
       "selector": "$",
       "target": "scenario:blast-cruise-v1"
     },
     {
-      "id": "foundation-shell-v2-legacy",
+      "id": "foundation-shell-v2",
       "category": "static",
       "scenario": "foundation-shell-v2",
       "selector": "$",
       "target": "scenario:foundation-shell-v2"
     },
     {
-      "id": "history-v1-legacy",
+      "id": "history-v1",
       "category": "static",
       "scenario": "history-v1",
       "selector": "$",
@@ -239,14 +239,14 @@
       "target": "src/offline-sync.ts"
     },
     {
-      "id": "offline-sync-v1-legacy",
+      "id": "offline-sync-v1",
       "category": "static",
       "scenario": "offline-sync-v1",
       "selector": "$",
       "target": "scenario:offline-sync-v1"
     },
     {
-      "id": "rotation-setup-v1-legacy",
+      "id": "rotation-setup-v1",
       "category": "static",
       "scenario": "rotation-setup-v1",
       "selector": "$",
