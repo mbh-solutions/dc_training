@@ -620,3 +620,15 @@ Remaining protocol-specific comparison and range rules are unresolved except whe
 - [x] kg conversion and rounding rules are owner-approved.
 - [x] Section 6 foundation decisions are complete; implementation planning is the next phase.
 - [x] No application code was created during foundation planning.
+
+
+## Approved workout polish (October 2026)
+
+- Rest-pause uses RP1, RP2, and RP3 labels and one combined target. Display a live rep total.
+- Keep all entry fields within narrow phones. Default to the previous compatible load, leaving new reps blank.
+- Save pending drafts on this device, scoped to owner and workout-start identity. Restore after leaving/reloading and clear after successful Save or Skip.
+- Dialogs contain keyboard focus and make background controls inert. Dismissible dialogs close on Escape and return focus to their trigger; required logbook decisions stay blocking.
+- History groups repeated exercises across slots, normalizes legacy names, and separates chart segments only for blast, prescription, or load-type changes. Legacy second-ab history remains accessible outside current exercises.
+- Historical corrections include load type. Failed weight-unit changes show a retry next to the setting.
+- Consecutive-failure enforcement follows compatible appearances of the exercise across slots in the same blast. A win clears the mulligan, as in the existing contract; this is not one allowance for an entire blast.
+- Reps and seconds must fit the database integer range before entering the offline queue.

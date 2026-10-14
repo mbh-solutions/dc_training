@@ -188,6 +188,10 @@ function renderEditingScreen({
     return withSyncStatus(
       syncStatus,
       <WorkoutTracer
+        draftScope={workoutDraftScope(
+          offline.accountState,
+          workout.activeWorkout.workout_id,
+        )}
         lastOperationId={workout.lastOperationId}
         lastOperationStatus={workout.lastOperationStatus}
         message={workout.message}
@@ -594,3 +598,13 @@ function accountWeightUnit(
 }
 
 export default FoundationHome;
+
+function workoutDraftScope(
+  state: ReturnType<typeof useOfflineSync>["accountState"],
+  workoutId: string,
+) {
+  const start = state?.history?.workouts.find(
+    (item) => item.workout_id === workoutId,
+  )?.start_operation_id;
+  return `${state?.userId ?? "owner"}:${start ?? workoutId}`;
+}

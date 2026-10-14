@@ -1,3 +1,4 @@
+import { Dialog } from "./Dialog.jsx";
 import {
   WORKOUT_SLOTS,
   positionLabel,
@@ -277,11 +278,10 @@ function InfoSheet({
   if (!open) return null;
   return (
     <div className="info-backdrop">
-      <section
+      <Dialog
         aria-label="PROTOCOL INFORMATION"
-        aria-modal="true"
         className="info-sheet"
-        role="dialog"
+        onDismiss={onClose}
       >
         <button
           aria-label="CLOSE INFORMATION"
@@ -295,7 +295,7 @@ function InfoSheet({
         <button className="info-sheet-action" type="button" onClick={onClose}>
           GOT IT
         </button>
-      </section>
+      </Dialog>
     </div>
   );
 }

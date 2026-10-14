@@ -86,13 +86,13 @@ test("S06 history ordering and correction boundary stay deterministic", () => {
   );
   assert.deepEqual(
     groups[0].assignments.map((item) => item.slot),
-    ["A1", "A3"],
+    ["A3"],
   );
   assert.deepEqual(
     domain
       .retiredHistoryAssignments(assignments)
       .map((item) => item.assignment_id),
-    ["retired-latest", "same-exercise-other-slot"],
+    ["retired-latest"],
   );
 
   const workouts = domain.sortHistoryWorkouts([

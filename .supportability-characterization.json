@@ -105,7 +105,9 @@
         "src/rotation-assignment.ts",
         "src/rotation-config.ts",
         "src/weight-conversion.ts",
-        "src/workout-domain.ts"
+        "src/workout-domain.ts",
+        "src/Dialog.tsx",
+        "src/hooks/use-workout-draft.ts"
       ]
     }
   ],
@@ -251,6 +253,20 @@
       "scenario": "rotation-setup-v1",
       "selector": "$",
       "target": "scenario:rotation-setup-v1"
+    },
+    {
+      "id": "journey-dialog",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/Dialog.tsx"
+    },
+    {
+      "id": "journey-draft",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/hooks/use-workout-draft.ts"
     }
   ]
 }

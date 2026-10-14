@@ -65,13 +65,16 @@ Object.defineProperty(globalThis, "navigator", {
   value: dom.window.navigator,
 });
 
-const { reduceOfflineState, startWorkoutPayload } =
-  await import("../src/offline-sync.ts");
-const { positionsFor, structureChoices, protocolChoices } =
-  await import("../src/rotation-config.ts");
+const { reduceOfflineState, startWorkoutPayload } = await import(
+  "../src/offline-sync.ts"
+);
+const { positionsFor, structureChoices, protocolChoices } = await import(
+  "../src/rotation-config.ts"
+);
 const { isAssignment } = await import("../src/rotation-assignment.ts");
-const { resolveAssignmentDraft } =
-  await import("../src/rotation-assignment-draft.ts");
+const { resolveAssignmentDraft } = await import(
+  "../src/rotation-assignment-draft.ts"
+);
 const { WorkoutTracer } = await import("../src/WorkoutTracer.tsx");
 const { act, createElement } = await import("react");
 const { createRoot } = await import("react-dom/client");
@@ -309,7 +312,7 @@ test("workout shows targets, saves labelled loads, and keeps current draft when 
       .find((b) => b.textContent === "PREVIOUS EXERCISE")
       .click(),
   );
-  assert.match(document.body.textContent, /11–15 TOTAL REPS · 3 MINI-SETS/);
+  assert.match(document.body.textContent, /11–15 TOTAL REPS/);
   await act(async () =>
     [...document.querySelectorAll("button")]
       .find((b) => b.textContent === "RETURN TO CURRENT")

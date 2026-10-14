@@ -58,7 +58,10 @@ export type WorkoutStep = {
   body_part: string;
   duration_seconds: number | null;
   enforcement_action:
-    "abs_choice" | "first_failure" | "replacement_required" | null;
+    | "abs_choice"
+    | "first_failure"
+    | "replacement_required"
+    | null;
   exercise: string | null;
   fresh_baseline: boolean;
   kind: "exercise" | "stretch";
@@ -72,7 +75,11 @@ export type WorkoutStep = {
   reference_history: PerformanceHistoryEntry[];
   reps: number[];
   resolution:
-    "count_failure" | "count_win" | "replaced" | "use_mulligan" | null;
+    | "count_failure"
+    | "count_win"
+    | "replaced"
+    | "use_mulligan"
+    | null;
   set_verdicts: ("failure" | "tie" | "win")[];
   status: "completed" | "pending" | "skipped";
   step_id: string;
@@ -237,13 +244,21 @@ export function progressionOrder(workout: HistoryWorkout) {
 
 export function currentHistoryGroups(assignments: HistoryAssignment[]) {
   return HISTORY_BODY_PARTS.map((bodyPart) => ({
-    assignments: assignments
-      .filter(
-        (assignment) => assignment.active && assignment.body_part === bodyPart,
-      )
-      .sort((left, right) =>
-        left.slot.localeCompare(right.slot, "en", { numeric: true }),
-      ),
+    assignments: [
+      ...new Map(
+        assignments
+          .filter(
+            (assignment) =>
+              assignment.active &&
+              assignment.body_part !== "abs_2" &&
+              assignment.body_part === bodyPart,
+          )
+          .sort((left, right) =>
+            left.slot.localeCompare(right.slot, "en", { numeric: true }),
+          )
+          .map((assignment) => [historyAssignmentKey(assignment), assignment]),
+      ).values(),
+    ],
     bodyPart,
   })).filter((group) => group.assignments.length > 0);
 }
@@ -251,7 +266,9 @@ export function currentHistoryGroups(assignments: HistoryAssignment[]) {
 export function retiredHistoryAssignments(assignments: HistoryAssignment[]) {
   const active = new Set(
     assignments
-      .filter((assignment) => assignment.active)
+      .filter(
+        (assignment) => assignment.active && assignment.body_part !== "abs_2",
+      )
       .map(historyAssignmentKey),
   );
   const retired = new Map<string, HistoryAssignment>();
@@ -259,7 +276,7 @@ export function retiredHistoryAssignments(assignments: HistoryAssignment[]) {
     const key = historyAssignmentKey(assignment);
     const previous = retired.get(key);
     if (
-      !assignment.active &&
+      (!assignment.active || assignment.body_part === "abs_2") &&
       !active.has(key) &&
       (!previous ||
         Date.parse(assignment.created_at) > Date.parse(previous.created_at))
@@ -280,7 +297,7 @@ export function retiredHistoryAssignments(assignments: HistoryAssignment[]) {
 export function historyAssignmentKey(
   assignment: Pick<HistoryAssignment, "body_part" | "exercise" | "slot">,
 ) {
-  return `${assignment.slot}:${assignment.body_part}:${assignment.exercise}`;
+  return `${assignment.body_part}:${exerciseName(assignment.exercise)}`;
 }
 
 export function activeWorkoutAssignmentIds(data: HistoryData) {
@@ -693,4 +710,13 @@ function validHistoryDuration(value: unknown) {
 
 function validHistoryVerdict(value: unknown) {
   return value === null || value === "failure" || value === "win";
+}
+
+// Match PostgreSQL integer fields before a performance enters the offline queue.
+export function validPerformanceInteger(value: number): boolean {
+  return Number.isInteger(value) && value > 0 && value <= 2147483647;
+}
+
+export function exerciseName(value: string): string {
+  return value.replace("Lying Deltech leg curl", "Lying leg curl");
 }

@@ -1,3 +1,6 @@
+import { Dialog } from "./Dialog.jsx";
+import { useWorkoutDraft } from "./hooks/use-workout-draft.js";
+import { validPerformanceInteger } from "./workout-domain.js";
 import { useState } from "react";
 import type { WorkoutSlot } from "./rotation-config.js";
 import {
@@ -130,6 +133,7 @@ const stretchDetails: Record<
 };
 
 type Props = {
+  draftScope?: string;
   actionSaving: boolean;
   blockingStep: WorkoutStep | null;
   lastOperationId: string | null;
@@ -172,7 +176,7 @@ export function WorkoutTracer(props: Props) {
           <BackChevron />
         </button>
         <div>
-          <strong>DC TRAINING</strong>
+          <strong>DC TRAINING LOG</strong>
           <p>
             {props.workout.slot}{" "}
             <span>
@@ -292,6 +296,7 @@ function WorkoutNavigation({
 }
 
 function ExerciseEntry({
+  draftScope,
   message,
   onSave,
   onSkip,
@@ -299,30 +304,30 @@ function ExerciseEntry({
   weightUnit,
 }: Props & { step: WorkoutStep }) {
   const shape = workoutEntryShape(step);
-  const [weights, setWeights] = useState<WeightEntry[]>(
-    Array.from({ length: shape.weightCount }, (_, index) =>
-      step.weight_entries[index]
-        ? displayWeight(step.weight_entries[index], weightUnit)
-        : {
-            amount: "",
-            unit: weightUnit,
-          },
-    ),
-  );
-  const [values, setValues] = useState<string[]>(
-    Array.from({ length: shape.valueCount }, (_, index) =>
-      shape.metric === "seconds"
-        ? String(step.duration_seconds ?? "")
-        : String(step.reps[index] ?? ""),
-    ),
-  );
+  const { weights, values, setWeights, setValues, clear, notice } =
+    useWorkoutDraft(
+      `dc-workout-draft:${draftScope ?? step.workout_id}:${step.ordinal}`,
+      () => ({
+        weights: Array.from({ length: shape.weightCount }, (_, index) => {
+          const weight =
+            step.weight_entries[index] ?? step.previous_weight_entries[index];
+          return weight
+            ? displayWeight(weight, weightUnit)
+            : { amount: "", unit: weightUnit };
+        }),
+        values: Array.from({ length: shape.valueCount }, (_, index) =>
+          shape.metric === "seconds"
+            ? String(step.duration_seconds ?? "")
+            : String(step.reps[index] ?? ""),
+        ),
+      }),
+      step.status === "pending",
+    );
   const [saving, setSaving] = useState(false);
   const [calfInfoOpen, setCalfInfoOpen] = useState(false);
   const valid =
     weights.every((entry) => conversionPreview(entry) !== "") &&
-    values.every(
-      (value) => Number.isInteger(Number(value)) && Number(value) > 0,
-    );
+    values.every((value) => validPerformanceInteger(Number(value)));
 
   const save = async () => {
     if (!valid) return;
@@ -330,7 +335,8 @@ function ExerciseEntry({
     const saved = await onSave(
       step,
       weights.map((entry, index) => {
-        const original = step.weight_entries[index];
+        const original =
+          step.weight_entries[index] ?? step.previous_weight_entries[index];
         const displayed = original ? displayWeight(original, weightUnit) : null;
         if (
           original &&
@@ -347,12 +353,14 @@ function ExerciseEntry({
       shape.metric === "reps" ? values.map(Number) : [],
       shape.metric === "seconds" ? Number(values[0]) : null,
     );
-    if (!saved) setSaving(false);
+    if (saved) clear();
+    else setSaving(false);
   };
 
   const skip = async () => {
     setSaving(true);
-    if (!(await onSkip(step))) setSaving(false);
+    if (await onSkip(step)) clear();
+    else setSaving(false);
   };
 
   return (
@@ -371,13 +379,13 @@ function ExerciseEntry({
         <summary>How the logbook compares results</summary>
         <p>
           Weighted reps use estimated 1RM: weight × (1 + reps ÷ 30). Rest-pause
-          uses the total of all three mini-sets. This is a comparison score, not
-          a tested maximum. Body weight, bar and band compare reps within the
-          same load type; timed holds compare load and seconds. Changing load
-          type starts a new baseline.
+          uses total reps. This is a comparison score, not a tested maximum.
+          Body weight, bar and band compare reps within the same load type;
+          timed holds compare load and seconds. Changing load type starts a new
+          baseline.
         </p>
       </details>
-      <p className="today-label">TODAY</p>
+
       <div className="entry-list">
         {weights.map((weight, index) => (
           <section className="entry-card" key={index}>
@@ -455,7 +463,7 @@ function ExerciseEntry({
                   {shape.metric === "seconds"
                     ? "HOLD SECONDS"
                     : step.protocol === "rest_pause"
-                      ? `MINI ${valueIndex + 1}`
+                      ? `RP${valueIndex + 1}`
                       : "REPS"}
                   <input
                     aria-label={
@@ -485,6 +493,12 @@ function ExerciseEntry({
           </section>
         ))}
       </div>
+      <EntryFeedback
+        step={step}
+        values={values}
+        weights={weights}
+        weightUnit={weightUnit}
+      />
       {message && <p className="form-message">{message}</p>}
       <ExerciseSaveControls
         status={step.status}
@@ -493,6 +507,11 @@ function ExerciseEntry({
         save={save}
         skip={skip}
       />
+      {notice && (
+        <p className="draft-notice" role="status">
+          {notice}
+        </p>
+      )}
       {calfInfoOpen && (
         <InformationDialog
           label="CALF 10–12 INFORMATION"
@@ -561,7 +580,7 @@ function Prescription({ step }: { step: WorkoutStep }) {
       {step.protocol === "rest_pause" ? (
         <p>
           {step.target_sets[0] ? range(step.target_sets[0]) : "UNSPECIFIED"}{" "}
-          TOTAL REPS · 3 MINI-SETS
+          TOTAL REPS
         </p>
       ) : step.target_sets.length ? (
         step.target_sets.map((target, index) => (
@@ -713,11 +732,10 @@ function StretchEntry({
       </button>
       {infoOpen && (
         <div className="stretch-dialog-backdrop">
-          <section
+          <Dialog
             aria-label="DC STRETCH INFORMATION"
-            aria-modal="true"
             className="stretch-dialog"
-            role="dialog"
+            onDismiss={() => setInfoOpen(false)}
           >
             <button
               aria-label="CLOSE STRETCH INFORMATION"
@@ -740,7 +758,7 @@ function StretchEntry({
             >
               GOT IT
             </button>
-          </section>
+          </Dialog>
         </div>
       )}
     </main>
@@ -765,7 +783,7 @@ export function WorkoutComplete({
   return (
     <div className="app-shell workout-complete">
       <style>{workoutStyles}</style>
-      <strong>DC TRAINING</strong>
+      <strong>DC TRAINING LOG</strong>
       <div className="complete-check">✓</div>
       <h1>{workout.slot} COMPLETE</h1>
       {lastOperationStatus && (
@@ -874,12 +892,7 @@ function InformationDialog({
 }) {
   return (
     <div className="stretch-dialog-backdrop">
-      <section
-        aria-label={label}
-        aria-modal="true"
-        className="stretch-dialog"
-        role="dialog"
-      >
+      <Dialog aria-label={label} className="stretch-dialog" onDismiss={onClose}>
         <button
           aria-label={`CLOSE ${label}`}
           className="dialog-close"
@@ -897,7 +910,7 @@ function InformationDialog({
         <button className="primary-action" type="button" onClick={onClose}>
           GOT IT
         </button>
-      </section>
+      </Dialog>
     </div>
   );
 }
@@ -924,12 +937,7 @@ function LogbookPrompt({
   const copy = logbookPromptCopy(step.enforcement_action);
   return (
     <div className="logbook-backdrop">
-      <section
-        aria-label={copy.label}
-        aria-modal="true"
-        className="logbook-sheet"
-        role="dialog"
-      >
+      <Dialog aria-label={copy.label} className="logbook-sheet">
         <p className="workout-part">LOGBOOK</p>
         <h2>{copy.title}</h2>
         <p>{copy.description}</p>
@@ -951,7 +959,7 @@ function LogbookPrompt({
             UNDO SAVE
           </button>
         )}
-      </section>
+      </Dialog>
     </div>
   );
 }
@@ -1102,6 +1110,10 @@ function comparisonVerdict(step: WorkoutStep, index: number) {
 }
 
 const workoutStyles = `
+.entry-card, .entry-card input, .rep-entry label, .load-kind-label select { min-width: 0; max-width: 100%; }
+.rp-total { color: var(--gray); font-size: .9rem; }
+.draft-notice { color: var(--gray); font-size: .8rem; text-align: center; }
+
 .logbook-method { margin-top: 14px; color: var(--gray); line-height: 1.5; }
 .prescription { border-left: 3px solid var(--red); padding: 12px 16px; margin: -12px 0 24px; background: var(--panel); }
 .prescription p { margin: 8px 0 0; }
@@ -1117,9 +1129,9 @@ const workoutStyles = `
 .workout-header span, .workout-part, .today-label { color: var(--red); }
 .undo-strip { display: flex; justify-content: space-between; align-items: center; min-height: 44px; margin-top: 12px; border: 1px solid var(--red); border-radius: 6px; padding: 6px 12px; color: var(--white); font-family: Impact, sans-serif; }
 .undo-strip button { min-height: 32px; border: 0; color: var(--red); background: transparent; cursor: pointer; }
-.workout-main { padding: 32px 3px 24px; }
+.workout-main { padding: 24px 0; }
 .workout-part, .today-label { margin: 0 0 10px; font-family: Impact, sans-serif; font-size: 1.25rem; letter-spacing: .08em; }
-.workout-main > h1 { margin: 0 0 28px; font-size: clamp(2.4rem, 11vw, 4rem); text-transform: uppercase; }
+.workout-main > h1 { margin: 0 0 20px; font-size: clamp(2rem, 9vw, 3rem); text-transform: uppercase; }
 .mulligan-badge { display: inline-block; margin: -12px 0 24px; border: 1px solid var(--red); border-radius: 5px; padding: 6px 9px; color: var(--red); font-family: Impact, sans-serif; letter-spacing: .08em; }
 .previous-card, .entry-card, .stretch-card, .workout-complete section { border: 1px solid var(--line); border-radius: 12px; padding: 20px; background: linear-gradient(145deg, rgba(22,22,22,.88), rgba(8,8,8,.96)); }
 .previous-card p, .entry-card > p, .workout-complete section p { margin: 0 0 13px; color: var(--gray); font-family: Impact, sans-serif; letter-spacing: .06em; }
@@ -1133,12 +1145,23 @@ const workoutStyles = `
 .previous-list output { display: flex; justify-content: space-between; gap: 12px; color: var(--gray); }
 .previous-list b { color: var(--white); }
 .today-label { margin-top: 30px; }
-.entry-list { display: grid; gap: 14px; }
-.weight-entry { display: grid; grid-template-columns: 1fr 82px; gap: 8px; }
+.entry-list { display: grid; gap: 14px; margin-top: 18px; }
+.entry-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 10px; padding: 14px; }
+.entry-card > p, .entry-card .rep-entry, .entry-card .conversion-preview { grid-column: 1 / -1; }
+.entry-card > p { font-size: .8rem; }
+.entry-card .load-kind-label { margin-bottom: 0; }
+.entry-card .weight-entry { align-self: end; }
+.entry-card .weight-entry input { width: 100%; }
+.entry-card .weight-entry { grid-template-columns: minmax(0, 1fr) 32px; gap: 0; }
+.entry-card .weight-unit { border: 0; font-size: .8rem; padding: 4px; }
+.entry-card .weight-entry input, .entry-card select { min-height: 48px; }
+.entry-card:has(select option[value="weight"]:not(:checked)) .load-kind-label { grid-column: 1 / -1; }
+
+.weight-entry { display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 8px; }
 .weight-entry input, .weight-unit, .rep-entry input { min-height: 58px; border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; color: var(--white); background: var(--panel); font-family: Impact, sans-serif; font-size: 1.55rem; }
 .weight-unit { display: grid; place-items: center; }
 .conversion-preview { display: block; margin-top: 6px; color: var(--gray); text-align: right; }
-.rep-entry { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+.rep-entry { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
 .rep-entry--single { grid-template-columns: 1fr; }
 .rep-entry label { color: var(--gray); font-size: .72rem; text-align: center; }
 .rep-entry input { width: 100%; margin-top: 6px; text-align: center; }
@@ -1194,5 +1217,46 @@ function WorkoutLoadError({ message, onExit }: Props) {
         LEAVE WORKOUT
       </button>
     </main>
+  );
+}
+
+function EntryFeedback({
+  step,
+  values,
+  weights,
+  weightUnit,
+}: {
+  step: WorkoutStep;
+  values: string[];
+  weights: WeightEntry[];
+  weightUnit: WeightUnit;
+}) {
+  const shape = workoutEntryShape(step);
+  return (
+    <>
+      {step.protocol === "rest_pause" && (
+        <p className="rp-total" aria-live="polite">
+          {values.some(Boolean)
+            ? `${values.reduce((total, value) => total + (validPerformanceInteger(Number(value)) ? Number(value) : 0), 0)} total reps`
+            : "Total appears as you enter reps"}
+        </p>
+      )}
+      {weights.some(
+        (entry) => entry.amount !== "" && !conversionPreview(entry),
+      ) && (
+        <p className="form-message">
+          Enter a valid load in {weightUnit === "lb" ? "0.5 lb" : "0.25 kg"}{" "}
+          increments.
+        </p>
+      )}
+      {values.some(
+        (value) => value !== "" && !validPerformanceInteger(Number(value)),
+      ) && (
+        <p className="form-message">
+          Enter positive whole {shape.metric === "seconds" ? "seconds" : "reps"}{" "}
+          within the supported range.
+        </p>
+      )}
+    </>
   );
 }
