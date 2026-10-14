@@ -1,3 +1,9 @@
+import {
+  exerciseName,
+  validPerformanceInteger,
+  progressionOrder,
+} from "./workout-domain.js";
+import { Dialog } from "./Dialog.jsx";
 import { useRef, useState } from "react";
 import { BackChevron, BottomNavigation } from "./HomeScreen.jsx";
 import {
@@ -585,7 +591,22 @@ function ExerciseButton({
       onClick={() => onOpen(assignment)}
       type="button"
     >
-      <span>{assignment.slot}</span>
+      <span>
+        {[
+          ...new Set(
+            data.assignments
+              .filter(
+                (item) =>
+                  item.active === assignment.active &&
+                  historyAssignmentKey(item) ===
+                    historyAssignmentKey(assignment),
+              )
+              .map((item) => item.slot),
+          ),
+        ]
+          .sort()
+          .join(" · ")}
+      </span>
       <strong>
         {assignment.exercise.replace(
           "Lying Deltech leg curl",
@@ -777,8 +798,8 @@ function ExercisePerformance({
           >
             {index > 0 && (
               <div className="reassignment-boundary">
-                <strong>REASSIGNED</strong>
-                <span>FRESH BASELINE</span>
+                <strong>NEW TRAINING SEGMENT</strong>
+                <span>BLAST, PRESCRIPTION OR LOAD TYPE CHANGED</span>
               </div>
             )}
             <p>{protocolConfigurationLabel(segment.assignment)}</p>
@@ -801,7 +822,10 @@ function ExercisePerformance({
             onClick={() => onEdit?.(performance.step)}
             type="button"
           >
-            <span>{shortDate(performance.workout.started_at)}</span>
+            <span>
+              {shortDate(performance.workout.started_at)} ·{" "}
+              {performance.workout.slot}
+            </span>
             <strong>{performanceSummary(performance.step, weightUnit)}</strong>
             <em className={performance.step.verdict === "win" ? "red" : ""}>
               {!onEdit
@@ -1032,12 +1056,13 @@ function CorrectionEditor({
   const [displayedWeights] = useState(() =>
     step.weight_entries.map((weight) => displayWeight(weight, weightUnit)),
   );
+  const [kinds, setKinds] = useState(
+    displayedWeights.map((weight) => weight.kind ?? "weight"),
+  );
   const [amounts, setAmounts] = useState(
     displayedWeights.map((weight) => weight.amount),
   );
-  const [duration, setDuration] = useState(
-    step.duration_seconds?.toString() ?? "",
-  );
+  const [duration, setDuration] = useState(String(step.duration_seconds ?? ""));
   const [localError, setLocalError] = useState("");
   const [reps, setReps] = useState(step.reps.map(String));
   const [expectedPerformance] = useState<PerformanceSnapshot>(() => ({
@@ -1050,7 +1075,18 @@ function CorrectionEditor({
   const submit = async () => {
     if (saveDisabled) return;
     const weights = expectedPerformance.weights.map((weight, index) => {
-      if (amounts[index] === displayedWeights[index].amount) return weight;
+      if (
+        amounts[index] === displayedWeights[index].amount &&
+        kinds[index] === (weight.kind ?? "weight")
+      )
+        return weight;
+      if (kinds[index] !== "weight")
+        return {
+          amount: "0",
+          kind: kinds[index],
+          micrograms: "0",
+          unit: weightUnit,
+        };
       return {
         amount: amounts[index],
         micrograms: weightMicrograms({
@@ -1066,9 +1102,9 @@ function CorrectionEditor({
       weights.some((weight) => !weight.micrograms) ||
       (shape.metric === "reps" &&
         (repValues.length !== shape.valueCount ||
-          repValues.some((rep) => !Number.isInteger(rep) || rep < 1))) ||
+          repValues.some((rep) => !validPerformanceInteger(rep)))) ||
       (shape.metric === "seconds" &&
-        (!Number.isInteger(durationValue) || Number(durationValue) < 1))
+        !validPerformanceInteger(Number(durationValue)))
     ) {
       setLocalError("ENTER VALID WEIGHT AND PERFORMANCE VALUES");
       return;
@@ -1078,11 +1114,10 @@ function CorrectionEditor({
   };
 
   return (
-    <div
+    <Dialog
       aria-labelledby="correction-title"
-      aria-modal="true"
       className="correction-backdrop"
-      role="dialog"
+      onDismiss={saving ? undefined : onCancel}
     >
       <form
         className="correction-dialog"
@@ -1096,40 +1131,54 @@ function CorrectionEditor({
           {step.exercise?.replace("Lying Deltech leg curl", "Lying leg curl")}
         </h2>
         {amounts.map((amount, index) => (
-          <label key={index}>
-            {amounts.length > 1 ? `SET ${index + 1} WEIGHT` : "WEIGHT"}
-            <span>
-              <input
-                disabled={
-                  !!expectedPerformance.weights[index].kind &&
-                  expectedPerformance.weights[index].kind !== "weight"
-                }
-                id={`correction-weight-${index}`}
-                inputMode="decimal"
+          <div className="correction-load" key={index}>
+            <label>
+              LOAD TYPE
+              <select
+                aria-label={`SET ${index + 1} LOAD TYPE`}
+                value={kinds[index]}
                 onChange={(event) =>
-                  setAmounts((current) =>
+                  setKinds((current) =>
                     current.map((value, item) =>
-                      item === index ? event.target.value : value,
+                      item === index
+                        ? (event.target.value as typeof value)
+                        : value,
                     ),
                   )
                 }
-                value={amount}
-              />
-              {expectedPerformance.weights[index].kind &&
-              expectedPerformance.weights[index].kind !== "weight"
-                ? expectedPerformance.weights[index].kind
-                    .replace("_", " ")
-                    .toUpperCase()
-                : weightUnit.toUpperCase()}
-            </span>
-          </label>
+              >
+                <option value="weight">Weight</option>
+                <option value="body_weight">Body weight</option>
+                <option value="bar">Bar</option>
+                <option value="band">Band</option>
+              </select>
+            </label>
+            {kinds[index] === "weight" && (
+              <label>
+                {amounts.length > 1 ? `SET ${index + 1} WEIGHT` : "WEIGHT"}
+                <span>
+                  <input
+                    id={`correction-weight-${index}`}
+                    inputMode="decimal"
+                    onChange={(event) =>
+                      setAmounts((current) =>
+                        current.map((value, item) =>
+                          item === index ? event.target.value : value,
+                        ),
+                      )
+                    }
+                    value={amount}
+                  />
+                  {weightUnit.toUpperCase()}
+                </span>
+              </label>
+            )}
+          </div>
         ))}
         {shape.metric === "reps" ? (
           reps.map((rep, index) => (
             <label key={index}>
-              {step.protocol === "rest_pause"
-                ? `MINI-SET ${index + 1} REPS`
-                : `SET ${index + 1} REPS`}
+              {correctionRepLabel(step, index)}
               <input
                 id={`correction-reps-${index}`}
                 inputMode="numeric"
@@ -1174,7 +1223,7 @@ function CorrectionEditor({
           CANCEL
         </button>
       </form>
-    </div>
+    </Dialog>
   );
 }
 
@@ -1219,8 +1268,8 @@ function performancesFor(data: HistoryData, selected: HistoryAssignment) {
     }))
     .sort(
       (left, right) =>
-        Date.parse(left.workout.started_at) -
-        Date.parse(right.workout.started_at),
+        progressionOrder(left.workout) - progressionOrder(right.workout) ||
+        left.step.ordinal - right.step.ordinal,
     );
 }
 
@@ -1258,7 +1307,23 @@ function performanceSegments(performances: Performance[]) {
   for (const performance of performances) {
     const segment = segments.at(-1);
     if (
-      segment?.assignment.assignment_id === performance.assignment.assignment_id
+      segment &&
+      segment.performances.at(-1)?.workout.blast_id ===
+        performance.workout.blast_id &&
+      segment.assignment.protocol === performance.assignment.protocol &&
+      segment.assignment.structure === performance.assignment.structure &&
+      JSON.stringify(segment.assignment.target_sets) ===
+        JSON.stringify(performance.assignment.target_sets) &&
+      JSON.stringify(
+        segment.performances
+          .at(-1)
+          ?.step.weight_entries.map((entry) => entry.kind ?? "weight"),
+      ) ===
+        JSON.stringify(
+          performance.step.weight_entries.map(
+            (entry) => entry.kind ?? "weight",
+          ),
+        )
     )
       segment.performances.push(performance);
     else
@@ -1274,9 +1339,18 @@ function searchMatches(assignments: HistoryAssignment[], search: string) {
   const query = search.trim().toLocaleLowerCase();
   if (!query) return [];
   const retired = retiredHistoryAssignments(assignments);
-  return [...assignments.filter((assignment) => assignment.active), ...retired]
+  return [
+    ...new Map(
+      [
+        ...assignments.filter(
+          (assignment) => assignment.active && assignment.body_part !== "abs_2",
+        ),
+        ...retired,
+      ].map((assignment) => [historyAssignmentKey(assignment), assignment]),
+    ).values(),
+  ]
     .filter((assignment) =>
-      assignment.exercise.toLocaleLowerCase().includes(query),
+      exerciseName(assignment.exercise).toLocaleLowerCase().includes(query),
     )
     .slice(0, 8);
 }
@@ -1451,6 +1525,13 @@ const historyStyles = `
 .correction-dialog h2 { margin: 7px 0 20px; font-size: 2rem; }
 .correction-dialog label { display: grid; gap: 6px; margin-top: 12px; color: var(--gray); }
 .correction-dialog label > span { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; }
+.correction-dialog select { width: 100%; min-height: 44px; margin: 8px 0 14px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--white); }
 .correction-dialog input { width: 100%; min-height: 48px; border: 1px solid var(--line); border-radius: 6px; padding: 0 12px; color: var(--white); background: #050505; }
 @media (max-width: 390px) { .workout-row { grid-template-columns: 45px 38px 1fr; } .workout-row > small { grid-column: 2 / 4; text-align: left; } .exercise-row > em { display: none; } }
 `;
+
+function correctionRepLabel(step: WorkoutStep, index: number) {
+  return step.protocol === "rest_pause"
+    ? `RP${index + 1}`
+    : `SET ${index + 1} REPS`;
+}

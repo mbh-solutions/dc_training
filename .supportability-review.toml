@@ -1,1003 +1,1056 @@
 schema_version = "1.0"
-module_boundaries = []
+
+[[module_boundaries]]
+path = "src/Dialog.tsx"
+owner_path = "src/WorkoutTracer.tsx"
+basis = "responsibility"
+justification = "Shared modal focus containment serves workout, history, rotation and lifecycle screens without duplicating accessibility behavior."
+
+[[module_boundaries]]
+path = "src/hooks/use-workout-draft.ts"
+owner_path = "src/hooks/use-workout.ts"
+basis = "responsibility"
+justification = "Pending device-local entry storage has a separate lifecycle from committed workout and cloud state, and is reused by exercise and stretch entries."
 
 [behavior]
-intended_behavior = "Improve workout navigation and prescriptions, support labelled loads, share exercise history across slots, compare weighted performance using estimated one-rep-max scores, and simplify rotation and home screens."
-proof = "Twenty runtime/domain tests, a PGlite migration and workout-flow check, existing characterization drivers, lint and production build exercise the changed behavior."
+intended_behavior = "Apply the approved workout polish: RP1/RP2/RP3, responsive inputs, live total, previous-load defaults, persistent drafts, accessible dialogs, load-type corrections, consolidated history, visible unit-save failures and shared consecutive-failure enforcement."
+proof = "45 isolated UI/reducer audit checks, existing runtime suites, PGlite cross-slot failure/undo/win tests, production build, lint and browser checks at 320/360/390/430 CSS pixels."
 
 [characterization]
-captured_behavior = "Retain authenticated owner access, recovery, offline state, assignment round trips and workout/history surface contracts while updating text selectors for the requested home cleanup."
-proof = "Existing characterization goldens remain unchanged. A schema-2 workflow scenario observes actual workout entry, history correction and rotation editing on both base and head, with whole-file behavior obligations. Runtime tests cover draft-preserving backward navigation, explicit prescriptions, labelled loads, one ab, B1/B3 history in both directions and estimated-strength verdicts. Database checks exercise correction propagation and active-history guards."
+captured_behavior = "Preserve workout saves, historical corrections and rotation editing on base and head while extending real workflow coverage to the draft and dialog modules."
+proof = "Existing characterization outputs are unchanged; new targeted tests reproduce the audited defects and retain the established win-clears-mulligan rule."
 
 [separation_of_concerns]
-before = "Workout screens embedded navigation and entry decisions; assignment identity also selected prior performance."
-after = "Small presentation helpers own readiness, navigation, and save controls. Domain scoring remains pure. Offline and database persistence select compatible exercise history and enforce correction ordering."
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/FoundationHome.tsx"
+path = "src/Dialog.tsx"
 kind = "component"
-symbol = "FoundationDashboardHome"
-before = "Dashboard provided generic data readiness to workout launch."
-after = "Dashboard checks all required assignments and wires saved-exercise corrections."
+symbol = "Dialog"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/FoundationHome.tsx"
+path = "src/Dialog.tsx"
 kind = "function"
-symbol = "FoundationDashboardHome.anonymous@296:9"
-before = "Dashboard provided generic data readiness to workout launch."
-after = "Dashboard checks all required assignments and wires saved-exercise corrections."
+symbol = "Dialog.anonymous@13:13"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/Dialog.tsx"
+kind = "function"
+symbol = "Dialog.anonymous@16:13"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/Dialog.tsx"
+kind = "function"
+symbol = "Dialog.anonymous@16:13.controls"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/Dialog.tsx"
+kind = "function"
+symbol = "Dialog.anonymous@16:13.controls.anonymous@37:16"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/Dialog.tsx"
+kind = "function"
+symbol = "Dialog.anonymous@16:13.focus"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/Dialog.tsx"
+kind = "function"
+symbol = "Dialog.anonymous@16:13.keydown"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/Dialog.tsx"
+kind = "function"
+symbol = "Dialog.anonymous@16:13.containFocus"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/Dialog.tsx"
+kind = "function"
+symbol = "Dialog.anonymous@16:13.anonymous@67:12"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/Dialog.tsx"
+kind = "function"
+symbol = "Dialog.anonymous@16:13.anonymous@67:12.anonymous@70:24"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/Dialog.tsx"
+kind = "module"
+symbol = "src/Dialog.tsx"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/FoundationHome.tsx"
 kind = "function"
 symbol = "renderEditingScreen"
-before = "Dashboard provided generic data readiness to workout launch."
-after = "Dashboard checks all required assignments and wires saved-exercise corrections."
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/FoundationHome.tsx"
-kind = "module"
-symbol = "src/FoundationHome.tsx"
-before = "Dashboard provided generic data readiness to workout launch."
-after = "Dashboard checks all required assignments and wires saved-exercise corrections."
+kind = "function"
+symbol = "workoutDraftScope"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/FoundationHome.tsx"
+kind = "function"
+symbol = "workoutDraftScope.anonymous@607:5"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
-kind = "component"
-symbol = "CorrectionEditor"
-before = "History selected performances by slot and exercise and displayed numeric loads."
-after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+kind = "module"
+symbol = "src/HistoryScreen.tsx"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "component"
 symbol = "ExerciseButton"
-before = "History selected performances by slot and exercise and displayed numeric loads."
-after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "ExerciseButton.anonymous@599:17"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "ExerciseButton.anonymous@604:20"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "component"
 symbol = "ExercisePerformance"
-before = "History selected performances by slot and exercise and displayed numeric loads."
-after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "ExercisePerformance.anonymous@794:23"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "ExercisePerformance.anonymous@816:42"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "component"
-symbol = "WorkoutDetail"
-before = "History selected performances by slot and exercise and displayed numeric loads."
-after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+symbol = "CorrectionEditor"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "CorrectionEditor.anonymous@1085:22"
-before = "History selected performances by slot and exercise and displayed numeric loads."
-after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+symbol = "CorrectionEditor.anonymous@1060:26"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "CorrectionEditor.anonymous@1098:22"
-before = "History selected performances by slot and exercise and displayed numeric loads."
-after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+symbol = "CorrectionEditor.submit"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "WorkoutDetail.anonymous@702:16"
-before = "History selected performances by slot and exercise and displayed numeric loads."
-after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+symbol = "CorrectionEditor.submit.anonymous@1077:53"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "WorkoutDetail.anonymous@705:16"
-before = "History selected performances by slot and exercise and displayed numeric loads."
-after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+symbol = "CorrectionEditor.submit.anonymous@1105:26"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "correctionPayloadFingerprint"
-before = "History selected performances by slot and exercise and displayed numeric loads."
-after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+symbol = "CorrectionEditor.anonymous@1133:22"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "correctionPayloadFingerprint.anonymous@1244:26"
-before = "History selected performances by slot and exercise and displayed numeric loads."
-after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+symbol = "CorrectionEditor.anonymous@1133:22.anonymous@1140:27"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.anonymous@1133:22.anonymous@1140:27.anonymous@1141:28"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.anonymous@1133:22.anonymous@1140:27.anonymous@1141:28.anonymous@1142:33"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.anonymous@1133:22.anonymous@1163:31"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.anonymous@1133:22.anonymous@1163:31.anonymous@1164:34"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.anonymous@1133:22.anonymous@1163:31.anonymous@1164:34.anonymous@1165:37"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.anonymous@1179:20"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
 symbol = "performancesFor"
-before = "History selected performances by slot and exercise and displayed numeric loads."
-after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "performancesFor.anonymous@1171:5"
-before = "History selected performances by slot and exercise and displayed numeric loads."
-after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+symbol = "performancesFor.anonymous@1270:7"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "performancesFor.anonymous@1192:5"
-before = "History selected performances by slot and exercise and displayed numeric loads."
-after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+symbol = "performanceSegments"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "weightLabel"
-before = "History selected performances by slot and exercise and displayed numeric loads."
-after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+symbol = "performanceSegments.anonymous@1320:37"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/HomeScreen.tsx"
-kind = "component"
-symbol = "AccountControls"
-before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
-after = "Home presents launch readiness next to Start; account identity is in Settings."
-
-[[separation_of_concerns.boundaries]]
-path = "src/HomeScreen.tsx"
-kind = "component"
-symbol = "CruiseHome"
-before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
-after = "Home presents launch readiness next to Start; account identity is in Settings."
-
-[[separation_of_concerns.boundaries]]
-path = "src/HomeScreen.tsx"
-kind = "component"
-symbol = "HomeScreen"
-before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
-after = "Home presents launch readiness next to Start; account identity is in Settings."
-
-[[separation_of_concerns.boundaries]]
-path = "src/HomeScreen.tsx"
-kind = "component"
-symbol = "RotationTracker"
-before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
-after = "Home presents launch readiness next to Start; account identity is in Settings."
-
-[[separation_of_concerns.boundaries]]
-path = "src/HomeScreen.tsx"
-kind = "component"
-symbol = "SettingsScreen"
-before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
-after = "Home presents launch readiness next to Start; account identity is in Settings."
-
-[[separation_of_concerns.boundaries]]
-path = "src/HomeScreen.tsx"
-kind = "component"
-symbol = "WorkoutCard"
-before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
-after = "Home presents launch readiness next to Start; account identity is in Settings."
-
-[[separation_of_concerns.boundaries]]
-path = "src/HomeScreen.tsx"
-kind = "component"
-symbol = "WorkoutStartNotice"
-before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
-after = "Home presents launch readiness next to Start; account identity is in Settings."
-
-[[separation_of_concerns.boundaries]]
-path = "src/HomeScreen.tsx"
+path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "RotationTracker.anonymous@670:28"
-before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
-after = "Home presents launch readiness next to Start; account identity is in Settings."
+symbol = "performanceSegments.anonymous@1324:13"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/HomeScreen.tsx"
+path = "src/HistoryScreen.tsx"
 kind = "function"
-symbol = "workoutActionsBusy"
-before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
-after = "Home presents launch readiness next to Start; account identity is in Settings."
+symbol = "searchMatches"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "searchMatches.anonymous@1346:11"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "searchMatches.anonymous@1349:13"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "searchMatches.anonymous@1352:13"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "correctionRepLabel"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "ExercisePerformance.anonymous@773:23"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "ExercisePerformance.anonymous@795:42"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.submit.anonymous@1052:53"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.submit.anonymous@1069:26"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.anonymous@1098:22"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.anonymous@1098:22.anonymous@1109:27"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.anonymous@1098:22.anonymous@1109:27.anonymous@1110:30"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.anonymous@1098:22.anonymous@1109:27.anonymous@1110:30.anonymous@1111:33"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.anonymous@1128:20"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "performancesFor.anonymous@1221:7"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "searchMatches.anonymous@1277:33"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "searchMatches.anonymous@1278:13"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/HomeScreen.tsx"
 kind = "module"
 symbol = "src/HomeScreen.tsx"
-before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
-after = "Home presents launch readiness next to Start; account identity is in Settings."
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/RotationSetupView.tsx"
+path = "src/HomeScreen.tsx"
 kind = "component"
-symbol = "CustomTargets"
-before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
-after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
+symbol = "CruiseConfirmation"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/RotationSetupView.tsx"
+path = "src/HomeScreen.tsx"
 kind = "component"
-symbol = "SetupScreen"
-before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
-after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
+symbol = "CruiseSuggestion"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/RotationSetupView.tsx"
+path = "src/HomeScreen.tsx"
+kind = "function"
+symbol = "CruiseSuggestion.anonymous@514:15"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HomeScreen.tsx"
 kind = "component"
-symbol = "StructureScreen"
-before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
-after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
+symbol = "SettingsScreen"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/RotationSetupView.tsx"
+path = "src/HomeScreen.tsx"
 kind = "function"
-symbol = "CustomTargets.anonymous@398:20"
-before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
-after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
+symbol = "SettingsScreen.changeUnit"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/RotationSetupView.tsx"
+path = "src/HomeScreen.tsx"
 kind = "function"
-symbol = "CustomTargets.anonymous@408:20"
-before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
-after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
-
-[[separation_of_concerns.boundaries]]
-path = "src/RotationSetupView.tsx"
-kind = "function"
-symbol = "SetupScreen.anonymous@305:26"
-before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
-after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
-
-[[separation_of_concerns.boundaries]]
-path = "src/RotationSetupView.tsx"
-kind = "function"
-symbol = "SetupScreen.anonymous@305:26.anonymous@337:30"
-before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
-after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
-
-[[separation_of_concerns.boundaries]]
-path = "src/RotationSetupView.tsx"
-kind = "function"
-symbol = "SetupScreen.anonymous@306:26"
-before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
-after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
-
-[[separation_of_concerns.boundaries]]
-path = "src/RotationSetupView.tsx"
-kind = "function"
-symbol = "SetupScreen.anonymous@306:26.anonymous@338:30"
-before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
-after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
+symbol = "SettingsScreen.anonymous@890:26"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/RotationSetupView.tsx"
 kind = "module"
 symbol = "src/RotationSetupView.tsx"
-before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
-after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
+path = "src/RotationSetupView.tsx"
 kind = "component"
-symbol = "CurrentWorkoutEntry"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "component"
-symbol = "ExerciseEntry"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "component"
-symbol = "ExerciseSaveControls"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "component"
-symbol = "Prescription"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "component"
-symbol = "WorkoutNavigation"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "component"
-symbol = "WorkoutTracer"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.anonymous@223:47"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.anonymous@229:46"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.anonymous@264:22"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.anonymous@264:22.anonymous@288:27"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.anonymous@264:22.anonymous@288:27.anonymous@289:30"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.anonymous@264:22.anonymous@288:27.anonymous@289:30.anonymous@290:33"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.anonymous@303:47"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.anonymous@313:46"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.anonymous@348:18"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.anonymous@356:18"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.anonymous@382:22"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.anonymous@382:22.anonymous@404:27"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.anonymous@382:22.anonymous@404:27.anonymous@405:30"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.anonymous@382:22.anonymous@404:27.anonymous@405:30.anonymous@406:33"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.anonymous@382:22.anonymous@432:29"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.anonymous@382:22.anonymous@432:29.anonymous@433:32"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.anonymous@382:22.anonymous@432:29.anonymous@433:32.anonymous@434:35"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.save"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseEntry.save.anonymous@332:19"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseSaveControls.anonymous@527:18"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "ExerciseSaveControls.anonymous@540:20"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "Prescription.anonymous@567:30"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "Prescription.range"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "WorkoutNavigation.anonymous@265:13"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "WorkoutNavigation.anonymous@268:18"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "WorkoutNavigation.anonymous@268:18.anonymous@272:17"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "WorkoutNavigation.anonymous@285:20"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "WorkoutTracer.anonymous@162:5"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "WorkoutTracer.anonymous@203:19"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
-
-[[separation_of_concerns.boundaries]]
-path = "src/WorkoutTracer.tsx"
-kind = "function"
-symbol = "weightDisplayLabel"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+symbol = "InfoSheet"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/WorkoutTracer.tsx"
 kind = "module"
 symbol = "src/WorkoutTracer.tsx"
-before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
-after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/hooks/use-rotation-assignment.ts"
-kind = "function"
-symbol = "useRotationAssignments"
-before = "Saving assignments displayed a redundant device-save message."
-after = "Successful assignment saves clear that message while errors remain visible."
+path = "src/WorkoutTracer.tsx"
+kind = "component"
+symbol = "WorkoutTracer"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/hooks/use-rotation-assignment.ts"
-kind = "function"
-symbol = "useRotationAssignments.saveAssignment"
-before = "Saving assignments displayed a redundant device-save message."
-after = "Successful assignment saves clear that message while errors remain visible."
+path = "src/WorkoutTracer.tsx"
+kind = "component"
+symbol = "ExerciseEntry"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/hooks/use-rotation-editor.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "savedDraft"
-before = "Editing restored the original brand-specific exercise name."
-after = "Editing maps the legacy leg-curl name to its current catalogue label."
+symbol = "ExerciseEntry.anonymous@310:7"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/hooks/use-workout.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "useWorkout"
-before = "Workout commands saved only the current pending step."
-after = "Workout commands also submit version-checked corrections to earlier saved exercise entries."
+symbol = "ExerciseEntry.anonymous@310:7.anonymous@311:60"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/hooks/use-workout.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "useWorkout.correctStep"
-before = "Workout commands saved only the current pending step."
-after = "Workout commands also submit version-checked corrections to earlier saved exercise entries."
+symbol = "ExerciseEntry.anonymous@310:7.anonymous@318:58"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "applyStepPerformance"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "ExerciseEntry.anonymous@330:18"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "assertHistoryCorrectionAvailable"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "ExerciseEntry.save"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "assertHistoryCorrectionAvailable.anonymous@2790:30"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "ExerciseEntry.save.anonymous@337:19"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "assertHistoryCorrectionAvailable.anonymous@2795:33"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "ExerciseEntry.skip"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "correctLocalHistory"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "ExerciseEntry.anonymous@390:22"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "correctLocalHistory.anonymous@2762:7"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "ExerciseEntry.anonymous@390:22.anonymous@461:46"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
-kind = "function"
-symbol = "earlierCompatiblePerformance"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+path = "src/WorkoutTracer.tsx"
+kind = "component"
+symbol = "Prescription"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
-kind = "function"
-symbol = "earlierCompatiblePerformance.anonymous@2834:26"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+path = "src/WorkoutTracer.tsx"
+kind = "component"
+symbol = "StretchEntry"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "earlierCompatiblePerformance.anonymous@2839:15"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "StretchEntry.anonymous@738:24"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
-kind = "function"
-symbol = "earlierCompatiblePerformance.anonymous@2854:9"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+path = "src/WorkoutTracer.tsx"
+kind = "component"
+symbol = "WorkoutComplete"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
-kind = "function"
-symbol = "evaluateRecalculatedPerformance"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+path = "src/WorkoutTracer.tsx"
+kind = "component"
+symbol = "InformationDialog"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
-kind = "function"
-symbol = "hasPendingLogbookDecision"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+path = "src/WorkoutTracer.tsx"
+kind = "component"
+symbol = "LogbookPrompt"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
-kind = "function"
-symbol = "hasPendingLogbookDecision.anonymous@2220:5"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+path = "src/WorkoutTracer.tsx"
+kind = "component"
+symbol = "EntryFeedback"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "hasPendingLogbookDecision.anonymous@2221:5"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "EntryFeedback.anonymous@1240:32"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "hasPendingLogbookDecision.anonymous@2221:5.anonymous@2224:9"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "EntryFeedback.anonymous@1245:9"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "previousPerformance"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "EntryFeedback.anonymous@1253:9"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "previousPerformance.anonymous@2384:7"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "ExerciseEntry.anonymous@303:47"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "previousPerformance.anonymous@2395:7"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "ExerciseEntry.anonymous@313:46"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "previousPerformance.anonymous@2404:9"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "ExerciseEntry.anonymous@324:7"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "previousPerformance.anonymous@2419:15"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "ExerciseEntry.save.anonymous@332:19"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "recalculateLocalAssignmentLogbook"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "ExerciseEntry.anonymous@382:22"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/WorkoutTracer.tsx"
 kind = "function"
-symbol = "recalculateLocalAssignmentLogbook.anonymous@2823:5"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "ExerciseEntry.anonymous@382:22.anonymous@453:46"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/hooks/use-workout-draft.ts"
 kind = "function"
-symbol = "recalculateLocalAssignmentLogbook.anonymous@2825:62"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "useWorkoutDraft"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/hooks/use-workout-draft.ts"
 kind = "function"
-symbol = "recalculateOneAssignmentLogbook"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "useWorkoutDraft.anonymous@12:45"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/offline-sync.ts"
+path = "src/hooks/use-workout-draft.ts"
 kind = "function"
-symbol = "sameExercise"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+symbol = "useWorkoutDraft.update"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/hooks/use-workout-draft.ts"
+kind = "function"
+symbol = "useWorkoutDraft.clear"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/hooks/use-workout-draft.ts"
+kind = "function"
+symbol = "useWorkoutDraft.setWeights"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/hooks/use-workout-draft.ts"
+kind = "function"
+symbol = "useWorkoutDraft.setValues"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/hooks/use-workout-draft.ts"
+kind = "function"
+symbol = "isStoredDraft"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/hooks/use-workout-draft.ts"
+kind = "function"
+symbol = "isStoredDraft.anonymous@79:25"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/hooks/use-workout-draft.ts"
+kind = "function"
+symbol = "validStoredWeight"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/hooks/use-workout-draft.ts"
+kind = "module"
+symbol = "src/hooks/use-workout-draft.ts"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/offline-sync.ts"
 kind = "module"
 symbol = "src/offline-sync.ts"
-before = "Offline progression used assignment-specific history and two ab steps."
-after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/rotation-assignment-draft.ts"
+path = "src/offline-sync.ts"
 kind = "function"
-symbol = "resolveAssignmentDraft"
-before = "Custom range validation admitted empty or multiple RP ranges."
-after = "Custom RP validation requires one nonempty valid combined range."
+symbol = "deleteLocalAccountData"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/rotation-assignment-draft.ts"
+path = "src/offline-sync.ts"
 kind = "function"
-symbol = "validTargetSets"
-before = "Custom range validation admitted empty or multiple RP ranges."
-after = "Custom RP validation requires one nonempty valid combined range."
+symbol = "localAssignmentFields"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/rotation-assignment.ts"
+path = "src/offline-sync.ts"
 kind = "function"
-symbol = "hasAssignmentIdentity"
-before = "Assignment validation matched the original exercise catalogue and position count."
-after = "Validation accepts the renamed leg curl and new presets while keeping legacy second-ab assignments readable."
+symbol = "applyStepPerformance"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/rotation-assignment.ts"
+path = "src/offline-sync.ts"
 kind = "function"
-symbol = "hasValidExercise"
-before = "Assignment validation matched the original exercise catalogue and position count."
-after = "Validation accepts the renamed leg curl and new presets while keeping legacy second-ab assignments readable."
+symbol = "applyLocalStepLogbookState"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/rotation-assignment.ts"
+path = "src/offline-sync.ts"
 kind = "function"
-symbol = "hasValidStructure"
-before = "Assignment validation matched the original exercise catalogue and position count."
-after = "Validation accepts the renamed leg curl and new presets while keeping legacy second-ab assignments readable."
+symbol = "resolveLocalLogbook"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/rotation-config.ts"
+path = "src/offline-sync.ts"
 kind = "function"
-symbol = "positionLabel"
-before = "Rotation prescribed two ab slots and omitted leg-extension presets and the hinge protocol badge."
-after = "New B workouts contain one ab slot; leg extensions have presets and straight-set hinge guidance is consistent."
+symbol = "applyResolvedLogbookState"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/rotation-config.ts"
+path = "src/offline-sync.ts"
 kind = "function"
-symbol = "positionsFor"
-before = "Rotation prescribed two ab slots and omitted leg-extension presets and the hinge protocol badge."
-after = "New B workouts contain one ab slot; leg extensions have presets and straight-set hinge guidance is consistent."
+symbol = "correctLocalHistory"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/rotation-config.ts"
+path = "src/offline-sync.ts"
 kind = "function"
-symbol = "protocolChoices"
-before = "Rotation prescribed two ab slots and omitted leg-extension presets and the hinge protocol badge."
-after = "New B workouts contain one ab slot; leg extensions have presets and straight-set hinge guidance is consistent."
+symbol = "recalculateLocalAssignmentLogbook"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/rotation-config.ts"
+path = "src/offline-sync.ts"
 kind = "function"
-symbol = "protocolInfo"
-before = "Rotation prescribed two ab slots and omitted leg-extension presets and the hinge protocol badge."
-after = "New B workouts contain one ab slot; leg extensions have presets and straight-set hinge guidance is consistent."
+symbol = "recalculateLocalAssignmentLogbook.anonymous@2828:26"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/rotation-config.ts"
+path = "src/offline-sync.ts"
 kind = "function"
-symbol = "quadricepsChoices"
-before = "Rotation prescribed two ab slots and omitted leg-extension presets and the hinge protocol badge."
-after = "New B workouts contain one ab slot; leg extensions have presets and straight-set hinge guidance is consistent."
+symbol = "recalculateLocalAssignmentLogbook.anonymous@2830:46"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/rotation-config.ts"
+path = "src/offline-sync.ts"
 kind = "function"
-symbol = "restPauseChoices"
-before = "Rotation prescribed two ab slots and omitted leg-extension presets and the hinge protocol badge."
-after = "New B workouts contain one ab slot; leg extensions have presets and straight-set hinge guidance is consistent."
+symbol = "recalculateLocalAssignmentLogbook.anonymous@2833:19"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/rotation-config.ts"
+path = "src/offline-sync.ts"
 kind = "function"
-symbol = "straightProtocolBadge"
-before = "Rotation prescribed two ab slots and omitted leg-extension presets and the hinge protocol badge."
-after = "New B workouts contain one ab slot; leg extensions have presets and straight-set hinge guidance is consistent."
+symbol = "recalculateLocalAssignmentLogbook.anonymous@2839:7"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/rotation-config.ts"
-kind = "module"
-symbol = "src/rotation-config.ts"
-before = "Rotation prescribed two ab slots and omitted leg-extension presets and the hinge protocol badge."
-after = "New B workouts contain one ab slot; leg extensions have presets and straight-set hinge guidance is consistent."
-
-[[separation_of_concerns.boundaries]]
-path = "src/weight-conversion.ts"
+path = "src/offline-sync.ts"
 kind = "function"
-symbol = "conversionPreview"
-before = "Weight values required a positive numeric load."
-after = "Weight conversion preserves body-weight, bar and band labels with a zero numeric sentinel."
+symbol = "recalculateLocalAssignmentLogbook.anonymous@2844:7"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/weight-conversion.ts"
+path = "src/offline-sync.ts"
 kind = "function"
-symbol = "displayWeight"
-before = "Weight values required a positive numeric load."
-after = "Weight conversion preserves body-weight, bar and band labels with a zero numeric sentinel."
+symbol = "recalculateLocalAssignmentLogbook.anonymous@2852:7"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/weight-conversion.ts"
+path = "src/offline-sync.ts"
 kind = "function"
-symbol = "labelledMicrograms"
-before = "Weight values required a positive numeric load."
-after = "Weight conversion preserves body-weight, bar and band labels with a zero numeric sentinel."
+symbol = "recalculateLocalAssignmentLogbook.anonymous@2868:23"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/weight-conversion.ts"
+path = "src/offline-sync.ts"
 kind = "function"
-symbol = "weightMicrograms"
-before = "Weight values required a positive numeric load."
-after = "Weight conversion preserves body-weight, bar and band labels with a zero numeric sentinel."
+symbol = "recalculateLocalAssignmentLogbook.anonymous@2878:26"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
-path = "src/weight-conversion.ts"
-kind = "module"
-symbol = "src/weight-conversion.ts"
-before = "Weight values required a positive numeric load."
-after = "Weight conversion preserves body-weight, bar and band labels with a zero numeric sentinel."
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "recalculateLocalAssignmentLogbook.anonymous@2882:17"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "recalculateLocalAssignmentLogbook.anonymous@2883:15"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "assertPerformanceNumbers"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "assertPerformanceNumbers.anonymous@3293:27"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "clearCompatibleLogbookStates"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "recalculateLocalAssignmentLogbook.anonymous@2825:62"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "recalculateOneAssignmentLogbook"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "recalculateOneAssignmentLogbook.anonymous@2869:30"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "recalculateOneAssignmentLogbook.anonymous@2872:26"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "recalculateOneAssignmentLogbook.anonymous@2876:7"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "recalculateOneAssignmentLogbook.anonymous@2880:7"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/workout-domain.ts"
 kind = "function"
-symbol = "absMetric"
-before = "Logbook wins used load and target-range rules."
-after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+symbol = "currentHistoryGroups"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/workout-domain.ts"
 kind = "function"
-symbol = "absVerdict"
-before = "Logbook wins used load and target-range rules."
-after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+symbol = "currentHistoryGroups.anonymous@239:33"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/workout-domain.ts"
 kind = "function"
-symbol = "compareAbs"
-before = "Logbook wins used load and target-range rules."
-after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+symbol = "currentHistoryGroups.anonymous@239:33.anonymous@244:13"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/workout-domain.ts"
 kind = "function"
-symbol = "compareLogbookPerformance"
-before = "Logbook wins used load and target-range rules."
-after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+symbol = "currentHistoryGroups.anonymous@239:33.anonymous@249:17"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/workout-domain.ts"
 kind = "function"
-symbol = "compareLogbookPerformance.anonymous@129:7"
-before = "Logbook wins used load and target-range rules."
-after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+symbol = "currentHistoryGroups.anonymous@239:33.anonymous@252:16"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/workout-domain.ts"
 kind = "function"
-symbol = "compareLogbookPerformance.anonymous@136:57"
-before = "Logbook wins used load and target-range rules."
-after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+symbol = "retiredHistoryAssignments"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/workout-domain.ts"
 kind = "function"
-symbol = "compareRestPause"
-before = "Logbook wins used load and target-range rules."
-after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+symbol = "retiredHistoryAssignments.anonymous@263:9"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/workout-domain.ts"
 kind = "function"
-symbol = "compareStraightSets"
-before = "Logbook wins used load and target-range rules."
-after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
-
-[[separation_of_concerns.boundaries]]
-path = "src/workout-domain.ts"
-kind = "function"
-symbol = "compareStraightSets.anonymous@180:43"
-before = "Logbook wins used load and target-range rules."
-after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
-
-[[separation_of_concerns.boundaries]]
-path = "src/workout-domain.ts"
-kind = "function"
-symbol = "compareTimedHold"
-before = "Logbook wins used load and target-range rules."
-after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
-
-[[separation_of_concerns.boundaries]]
-path = "src/workout-domain.ts"
-kind = "function"
-symbol = "performanceScore"
-before = "Logbook wins used load and target-range rules."
-after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
-
-[[separation_of_concerns.boundaries]]
-path = "src/workout-domain.ts"
-kind = "function"
-symbol = "validLoadKind"
-before = "Logbook wins used load and target-range rules."
-after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
-
-[[separation_of_concerns.boundaries]]
-path = "src/workout-domain.ts"
-kind = "function"
-symbol = "validWeightEntry"
-before = "Logbook wins used load and target-range rules."
-after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+symbol = "historyAssignmentKey"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [[separation_of_concerns.boundaries]]
 path = "src/workout-domain.ts"
 kind = "module"
 symbol = "src/workout-domain.ts"
-before = "Logbook wins used load and target-range rules."
-after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "function"
+symbol = "validPerformanceInteger"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "function"
+symbol = "exerciseName"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "function"
+symbol = "currentHistoryGroups.anonymous@239:33.anonymous@242:9"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "function"
+symbol = "retiredHistoryAssignments.anonymous@254:15"
+before = "Workout entries were transient; dialogs left background controls reachable; exercise history and failure state were split by assignment."
+after = "Draft storage and focus containment have separate owners. Shared exercise history drives compatible failure sequences, while presentation handles entry feedback and correction controls."
 
 [architecture]
-dependency_direction = "Presentation calls existing workout hooks; hooks submit offline operations; the reducer and SQL functions implement persistence while shared domain helpers calculate scores. PGlite is test-only."
-reviewed_paths = ["src/FoundationHome.tsx", "src/HistoryScreen.tsx", "src/HomeScreen.tsx", "src/RotationSetupView.tsx", "src/WorkoutTracer.tsx", "src/hooks/use-rotation-assignment.ts", "src/hooks/use-rotation-editor.ts", "src/hooks/use-workout.ts", "src/offline-sync.ts", "src/rotation-assignment-draft.ts", "src/rotation-assignment.ts", "src/rotation-config.ts", "src/weight-conversion.ts", "src/workout-domain.ts"]
+dependency_direction = "React screens use an isolated draft hook and shared dialog; the offline reducer and database replay compatible exercise history; pure domain functions normalize names and validate integer bounds."
+reviewed_paths = ["src/Dialog.tsx", "src/FoundationHome.tsx", "src/HistoryScreen.tsx", "src/HomeScreen.tsx", "src/RotationSetupView.tsx", "src/WorkoutTracer.tsx", "src/hooks/use-workout-draft.ts", "src/offline-sync.ts", "src/workout-domain.ts"]
 
 [responsibility_boundary]
-path = "src/workout-domain.ts"
-owns = "Pure performance comparison and data-shape validation."
-does_not_own = "React navigation, device storage, authentication, cloud RPCs, or deployment."
+path = "src/hooks/use-workout-draft.ts"
+owns = "Device-local pending workout inputs, validated restoration and cleanup after successful submission."
+does_not_own = "Cloud synchronization, saved performance, authentication, comparison rules or workout progression."
 
 [incremental_refactor]
-target = "Separate exercise identity from workout-slot history and make workout prescriptions visible."
-completed_step = "Keep persisted historical assignments intact while adapting new workout composition, comparison logic, presentation and corresponding cloud functions together."
+target = "Remove audited workout friction while preserving existing saved data and training rules."
+completed_step = "Reusable draft and dialog behavior, shared history identity, correction input controls and paired client/database enforcement."
 
 [review_handoff]
 summary = "DERIVED_FROM_AUTHENTICATED_EVIDENCE"
 remaining_risks = ["DERIVED_FROM_AUTHENTICATED_EVIDENCE"]
 
 [human_review]
-naming = "Names distinguish compatible performance history, load type, estimated score and per-assignment enforcement."
-cohesion = "UI helpers own display and controls; validation and scoring stay in domain modules; offline reducer and SQL implement matching state transitions."
-intended_behavior = "Owner-requested updates preserve saved history, synchronize exercise baselines across workout slots, and use estimated strength for weighted logbook and mulligan decisions."
-reviewability = "Production changes are accompanied by targeted runtime and database checks. The owner separately authorized removing AGENTS.md. The database migration must be applied before clients use new load types and presets."
+naming = "RP1/RP2/RP3 are owner-approved; shared failure tracking describes consecutive compatible appearances, not a lifetime or whole-blast allowance."
+cohesion = "Draft storage and focus management are independent of workout business rules. Reducer and SQL replay the same exercise sequence."
+intended_behavior = "A mulligan follows the exercise across slots; a later win clears it. Corrections and undo recalculate shared history."
+reviewability = "Owner approved the interactive mockup and asked to resume implementation and delivery. Tests cover the reproduced defects without using real production workout data."

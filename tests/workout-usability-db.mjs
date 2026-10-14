@@ -14,7 +14,8 @@ for (const file of readdirSync(dir)
       f.endsWith(".sql") &&
       (f < "20260811054903" ||
         f.startsWith("20260812025545") ||
-        f.startsWith("20261013")),
+        f.startsWith("20261013") ||
+        f.startsWith("20261014")),
   )) {
   try {
     await db.exec(readFileSync(path.join(dir, file), "utf8"));
@@ -211,5 +212,106 @@ console.log(
 );
 console.log(
   "PASS: one ab, legacy second ab retained, B1 to B3 shared history, all three load labels, estimated strength, cross-slot correction guard",
+);
+
+async function logHamstrings(workout, amount) {
+  const rows = (
+    await db.query(
+      `select * from public.workout_steps where workout_id=$1 order by ordinal`,
+      [workout.workout_id],
+    )
+  ).rows;
+  let logged;
+  for (const step of rows) {
+    const target = step.body_part === "hamstrings" && step.kind === "exercise";
+    const result = (
+      await db.query(
+        `select public.save_workout_step($1,gen_random_uuid(),$2,$3::jsonb,$4::integer[],null) result`,
+        [
+          step.step_id,
+          target ? "completed" : "skipped",
+          JSON.stringify(target ? [{ amount, unit: "lb" }] : []),
+          target ? [10, 3, 2] : [],
+        ],
+      )
+    ).rows[0].result;
+    if (target) {
+      logged = result.step;
+      if (logged.enforcement_action) return logged;
+    }
+  }
+  return logged;
+}
+async function finishPending(workout) {
+  for (const step of (
+    await db.query(
+      `select * from public.workout_steps where workout_id=$1 and status='pending' order by ordinal`,
+      [workout.workout_id],
+    )
+  ).rows)
+    await db.query(
+      `select public.save_workout_step($1,gen_random_uuid(),'skipped','[]','{}',null)`,
+      [step.step_id],
+    );
+}
+async function startSlot(slot) {
+  await db.query(
+    `update public.workout_rotation_state set next_slot=$1 where user_id=$2`,
+    [slot, owner],
+  );
+  return (
+    await db.query(`select * from public.start_workout(gen_random_uuid())`)
+  ).rows[0];
+}
+const failure = await logHamstrings(third, "110");
+assert.equal(failure.enforcement_action, "first_failure");
+await db.query(
+  `select public.resolve_logbook_action($1,gen_random_uuid(),'use_mulligan')`,
+  [failure.step_id],
+);
+await finishPending(third);
+const fourth = await startSlot("B3");
+const crossFailure = await logHamstrings(fourth, "100");
+assert.equal(crossFailure.mulligan_used, true);
+assert.equal(crossFailure.enforcement_action, "replacement_required");
+await db.query(`select public.undo_workout_step($1,gen_random_uuid())`, [
+  crossFailure.last_operation_id,
+]);
+const undone = (
+  await db.query(`select * from public.workout_steps where step_id=$1`, [
+    crossFailure.step_id,
+  ])
+).rows[0];
+assert.equal(undone.status, "pending");
+const winning = (
+  await db.query(
+    `select public.save_workout_step($1,gen_random_uuid(),'completed','[{"amount":"130","unit":"lb"}]',array[10,3,2],null) result`,
+    [crossFailure.step_id],
+  )
+).rows[0].result.step;
+assert.equal(winning.verdict, "win");
+assert.equal(winning.enforcement_action, null);
+await finishPending(fourth);
+const fifth = await startSlot("B1");
+const firstFailureAgain = await logHamstrings(fifth, "120");
+assert.equal(firstFailureAgain.mulligan_used, false);
+assert.equal(firstFailureAgain.enforcement_action, "first_failure");
+await assert.rejects(
+  db.query(
+    `select public.normalize_workout_performance('rest_pause','[{"min":11,"max":15}]','[{"amount":"100","unit":"lb"}]',array[2147483648]::integer[],null)`,
+  ),
+  /out of range/,
+);
+console.log(
+  "PASS: cross-slot mulligan, second failure, undo, shared win reset, integer bounds",
+);
+const largeTotal = (
+  await db.query(
+    `select public.evaluate_logbook_performance('chest','rest_pause','[]','[{"micrograms":"100"}]',array[2147483647,3,2],null,'[{"micrograms":"100"}]',array[8,3,2],null) result`,
+  )
+).rows[0].result;
+assert.equal(largeTotal.status, "win");
+console.log(
+  "PASS: RP totals do not overflow when individual rep lanes fit the database",
 );
 await db.close();

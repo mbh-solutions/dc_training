@@ -1,3 +1,4 @@
+import { Dialog } from "./Dialog.jsx";
 import { useEffect, useState, type FormEvent } from "react";
 import type { FoundationHomeProps } from "./FoundationHome.js";
 import type { OfflineSyncState } from "./hooks/use-offline-sync.js";
@@ -453,11 +454,10 @@ function CruiseConfirmation({
 }) {
   return (
     <div className="sheet-backdrop" role="presentation">
-      <section
+      <Dialog
         aria-labelledby="cruise-confirmation-title"
-        aria-modal="true"
         className="bottom-sheet"
-        role="dialog"
+        onDismiss={saving ? undefined : onCancel}
       >
         <h2 id="cruise-confirmation-title">START CRUISE?</h2>
         <p>
@@ -484,7 +484,7 @@ function CruiseConfirmation({
         >
           CANCEL
         </button>
-      </section>
+      </Dialog>
       <style>{sheetStyles}</style>
     </div>
   );
@@ -505,11 +505,16 @@ function CruiseSuggestion({
 }) {
   return (
     <div className="sheet-backdrop" role="presentation">
-      <section
+      <Dialog
         aria-labelledby="cruise-suggestion-title"
-        aria-modal="true"
         className="bottom-sheet"
-        role="dialog"
+        onDismiss={
+          saving
+            ? undefined
+            : () => {
+                void onDismiss();
+              }
+        }
       >
         <p className="sheet-kicker">BLAST STATUS</p>
         <h2 id="cruise-suggestion-title">IT'S BEEN 7 WEEKS</h2>
@@ -534,7 +539,7 @@ function CruiseSuggestion({
         >
           {saving ? "SAVING" : "NOT NOW"}
         </button>
-      </section>
+      </Dialog>
       <style>{sheetStyles}</style>
     </div>
   );
@@ -829,11 +834,18 @@ export function SettingsScreen({
   userId: string;
 }) {
   const [saving, setSaving] = useState(false);
+  const [failedUnit, setFailedUnit] = useState<WeightUnit | null>(null);
   const changeUnit = async (next: WeightUnit) => {
     if (next === unit || saving || !editingEnabled) return;
     setSaving(true);
-    await onChangeUnit(next);
-    setSaving(false);
+    setFailedUnit(null);
+    try {
+      if (!(await onChangeUnit(next))) setFailedUnit(next);
+    } catch {
+      setFailedUnit(next);
+    } finally {
+      setSaving(false);
+    }
   };
   const canSignOut = online && syncState === "synced";
 
@@ -868,6 +880,19 @@ export function SettingsScreen({
             Changing units converts weights everywhere. Your workout history
             stays together.
           </p>
+          {failedUnit && (
+            <p className="form-message" role="alert">
+              Couldn’t save your unit. Still using {unit}.
+              <button
+                type="button"
+                className="secondary-action"
+                disabled={saving || !editingEnabled}
+                onClick={() => void changeUnit(failedUnit)}
+              >
+                TRY AGAIN
+              </button>
+            </p>
+          )}
           {!editingEnabled && (
             <p className="quiet-note">FINISH SYNC BEFORE CHANGING SETTINGS</p>
           )}

@@ -45,9 +45,7 @@
       "kind": "regression"
     },
     {
-      "covers": [
-        "src/HistoryScreen.tsx"
-      ],
+      "covers": ["src/HistoryScreen.tsx"],
       "id": "history-v1",
       "kind": "regression"
     },
@@ -92,6 +90,7 @@
       "id": "workout-journey",
       "kind": "regression",
       "covers": [
+        "src/Dialog.tsx",
         "src/FoundationHome.tsx",
         "src/HistoryScreen.tsx",
         "src/HomeScreen.tsx",
@@ -99,6 +98,7 @@
         "src/WorkoutTracer.tsx",
         "src/hooks/use-rotation-assignment.ts",
         "src/hooks/use-rotation-editor.ts",
+        "src/hooks/use-workout-draft.ts",
         "src/hooks/use-workout.ts",
         "src/offline-sync.ts",
         "src/rotation-assignment-draft.ts",
@@ -237,6 +237,20 @@
       "scenario": "workout-journey",
       "selector": "journey",
       "target": "src/offline-sync.ts"
+    },
+    {
+      "id": "journey-dialog",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/Dialog.tsx"
+    },
+    {
+      "id": "journey-draft",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/hooks/use-workout-draft.ts"
     },
     {
       "id": "offline-sync-v1",

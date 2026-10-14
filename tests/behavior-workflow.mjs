@@ -64,7 +64,9 @@ export async function workflowCase(slot, amount, reps) {
   await input(history.container, "#history-search", "Incline barbell press");
   const result = [
     ...history.container.querySelectorAll(".history-search-results button"),
-  ].find((b) => b.querySelector("span").textContent === slot);
+  ].find((b) =>
+    b.querySelector("span").textContent.split(" · ").includes(slot),
+  );
   assert.ok(result);
   await act(async () => result.click());
   assert.ok(history.container.textContent.includes("Incline barbell press"));

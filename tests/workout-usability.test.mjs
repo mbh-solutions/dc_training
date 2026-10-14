@@ -309,7 +309,7 @@ test("workout shows targets, saves labelled loads, and keeps current draft when 
       .find((b) => b.textContent === "PREVIOUS EXERCISE")
       .click(),
   );
-  assert.match(document.body.textContent, /11–15 TOTAL REPS · 3 MINI-SETS/);
+  assert.match(document.body.textContent, /11–15 TOTAL REPS/);
   await act(async () =>
     [...document.querySelectorAll("button")]
       .find((b) => b.textContent === "RETURN TO CURRENT")
