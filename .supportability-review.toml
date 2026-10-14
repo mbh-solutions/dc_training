@@ -2,40 +2,1002 @@ schema_version = "1.0"
 module_boundaries = []
 
 [behavior]
-intended_behavior = "Codex review is owner opt-in advisory activity and is never automatically requested, retried, required, or blocking."
-proof = "AGENTS.md contains the shared owner-opt-in rule; the organization-required Gate remains the deterministic merge boundary."
+intended_behavior = "Improve workout navigation and prescriptions, support labelled loads, share exercise history across slots, compare weighted performance using estimated one-rep-max scores, and simplify rotation and home screens."
+proof = "Twenty runtime/domain tests, a PGlite migration and workout-flow check, existing characterization drivers, lint and production build exercise the changed behavior."
 
 [characterization]
-captured_behavior = "Product source, tests, dependencies, runtime configuration, and Supportability thresholds remain unchanged; only repository review instructions and their evidence change."
-proof = "Changed files are AGENTS.md and .supportability-review.toml only; neither is a production or high-risk path, and no changed file is excluded."
+captured_behavior = "Retain authenticated owner access, recovery, offline state, assignment round trips and workout/history surface contracts while updating text selectors for the requested home cleanup."
+proof = "Existing characterization goldens remain unchanged. A schema-2 workflow scenario observes actual workout entry, history correction and rotation editing on both base and head, with whole-file behavior obligations. Runtime tests cover draft-preserving backward navigation, explicit prescriptions, labelled loads, one ab, B1/B3 history in both directions and estimated-strength verdicts. Database checks exercise correction propagation and active-history guards."
 
 [separation_of_concerns]
-before = "Repository instructions required three serial connector reviews for every pull-request head and workflow run."
-after = "Repository instructions permit Codex review only after an explicit owner request in the current task and never make it qualification or merge evidence."
-boundaries = []
+before = "Workout screens embedded navigation and entry decisions; assignment identity also selected prior performance."
+after = "Small presentation helpers own readiness, navigation, and save controls. Domain scoring remains pure. Offline and database persistence select compatible exercise history and enforce correction ordering."
+
+[[separation_of_concerns.boundaries]]
+path = "src/FoundationHome.tsx"
+kind = "component"
+symbol = "FoundationDashboardHome"
+before = "Dashboard provided generic data readiness to workout launch."
+after = "Dashboard checks all required assignments and wires saved-exercise corrections."
+
+[[separation_of_concerns.boundaries]]
+path = "src/FoundationHome.tsx"
+kind = "function"
+symbol = "FoundationDashboardHome.anonymous@296:9"
+before = "Dashboard provided generic data readiness to workout launch."
+after = "Dashboard checks all required assignments and wires saved-exercise corrections."
+
+[[separation_of_concerns.boundaries]]
+path = "src/FoundationHome.tsx"
+kind = "function"
+symbol = "renderEditingScreen"
+before = "Dashboard provided generic data readiness to workout launch."
+after = "Dashboard checks all required assignments and wires saved-exercise corrections."
+
+[[separation_of_concerns.boundaries]]
+path = "src/FoundationHome.tsx"
+kind = "module"
+symbol = "src/FoundationHome.tsx"
+before = "Dashboard provided generic data readiness to workout launch."
+after = "Dashboard checks all required assignments and wires saved-exercise corrections."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "component"
+symbol = "CorrectionEditor"
+before = "History selected performances by slot and exercise and displayed numeric loads."
+after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "component"
+symbol = "ExerciseButton"
+before = "History selected performances by slot and exercise and displayed numeric loads."
+after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "component"
+symbol = "ExercisePerformance"
+before = "History selected performances by slot and exercise and displayed numeric loads."
+after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "component"
+symbol = "WorkoutDetail"
+before = "History selected performances by slot and exercise and displayed numeric loads."
+after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.anonymous@1085:22"
+before = "History selected performances by slot and exercise and displayed numeric loads."
+after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "CorrectionEditor.anonymous@1098:22"
+before = "History selected performances by slot and exercise and displayed numeric loads."
+after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "WorkoutDetail.anonymous@702:16"
+before = "History selected performances by slot and exercise and displayed numeric loads."
+after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "WorkoutDetail.anonymous@705:16"
+before = "History selected performances by slot and exercise and displayed numeric loads."
+after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "correctionPayloadFingerprint"
+before = "History selected performances by slot and exercise and displayed numeric loads."
+after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "correctionPayloadFingerprint.anonymous@1244:26"
+before = "History selected performances by slot and exercise and displayed numeric loads."
+after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "performancesFor"
+before = "History selected performances by slot and exercise and displayed numeric loads."
+after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "performancesFor.anonymous@1171:5"
+before = "History selected performances by slot and exercise and displayed numeric loads."
+after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "performancesFor.anonymous@1192:5"
+before = "History selected performances by slot and exercise and displayed numeric loads."
+after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HistoryScreen.tsx"
+kind = "function"
+symbol = "weightLabel"
+before = "History selected performances by slot and exercise and displayed numeric loads."
+after = "History follows exercise identity across slots and displays labelled loads without unit conversion."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HomeScreen.tsx"
+kind = "component"
+symbol = "AccountControls"
+before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
+after = "Home presents launch readiness next to Start; account identity is in Settings."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HomeScreen.tsx"
+kind = "component"
+symbol = "CruiseHome"
+before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
+after = "Home presents launch readiness next to Start; account identity is in Settings."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HomeScreen.tsx"
+kind = "component"
+symbol = "HomeScreen"
+before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
+after = "Home presents launch readiness next to Start; account identity is in Settings."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HomeScreen.tsx"
+kind = "component"
+symbol = "RotationTracker"
+before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
+after = "Home presents launch readiness next to Start; account identity is in Settings."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HomeScreen.tsx"
+kind = "component"
+symbol = "SettingsScreen"
+before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
+after = "Home presents launch readiness next to Start; account identity is in Settings."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HomeScreen.tsx"
+kind = "component"
+symbol = "WorkoutCard"
+before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
+after = "Home presents launch readiness next to Start; account identity is in Settings."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HomeScreen.tsx"
+kind = "component"
+symbol = "WorkoutStartNotice"
+before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
+after = "Home presents launch readiness next to Start; account identity is in Settings."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HomeScreen.tsx"
+kind = "function"
+symbol = "RotationTracker.anonymous@670:28"
+before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
+after = "Home presents launch readiness next to Start; account identity is in Settings."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HomeScreen.tsx"
+kind = "function"
+symbol = "workoutActionsBusy"
+before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
+after = "Home presents launch readiness next to Start; account identity is in Settings."
+
+[[separation_of_concerns.boundaries]]
+path = "src/HomeScreen.tsx"
+kind = "module"
+symbol = "src/HomeScreen.tsx"
+before = "Home mixed account details, a last-slot-only tracker and workout launch controls."
+after = "Home presents launch readiness next to Start; account identity is in Settings."
+
+[[separation_of_concerns.boundaries]]
+path = "src/RotationSetupView.tsx"
+kind = "component"
+symbol = "CustomTargets"
+before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
+after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
+
+[[separation_of_concerns.boundaries]]
+path = "src/RotationSetupView.tsx"
+kind = "component"
+symbol = "SetupScreen"
+before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
+after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
+
+[[separation_of_concerns.boundaries]]
+path = "src/RotationSetupView.tsx"
+kind = "component"
+symbol = "StructureScreen"
+before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
+after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
+
+[[separation_of_concerns.boundaries]]
+path = "src/RotationSetupView.tsx"
+kind = "function"
+symbol = "CustomTargets.anonymous@398:20"
+before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
+after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
+
+[[separation_of_concerns.boundaries]]
+path = "src/RotationSetupView.tsx"
+kind = "function"
+symbol = "CustomTargets.anonymous@408:20"
+before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
+after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
+
+[[separation_of_concerns.boundaries]]
+path = "src/RotationSetupView.tsx"
+kind = "function"
+symbol = "SetupScreen.anonymous@305:26"
+before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
+after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
+
+[[separation_of_concerns.boundaries]]
+path = "src/RotationSetupView.tsx"
+kind = "function"
+symbol = "SetupScreen.anonymous@305:26.anonymous@337:30"
+before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
+after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
+
+[[separation_of_concerns.boundaries]]
+path = "src/RotationSetupView.tsx"
+kind = "function"
+symbol = "SetupScreen.anonymous@306:26"
+before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
+after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
+
+[[separation_of_concerns.boundaries]]
+path = "src/RotationSetupView.tsx"
+kind = "function"
+symbol = "SetupScreen.anonymous@306:26.anonymous@338:30"
+before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
+after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
+
+[[separation_of_concerns.boundaries]]
+path = "src/RotationSetupView.tsx"
+kind = "module"
+symbol = "src/RotationSetupView.tsx"
+before = "Setup used numbered abs, an isolated calf info icon and ambiguous custom RP labels."
+after = "Setup shows one ab assignment, a labelled calf information button and explicit combined RP targets."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "component"
+symbol = "CurrentWorkoutEntry"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "component"
+symbol = "ExerciseEntry"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "component"
+symbol = "ExerciseSaveControls"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "component"
+symbol = "Prescription"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "component"
+symbol = "WorkoutNavigation"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "component"
+symbol = "WorkoutTracer"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.anonymous@223:47"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.anonymous@229:46"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.anonymous@264:22"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.anonymous@264:22.anonymous@288:27"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.anonymous@264:22.anonymous@288:27.anonymous@289:30"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.anonymous@264:22.anonymous@288:27.anonymous@289:30.anonymous@290:33"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.anonymous@303:47"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.anonymous@313:46"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.anonymous@348:18"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.anonymous@356:18"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.anonymous@382:22"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.anonymous@382:22.anonymous@404:27"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.anonymous@382:22.anonymous@404:27.anonymous@405:30"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.anonymous@382:22.anonymous@404:27.anonymous@405:30.anonymous@406:33"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.anonymous@382:22.anonymous@432:29"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.anonymous@382:22.anonymous@432:29.anonymous@433:32"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.anonymous@382:22.anonymous@432:29.anonymous@433:32.anonymous@434:35"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.save"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseEntry.save.anonymous@332:19"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseSaveControls.anonymous@527:18"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "ExerciseSaveControls.anonymous@540:20"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "Prescription.anonymous@567:30"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "Prescription.range"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "WorkoutNavigation.anonymous@265:13"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "WorkoutNavigation.anonymous@268:18"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "WorkoutNavigation.anonymous@268:18.anonymous@272:17"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "WorkoutNavigation.anonymous@285:20"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "WorkoutTracer.anonymous@162:5"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "WorkoutTracer.anonymous@203:19"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "function"
+symbol = "weightDisplayLabel"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/WorkoutTracer.tsx"
+kind = "module"
+symbol = "src/WorkoutTracer.tsx"
+before = "Workout entry displayed performance inputs without full prescriptions or backward exercise navigation."
+after = "Workout entry displays targets and load labels, preserves drafts while navigating, and allows saved-step correction."
+
+[[separation_of_concerns.boundaries]]
+path = "src/hooks/use-rotation-assignment.ts"
+kind = "function"
+symbol = "useRotationAssignments"
+before = "Saving assignments displayed a redundant device-save message."
+after = "Successful assignment saves clear that message while errors remain visible."
+
+[[separation_of_concerns.boundaries]]
+path = "src/hooks/use-rotation-assignment.ts"
+kind = "function"
+symbol = "useRotationAssignments.saveAssignment"
+before = "Saving assignments displayed a redundant device-save message."
+after = "Successful assignment saves clear that message while errors remain visible."
+
+[[separation_of_concerns.boundaries]]
+path = "src/hooks/use-rotation-editor.ts"
+kind = "function"
+symbol = "savedDraft"
+before = "Editing restored the original brand-specific exercise name."
+after = "Editing maps the legacy leg-curl name to its current catalogue label."
+
+[[separation_of_concerns.boundaries]]
+path = "src/hooks/use-workout.ts"
+kind = "function"
+symbol = "useWorkout"
+before = "Workout commands saved only the current pending step."
+after = "Workout commands also submit version-checked corrections to earlier saved exercise entries."
+
+[[separation_of_concerns.boundaries]]
+path = "src/hooks/use-workout.ts"
+kind = "function"
+symbol = "useWorkout.correctStep"
+before = "Workout commands saved only the current pending step."
+after = "Workout commands also submit version-checked corrections to earlier saved exercise entries."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "applyStepPerformance"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "assertHistoryCorrectionAvailable"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "assertHistoryCorrectionAvailable.anonymous@2790:30"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "assertHistoryCorrectionAvailable.anonymous@2795:33"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "correctLocalHistory"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "correctLocalHistory.anonymous@2762:7"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "earlierCompatiblePerformance"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "earlierCompatiblePerformance.anonymous@2834:26"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "earlierCompatiblePerformance.anonymous@2839:15"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "earlierCompatiblePerformance.anonymous@2854:9"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "evaluateRecalculatedPerformance"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "hasPendingLogbookDecision"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "hasPendingLogbookDecision.anonymous@2220:5"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "hasPendingLogbookDecision.anonymous@2221:5"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "hasPendingLogbookDecision.anonymous@2221:5.anonymous@2224:9"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "previousPerformance"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "previousPerformance.anonymous@2384:7"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "previousPerformance.anonymous@2395:7"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "previousPerformance.anonymous@2404:9"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "previousPerformance.anonymous@2419:15"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "recalculateLocalAssignmentLogbook"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "recalculateLocalAssignmentLogbook.anonymous@2823:5"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "recalculateLocalAssignmentLogbook.anonymous@2825:62"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "recalculateOneAssignmentLogbook"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "function"
+symbol = "sameExercise"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/offline-sync.ts"
+kind = "module"
+symbol = "src/offline-sync.ts"
+before = "Offline progression used assignment-specific history and two ab steps."
+after = "Offline progression uses compatible exercise history across slots, one ab step, and recalculates corrections across affected assignments."
+
+[[separation_of_concerns.boundaries]]
+path = "src/rotation-assignment-draft.ts"
+kind = "function"
+symbol = "resolveAssignmentDraft"
+before = "Custom range validation admitted empty or multiple RP ranges."
+after = "Custom RP validation requires one nonempty valid combined range."
+
+[[separation_of_concerns.boundaries]]
+path = "src/rotation-assignment-draft.ts"
+kind = "function"
+symbol = "validTargetSets"
+before = "Custom range validation admitted empty or multiple RP ranges."
+after = "Custom RP validation requires one nonempty valid combined range."
+
+[[separation_of_concerns.boundaries]]
+path = "src/rotation-assignment.ts"
+kind = "function"
+symbol = "hasAssignmentIdentity"
+before = "Assignment validation matched the original exercise catalogue and position count."
+after = "Validation accepts the renamed leg curl and new presets while keeping legacy second-ab assignments readable."
+
+[[separation_of_concerns.boundaries]]
+path = "src/rotation-assignment.ts"
+kind = "function"
+symbol = "hasValidExercise"
+before = "Assignment validation matched the original exercise catalogue and position count."
+after = "Validation accepts the renamed leg curl and new presets while keeping legacy second-ab assignments readable."
+
+[[separation_of_concerns.boundaries]]
+path = "src/rotation-assignment.ts"
+kind = "function"
+symbol = "hasValidStructure"
+before = "Assignment validation matched the original exercise catalogue and position count."
+after = "Validation accepts the renamed leg curl and new presets while keeping legacy second-ab assignments readable."
+
+[[separation_of_concerns.boundaries]]
+path = "src/rotation-config.ts"
+kind = "function"
+symbol = "positionLabel"
+before = "Rotation prescribed two ab slots and omitted leg-extension presets and the hinge protocol badge."
+after = "New B workouts contain one ab slot; leg extensions have presets and straight-set hinge guidance is consistent."
+
+[[separation_of_concerns.boundaries]]
+path = "src/rotation-config.ts"
+kind = "function"
+symbol = "positionsFor"
+before = "Rotation prescribed two ab slots and omitted leg-extension presets and the hinge protocol badge."
+after = "New B workouts contain one ab slot; leg extensions have presets and straight-set hinge guidance is consistent."
+
+[[separation_of_concerns.boundaries]]
+path = "src/rotation-config.ts"
+kind = "function"
+symbol = "protocolChoices"
+before = "Rotation prescribed two ab slots and omitted leg-extension presets and the hinge protocol badge."
+after = "New B workouts contain one ab slot; leg extensions have presets and straight-set hinge guidance is consistent."
+
+[[separation_of_concerns.boundaries]]
+path = "src/rotation-config.ts"
+kind = "function"
+symbol = "protocolInfo"
+before = "Rotation prescribed two ab slots and omitted leg-extension presets and the hinge protocol badge."
+after = "New B workouts contain one ab slot; leg extensions have presets and straight-set hinge guidance is consistent."
+
+[[separation_of_concerns.boundaries]]
+path = "src/rotation-config.ts"
+kind = "function"
+symbol = "quadricepsChoices"
+before = "Rotation prescribed two ab slots and omitted leg-extension presets and the hinge protocol badge."
+after = "New B workouts contain one ab slot; leg extensions have presets and straight-set hinge guidance is consistent."
+
+[[separation_of_concerns.boundaries]]
+path = "src/rotation-config.ts"
+kind = "function"
+symbol = "restPauseChoices"
+before = "Rotation prescribed two ab slots and omitted leg-extension presets and the hinge protocol badge."
+after = "New B workouts contain one ab slot; leg extensions have presets and straight-set hinge guidance is consistent."
+
+[[separation_of_concerns.boundaries]]
+path = "src/rotation-config.ts"
+kind = "function"
+symbol = "straightProtocolBadge"
+before = "Rotation prescribed two ab slots and omitted leg-extension presets and the hinge protocol badge."
+after = "New B workouts contain one ab slot; leg extensions have presets and straight-set hinge guidance is consistent."
+
+[[separation_of_concerns.boundaries]]
+path = "src/rotation-config.ts"
+kind = "module"
+symbol = "src/rotation-config.ts"
+before = "Rotation prescribed two ab slots and omitted leg-extension presets and the hinge protocol badge."
+after = "New B workouts contain one ab slot; leg extensions have presets and straight-set hinge guidance is consistent."
+
+[[separation_of_concerns.boundaries]]
+path = "src/weight-conversion.ts"
+kind = "function"
+symbol = "conversionPreview"
+before = "Weight values required a positive numeric load."
+after = "Weight conversion preserves body-weight, bar and band labels with a zero numeric sentinel."
+
+[[separation_of_concerns.boundaries]]
+path = "src/weight-conversion.ts"
+kind = "function"
+symbol = "displayWeight"
+before = "Weight values required a positive numeric load."
+after = "Weight conversion preserves body-weight, bar and band labels with a zero numeric sentinel."
+
+[[separation_of_concerns.boundaries]]
+path = "src/weight-conversion.ts"
+kind = "function"
+symbol = "labelledMicrograms"
+before = "Weight values required a positive numeric load."
+after = "Weight conversion preserves body-weight, bar and band labels with a zero numeric sentinel."
+
+[[separation_of_concerns.boundaries]]
+path = "src/weight-conversion.ts"
+kind = "function"
+symbol = "weightMicrograms"
+before = "Weight values required a positive numeric load."
+after = "Weight conversion preserves body-weight, bar and band labels with a zero numeric sentinel."
+
+[[separation_of_concerns.boundaries]]
+path = "src/weight-conversion.ts"
+kind = "module"
+symbol = "src/weight-conversion.ts"
+before = "Weight values required a positive numeric load."
+after = "Weight conversion preserves body-weight, bar and band labels with a zero numeric sentinel."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "function"
+symbol = "absMetric"
+before = "Logbook wins used load and target-range rules."
+after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "function"
+symbol = "absVerdict"
+before = "Logbook wins used load and target-range rules."
+after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "function"
+symbol = "compareAbs"
+before = "Logbook wins used load and target-range rules."
+after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "function"
+symbol = "compareLogbookPerformance"
+before = "Logbook wins used load and target-range rules."
+after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "function"
+symbol = "compareLogbookPerformance.anonymous@129:7"
+before = "Logbook wins used load and target-range rules."
+after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "function"
+symbol = "compareLogbookPerformance.anonymous@136:57"
+before = "Logbook wins used load and target-range rules."
+after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "function"
+symbol = "compareRestPause"
+before = "Logbook wins used load and target-range rules."
+after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "function"
+symbol = "compareStraightSets"
+before = "Logbook wins used load and target-range rules."
+after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "function"
+symbol = "compareStraightSets.anonymous@180:43"
+before = "Logbook wins used load and target-range rules."
+after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "function"
+symbol = "compareTimedHold"
+before = "Logbook wins used load and target-range rules."
+after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "function"
+symbol = "performanceScore"
+before = "Logbook wins used load and target-range rules."
+after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "function"
+symbol = "validLoadKind"
+before = "Logbook wins used load and target-range rules."
+after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "function"
+symbol = "validWeightEntry"
+before = "Logbook wins used load and target-range rules."
+after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
+
+[[separation_of_concerns.boundaries]]
+path = "src/workout-domain.ts"
+kind = "module"
+symbol = "src/workout-domain.ts"
+before = "Logbook wins used load and target-range rules."
+after = "Weighted rep sets use exact Epley comparison scores; labelled loads compare reps and timed holds retain duration comparisons."
 
 [architecture]
-dependency_direction = "Repository instructions no longer couple advisory Codex review to the external deterministic Gate; no application dependency changes."
-reviewed_paths = [
-    "AGENTS.md",
-    ".supportability-review.toml",
-]
+dependency_direction = "Presentation calls existing workout hooks; hooks submit offline operations; the reducer and SQL functions implement persistence while shared domain helpers calculate scores. PGlite is test-only."
+reviewed_paths = ["src/FoundationHome.tsx", "src/HistoryScreen.tsx", "src/HomeScreen.tsx", "src/RotationSetupView.tsx", "src/WorkoutTracer.tsx", "src/hooks/use-rotation-assignment.ts", "src/hooks/use-rotation-editor.ts", "src/hooks/use-workout.ts", "src/offline-sync.ts", "src/rotation-assignment-draft.ts", "src/rotation-assignment.ts", "src/rotation-config.ts", "src/weight-conversion.ts", "src/workout-domain.ts"]
 
 [responsibility_boundary]
-path = "AGENTS.md"
-owns = "The repository-local owner-opt-in boundary for advisory Codex review."
-does_not_own = "Automatic review requests, retries, Gate implementation, qualification, merge blocking, product behavior, dependencies, or Supportability thresholds."
+path = "src/workout-domain.ts"
+owns = "Pure performance comparison and data-shape validation."
+does_not_own = "React navigation, device storage, authentication, cloud RPCs, or deployment."
 
 [incremental_refactor]
-target = "Remove stale connector-review coupling from the repository-local agent contract."
-completed_step = "Replace the required three-review loop with the shared owner-opt-in rule without changing product code."
+target = "Separate exercise identity from workout-slot history and make workout prescriptions visible."
+completed_step = "Keep persisted historical assignments intact while adapting new workout composition, comparison logic, presentation and corresponding cloud functions together."
 
 [review_handoff]
 summary = "DERIVED_FROM_AUTHENTICATED_EVIDENCE"
 remaining_risks = ["DERIVED_FROM_AUTHENTICATED_EVIDENCE"]
 
 [human_review]
-naming = "The owner-opt-in rule names the sole authorization source and the events that never authorize a request or retry."
-cohesion = "AGENTS.md owns the advisory-review instruction; deterministic Gate enforcement remains external."
-intended_behavior = "A push, failure, timeout, missing acknowledgement, or prior request cannot trigger or retry Codex review."
-reviewability = "The complete diff contains two repository metadata files and no executable function change."
+naming = "Names distinguish compatible performance history, load type, estimated score and per-assignment enforcement."
+cohesion = "UI helpers own display and controls; validation and scoring stay in domain modules; offline reducer and SQL implement matching state transitions."
+intended_behavior = "Owner-requested updates preserve saved history, synchronize exercise baselines across workout slots, and use estimated strength for weighted logbook and mulligan decisions."
+reviewability = "Production changes are accompanied by targeted runtime and database checks. The owner separately authorized removing AGENTS.md. The database migration must be applied before clients use new load types and presets."

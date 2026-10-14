@@ -39,6 +39,9 @@ function sourcePools() {
   const corrected = "Wide-stance / sumo belt squat";
   pools.hamstrings = pools.hamstrings.filter((item) => item !== corrected);
   pools.quadriceps.splice(6, 0, corrected);
+  pools.hamstrings = pools.hamstrings.map((name) =>
+    name.replace("Lying Deltech leg curl", "Lying leg curl"),
+  );
   return pools;
 }
 
@@ -89,7 +92,6 @@ test("every exercise category and protocol branch matches the locked ledger", ()
     "hamstrings",
     "quadriceps",
     "abs_1",
-    "abs_2",
   ]);
 
   for (const slot of config.WORKOUT_SLOTS) {
@@ -130,6 +132,8 @@ test("every exercise category and protocol branch matches the locked ledger", ()
     "custom",
   ]);
   assert.deepEqual(values("quadriceps", "Leg extension", "rest_pause"), [
+    "11-15",
+    "15-20",
     "custom",
   ]);
   assert.deepEqual(

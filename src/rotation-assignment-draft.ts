@@ -12,6 +12,7 @@ const POSTGRES_INTEGER_MAX = 2_147_483_647;
 export function validTargetSets(value: unknown): value is TargetSet[] {
   return (
     Array.isArray(value) &&
+    value.length > 0 &&
     value.length <= 10 &&
     value.every(
       (target) =>
@@ -61,6 +62,8 @@ export function resolveAssignmentDraft(
     structureValid:
       availableStructures.length === 0 ||
       (Boolean(selectedStructure) &&
-        (structure !== "custom" || validTargetSets(targets))),
+        (structure !== "custom" ||
+          (validTargetSets(targets) &&
+            (protocol !== "rest_pause" || targets.length === 1)))),
   };
 }

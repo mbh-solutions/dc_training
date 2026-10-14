@@ -44,7 +44,8 @@ function hasAssignmentIdentity(row: Record<string, unknown>) {
     row.active === true &&
     typeof row.assignment_id === "string" &&
     WORKOUT_SLOTS.includes(slot) &&
-    positionsFor(slot).includes(position) &&
+    (positionsFor(slot).includes(position) ||
+      (slot.startsWith("B") && position === "abs_2")) &&
     typeof row.exercise === "string"
   );
 }
@@ -54,7 +55,7 @@ function hasValidExercise(row: Record<string, unknown>) {
   const exercise = row.exercise as string;
   return (
     (EXERCISES[categoryFor(position)] as readonly string[]).includes(
-      exercise,
+      exercise === "Lying Deltech leg curl" ? "Lying leg curl" : exercise,
     ) &&
     protocolChoices(position, exercise).some(
       (choice) => choice.value === row.protocol,
@@ -85,6 +86,8 @@ function hasValidStructure(row: Record<string, unknown>) {
   }
   const selected = choices.find((choice) => choice.value === row.structure);
   if (!selected || !validTargetSets(row.target_sets)) return false;
+  if (row.protocol === "rest_pause" && row.target_sets.length !== 1)
+    return false;
   return (
     row.structure === "custom" ||
     sameTargets(row.target_sets, selected.targets ?? [])

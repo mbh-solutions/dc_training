@@ -89,6 +89,34 @@ export function useWorkout(
     durationSeconds: number | null = null,
   ) => submitStep(step, "completed", weights, reps, durationSeconds);
 
+  const correctStep = async (
+    step: WorkoutStep,
+    weights: WeightEntry[] = [],
+    reps: number[] = [],
+    durationSeconds: number | null = null,
+  ) => {
+    if (!state) return false;
+    const key = `correct:${step.step_id}`;
+    return submit(
+      {
+        id: retryOperationId(pendingOperationIds.current, key),
+        kind: "correct_history_performance",
+        payload: {
+          ...stepTarget(state, step),
+          weights,
+          reps,
+          duration_seconds: durationSeconds,
+          expected_performance: {
+            weights: step.weight_entries,
+            reps: step.reps,
+            duration_seconds: step.duration_seconds,
+          },
+        },
+      },
+      key,
+    );
+  };
+
   const skipStep = async (step: WorkoutStep) =>
     submitStep(step, "skipped", [], [], null);
 
@@ -194,6 +222,7 @@ export function useWorkout(
     replacementStep,
     resolveAction,
     saveStep,
+    correctStep,
     skipStep,
     start,
     startCruise: () => transitionLifecycle("start_cruise"),

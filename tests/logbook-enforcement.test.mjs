@@ -47,7 +47,7 @@ const compare = ({
     targetSets,
   });
 
-test("locked verdict truth tables stay deterministic at boundaries and retries", () => {
+test("estimated one-rep-max verdicts stay deterministic at boundaries and retries", () => {
   const cases = [
     {
       name: "new assignment is baseline",
@@ -71,12 +71,12 @@ test("locked verdict truth tables stay deterministic at boundaries and retries",
       expected: { setVerdicts: [], verdict: "win" },
     },
     {
-      name: "rest-pause heavier at lower target boundary wins",
+      name: "rest-pause small load increase with fewer reps loses estimated strength",
       input: {
         current: performance([101], [6, 3, 2]),
         previous: performance([100], [8, 4, 2]),
       },
-      expected: { setVerdicts: [], verdict: "win" },
+      expected: { setVerdicts: [], verdict: "failure" },
     },
     {
       name: "rest-pause heavier below target fails",
@@ -121,14 +121,14 @@ test("locked verdict truth tables stay deterministic at boundaries and retries",
       expected: { setVerdicts: ["tie", "tie"], verdict: "failure" },
     },
     {
-      name: "straight-set heavier above range fails",
+      name: "straight-set higher estimated strength wins regardless of target",
       input: {
         protocol: "straight_set",
         targetSets: [{ min: 6, max: 8 }],
         current: performance([101], [9]),
         previous: performance([100], [8]),
       },
-      expected: { setVerdicts: ["failure"], verdict: "failure" },
+      expected: { setVerdicts: ["win"], verdict: "win" },
     },
     {
       name: "abs same load more metric wins",
@@ -139,7 +139,7 @@ test("locked verdict truth tables stay deterministic at boundaries and retries",
         current: performance([50], [21]),
         previous: performance([50], [20]),
       },
-      expected: { setVerdicts: [], verdict: "win" },
+      expected: { setVerdicts: ["win"], verdict: "win" },
     },
     {
       name: "abs same load tie fails",
@@ -150,10 +150,10 @@ test("locked verdict truth tables stay deterministic at boundaries and retries",
         current: performance([50], [20]),
         previous: performance([50], [20]),
       },
-      expected: { setVerdicts: [], verdict: "failure" },
+      expected: { setVerdicts: ["tie"], verdict: "failure" },
     },
     {
-      name: "abs heavier with lower metric is ambiguous",
+      name: "weighted abs uses estimated strength",
       input: {
         bodyPart: "abs_1",
         protocol: "straight_set",
@@ -161,7 +161,7 @@ test("locked verdict truth tables stay deterministic at boundaries and retries",
         current: performance([51], [19]),
         previous: performance([50], [20]),
       },
-      expected: { setVerdicts: [], verdict: "ambiguous" },
+      expected: { setVerdicts: ["failure"], verdict: "failure" },
     },
     {
       name: "abs lighter with higher timed metric is ambiguous",

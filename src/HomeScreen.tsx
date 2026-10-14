@@ -1,13 +1,14 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { FoundationHomeProps } from "./FoundationHome.js";
 import type { OfflineSyncState } from "./hooks/use-offline-sync.js";
-import { WORKOUT_SLOTS, type WorkoutSlot } from "./rotation-config.js";
+import { type WorkoutSlot } from "./rotation-config.js";
 import type { TrainingLifecycle } from "./workout-domain.js";
 import { requestOwnerAccountDeletion } from "./lib/auth-actions.js";
 import type { WeightUnit } from "./weight-conversion.js";
 
 type HomeScreenProps = Omit<FoundationHomeProps, "onSignOut" | "userId"> & {
   activeSlot: WorkoutSlot | null;
+  assignmentsReady: boolean;
   actionSaving: boolean;
   conflictDeferred: boolean;
   dataReady: boolean;
@@ -67,8 +68,7 @@ const summaries: Record<WorkoutSlot, string> = {
 };
 
 function HomeScreen({
-  cloudStatus,
-  email,
+  assignmentsReady,
   activeSlot,
   actionSaving,
   conflictDeferred,
@@ -120,8 +120,7 @@ function HomeScreen({
       <style>{homeStyles}</style>
       <header className="app-header">
         <div>
-          <p className="eyebrow">PRIVATE TRAINING LOG</p>
-          <h1>DC TRAINING</h1>
+          <h1>DC Training Log</h1>
         </div>
         <button
           aria-label="Settings"
@@ -145,6 +144,9 @@ function HomeScreen({
       <main>
         <WorkoutCard
           activeSlot={activeSlot}
+          assignmentsReady={assignmentsReady}
+          message={message}
+          onOpenRotation={onOpenRotation}
           actionSaving={actionSaving}
           dataReady={dataReady}
           loading={loadingWorkout}
@@ -155,24 +157,12 @@ function HomeScreen({
           unavailable={lifecycle === null}
         />
 
-        <RotationTracker
-          lastCompletedSlot={lastCompletedSlot}
-          nextSlot={nextSlot}
-        />
-
         {lastCompletedSlot && (
           <section className="last-workout">
             <p className="section-label">LAST WORKOUT</p>
             <strong>{lastCompletedSlot} COMPLETE</strong>
           </section>
         )}
-
-        <AccountControls
-          cloudStatus={cloudStatus}
-          email={email}
-          message={message}
-          onOpenRotation={onOpenRotation}
-        />
       </main>
       <BottomNavigation
         active="home"
@@ -194,34 +184,6 @@ function HomeScreen({
         />
       )}
     </div>
-  );
-}
-
-function AccountControls({
-  cloudStatus,
-  email,
-  message,
-  onOpenRotation,
-}: Pick<
-  HomeScreenProps,
-  "cloudStatus" | "email" | "message" | "onOpenRotation"
->) {
-  return (
-    <>
-      {message && <p className="form-message">{message}</p>}
-      <p className="account-email">SIGNED IN AS {email?.toUpperCase()}</p>
-      <button
-        className="primary-action"
-        disabled={!onOpenRotation}
-        onClick={onOpenRotation}
-        type="button"
-      >
-        ROTATION SETUP
-      </button>
-      <p className="quiet-note">
-        APP FOUNDATION · AUTHENTICATED · {cloudStatus} · {email?.toUpperCase()}
-      </p>
-    </>
   );
 }
 
@@ -279,7 +241,7 @@ function CruiseHome({
       <style>{homeStyles}</style>
       <header className="app-header">
         <div>
-          <h1>DC TRAINING</h1>
+          <h1>DC Training Log</h1>
         </div>
         <button
           aria-label="Settings"
@@ -592,7 +554,33 @@ const sheetStyles = `
 .bottom-sheet .sheet-secondary { margin-top: 10px; border-color: var(--line); }
 `;
 
+type WorkoutCardProps = {
+  activeSlot: WorkoutSlot | null;
+  assignmentsReady: boolean;
+  message: string;
+  onOpenRotation?: () => void;
+  actionSaving: boolean;
+  dataReady: boolean;
+  loading: boolean;
+  nextSlot: WorkoutSlot;
+  onStartCruise: () => void;
+  resume: () => void;
+  start: () => Promise<void>;
+  unavailable: boolean;
+};
+
+function workoutActionsBusy(
+  dataReady: boolean,
+  loading: boolean,
+  saving: boolean,
+) {
+  return !dataReady || loading || saving;
+}
+
 function WorkoutCard({
+  assignmentsReady,
+  message,
+  onOpenRotation,
   activeSlot,
   actionSaving,
   dataReady,
@@ -602,20 +590,11 @@ function WorkoutCard({
   resume,
   start,
   unavailable,
-}: {
-  activeSlot: WorkoutSlot | null;
-  actionSaving: boolean;
-  dataReady: boolean;
-  loading: boolean;
-  nextSlot: WorkoutSlot;
-  onStartCruise: () => void;
-  resume: () => void;
-  start: () => Promise<void>;
-  unavailable: boolean;
-}) {
+}: WorkoutCardProps) {
   if (unavailable) return <UnavailableWorkoutCard loading={loading} />;
 
   const slot = activeSlot ?? nextSlot;
+  const busy = workoutActionsBusy(dataReady, loading, actionSaving);
   return (
     <section className="foundation-card" aria-labelledby="foundation-title">
       <p className="section-label">
@@ -626,22 +605,70 @@ function WorkoutCard({
       <button
         className="primary-action"
         type="button"
-        disabled={!dataReady || loading}
+        disabled={busy || (!activeSlot && !assignmentsReady)}
         onClick={activeSlot ? resume : () => void start()}
       >
         {activeSlot ? `RESUME ${activeSlot}` : `START ${nextSlot}`}
       </button>
+      <WorkoutStartNotice
+        activeSlot={activeSlot}
+        assignmentsReady={assignmentsReady}
+        loading={loading}
+        message={message}
+        nextSlot={nextSlot}
+        onOpenRotation={onOpenRotation}
+      />
       {!activeSlot && (
         <button
           className="secondary-action cruise-action"
           type="button"
-          disabled={!dataReady || loading || actionSaving}
+          disabled={busy}
           onClick={onStartCruise}
         >
           START CRUISE
         </button>
       )}
     </section>
+  );
+}
+
+function WorkoutStartNotice({
+  activeSlot,
+  assignmentsReady,
+  loading,
+  message,
+  nextSlot,
+  onOpenRotation,
+}: Pick<
+  WorkoutCardProps,
+  | "activeSlot"
+  | "assignmentsReady"
+  | "loading"
+  | "message"
+  | "nextSlot"
+  | "onOpenRotation"
+>) {
+  return (
+    <>
+      {message && (
+        <p className="form-message" role="status">
+          {message}
+        </p>
+      )}
+      {!activeSlot && !assignmentsReady && !loading && (
+        <p className="form-message">
+          Assign exercises for {nextSlot} before starting.{" "}
+          <button
+            className="text-action"
+            type="button"
+            disabled={!onOpenRotation}
+            onClick={onOpenRotation}
+          >
+            SET UP {nextSlot}
+          </button>
+        </p>
+      )}
+    </>
   );
 }
 
@@ -655,25 +682,6 @@ function UnavailableWorkoutCard({ loading }: { loading: boolean }) {
           ? "CHECKING YOUR TRAINING PHASE"
           : "TRAINING CONTROLS ARE LOCKED"}
       </p>
-    </section>
-  );
-}
-
-function RotationTracker({
-  lastCompletedSlot,
-  nextSlot,
-}: Pick<HomeScreenProps, "lastCompletedSlot" | "nextSlot">) {
-  return (
-    <section aria-label="ROTATION" className="rotation-tracker">
-      <p className="section-label">ROTATION</p>
-      <div>
-        {WORKOUT_SLOTS.map((slot) => (
-          <span className={slot === nextSlot ? "rotation-next" : ""} key={slot}>
-            {slot}
-            {lastCompletedSlot === slot ? " ✓" : ""}
-          </span>
-        ))}
-      </div>
     </section>
   );
 }
@@ -839,6 +847,7 @@ export function SettingsScreen({
         <h1>SETTINGS</h1>
       </header>
       <main>
+        <p className="account-email">SIGNED IN AS {email}</p>
         <p className="section-label">WEIGHT UNIT</p>
         <section className="settings-card">
           <h2>Display weights in</h2>

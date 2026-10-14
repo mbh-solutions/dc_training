@@ -975,7 +975,7 @@ const assignmentCard = (workout, position) => {
       `${workout} WORKOUT`,
   );
   return [...(section?.querySelectorAll("button.assignment-card") ?? [])].find(
-    (button) => button.querySelector("span")?.textContent === position,
+    (button) => button.querySelector("span")?.textContent === position || (position === "ABS 1" && button.querySelector("span")?.textContent === "ABS"),
   );
 };
 const workoutToggle = (workout) =>
@@ -1191,7 +1191,7 @@ const mountedApplication =
 
 await act(async () => {
   [...document.querySelectorAll("button")]
-    .find((button) => button.textContent.includes("ROTATION SETUP"))
+    .find((button) => button.textContent.includes("ROTATION"))
     .click();
   await flush();
 });
@@ -1303,7 +1303,7 @@ await act(async () => {
 await act(settleLoading);
 await act(async () => {
   [...document.querySelectorAll("button")]
-    .find((button) => button.textContent.includes("ROTATION SETUP"))
+    .find((button) => button.textContent.includes("ROTATION"))
     .click();
   await flush();
 });
@@ -1386,7 +1386,7 @@ await act(async () => {
 await act(settleLoading);
 await act(async () => {
   [...document.querySelectorAll("button")]
-    .find((button) => button.textContent.includes("ROTATION SETUP"))
+    .find((button) => button.textContent.includes("ROTATION"))
     .click();
   await flush();
 });

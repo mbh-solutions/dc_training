@@ -26,7 +26,10 @@ function savedDraft(current: Assignment | undefined) {
       current.structure === "custom"
         ? draftTargets(current.target_sets)
         : emptyTargets(),
-    exercise: current.exercise,
+    exercise: current.exercise.replace(
+      "Lying Deltech leg curl",
+      "Lying leg curl",
+    ),
     protocol: current.protocol,
     structure: current.structure === "none" ? "" : current.structure,
   };

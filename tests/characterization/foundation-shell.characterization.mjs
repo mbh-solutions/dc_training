@@ -390,12 +390,12 @@ const profileErrorSignedOut =
     .length ===
     localSignOutsBeforeProfileError + 1 &&
   text().includes("OWNER ACCESS") &&
-  !text().includes("APP FOUNDATION");
+  !text().includes("SIGNED IN AS");
 const profileErrorHandled =
   profileErrorSignedOut ||
   text().includes("SYNC FAILED · SAVED ON DEVICE") ||
   (offlineSyncAvailable &&
-    text().includes("APP FOUNDATION") &&
+    text().includes("SIGNED IN AS") &&
     calls.filter((call) => call[0] === "signOut" && call[1]?.scope === "local")
       .length === localSignOutsBeforeProfileError);
 profileResult = { data: { status: "ready" }, error: null };
@@ -513,7 +513,7 @@ await act(async () => {
   await flush();
 });
 const recoveryExited =
-  text().includes("APP FOUNDATION") && !text().includes("OWNER RECOVERY");
+  text().includes("SIGNED IN AS") && !text().includes("OWNER RECOVERY");
 
 const behavior = {
   browser_safe_client:
@@ -565,8 +565,8 @@ const behavior = {
     ),
   session_restored:
     loading &&
-    coldOffline.includes("AUTHENTICATED") &&
-    firstOnline.includes("PROTECTED"),
+    coldOffline.includes("SIGNED IN AS") &&
+    firstOnline.includes("SIGNED IN AS"),
   sign_in_submitted: hasCall(
     "signInWithPassword",
     (call) =>

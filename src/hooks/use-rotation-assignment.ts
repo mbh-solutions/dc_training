@@ -50,7 +50,7 @@ export function useRotationAssignments(
       return false;
     }
     operationIds.current.delete(key);
-    setMessage("ASSIGNMENT SAVED ON DEVICE");
+    setMessage("");
     return true;
   };
 

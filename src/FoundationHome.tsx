@@ -1,3 +1,4 @@
+import { positionsFor } from "./rotation-config.js";
 import { useEffect, useState, type ReactNode } from "react";
 import HistoryScreen from "./HistoryScreen.jsx";
 import HomeScreen, { NetworkStatus, SettingsScreen } from "./HomeScreen.jsx";
@@ -196,6 +197,7 @@ function renderEditingScreen({
         onExit={onCloseWorkout}
         onResolveAction={workout.resolveAction}
         onSave={workout.saveStep}
+        onCorrect={workout.correctStep}
         onSkip={workout.skipStep}
         onUndo={workout.undo}
         steps={workout.steps}
@@ -290,6 +292,10 @@ function FoundationDashboardHome({
   return (
     <HomeScreen
       {...homeProps}
+      assignmentsReady={positionsFor(workout.nextSlot).every(
+        (position) =>
+          offline.accountState?.assignments[`${workout.nextSlot}:${position}`],
+      )}
       activeSlot={workout.activeWorkout?.slot ?? null}
       actionSaving={workout.actionSaving}
       conflictDeferred={offline.conflictDeferred}
