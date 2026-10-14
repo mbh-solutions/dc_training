@@ -4,57 +4,37 @@ This runbook is for the single pre-authorized DC Training owner. It does not
 create public signup, an administrator surface, or a browser-accessible
 privileged credential.
 
-## Account deletion and recovery
+## Account lifecycle enforcement
 
-1. From any signed-in current client after revision-mode activation, open
-   Account, re-enter the current password, acknowledge the permanent-deletion
-   warning, and request deletion. During the legacy transition, use the active
-   editing client.
-2. The app immediately clears its local working copy and signs out every
-   session. Cloud data becomes unavailable immediately.
-3. For 30 days, signing in opens only the deletion-recovery screen. Select
-   **Cancel deletion** to restore access before the displayed deadline.
-4. At the deadline, the database scheduler deletes the authentication user.
-   Existing foreign keys cascade that deletion through the owner's cloud data.
-   Cancellation is no longer accepted.
+Owner-facing sign-in, deletion, recovery, and sync instructions are in the
+[Offline and account guide](https://github.com/mbh-solutions/dc_training/wiki/Offline-and-account).
 
-The request RPC requires a password-authenticated session created within the
-previous five minutes. Revision mode does not use a device ID as editing
-authority; only legacy single-writer mode checks the active device during the
-transition. The same database transaction commits the deletion request and
-revokes every owner Auth session visible to that transaction; client sign-out
-then clears the device's persisted session. A concurrent or later sign-in can
-access only the deletion-recovery flow because database guards reject owner-data
-access and mutation while deletion is pending. The browser deletes its IndexedDB
-database, local device identifiers, and cached owner-access marker when the
-request succeeds.
+The deletion RPC requires a password-authenticated session created within five
+minutes. Its database transaction records the deletion request and revokes owner
+Auth sessions. Database guards reject training-data access while deletion is
+pending; the client clears its owner working copy and signs out. Signing in
+during the 30-day recovery window exposes only the deletion-recovery flow.
+Cancellation is rejected at the finalization deadline.
 
-## Multi-device sync and recovery
+The database scheduler invokes `private.finalize_account_deletions()` each
+minute. It deletes due Auth users; foreign keys cascade through owner data.
+Recovery requires both the deadline check and the deletion schedule to remain
+intact. Password recovery does not cancel a pending deletion request.
 
-- Normal sign-in on a current client does not show an edit-access transfer
-  warning. After revision-mode activation, every signed-in current client may
-  edit.
-- Cached legacy clients remain single-writer until the active current client
-  connects, drains its local queue, and activates revision mode. After
-  activation, the server rejects new legacy writes while still recognizing
-  exact retries of operations it already accepted.
-- If the prior legacy device is unavailable, `CONTINUE ON THIS DEVICE` warns
-  that changes never synced from either device cannot be recovered. After the
-  owner's confirmation, the database performs the legacy takeover and
-  revision-mode activation atomically. Any pre-upgrade queue on the current
-  device must be reviewed before cloud data replaces it.
-- A device sends its complete pending queue as one batch with the account
-  revision it started from. The database applies every operation and advances
-  the revision, or applies none of them.
-- A stale or rejected batch remains retained. The app pauses further edits and
-  offers `USE CLOUD DATA`, `REVIEW DEVICE COPY`, and `NOT NOW`; it never silently
-  drops confirmed local work or asks the owner to transfer edit access.
-- `USE CLOUD DATA` replaces the device working copy only after the owner's
-  choice. Server-rejected batches remain archived; pre-upgrade local work stays
-  on its device until that choice. `NOT NOW` leaves the local queue untouched.
-- Successfully synced data restores after sign-in on a replacement device.
-  Changes that existed only on a lost device and never synced cannot be
-  recovered.
+## Sync recovery boundaries
+
+The client submits its pending operations as an atomic batch against the expected
+cloud state counter. Conflicting or rejected batches remain retained for explicit
+review; the app does not silently merge or discard them. Successfully synced data
+can restore on another device. Work that never left an unavailable device cannot
+be recovered from the cloud.
+
+Compatibility handling for single-writer clients is implemented in
+`20260811171245_allow_multi_device_editing.sql`. Activation must drain or explicitly
+resolve a device's pending work. `CONTINUE ON THIS DEVICE` requires the owner's
+choice; it is not an operator shortcut for overwriting unsynced work. See the
+[architecture guide](https://github.com/mbh-solutions/dc_training/wiki/Architecture)
+for the main data flow.
 
 ## Daily encrypted backup
 
@@ -227,8 +207,8 @@ where jobname = 'dc-training-finalize-account-deletions'
 ## Release operations
 
 - A production release is blocked if the built-in password-reset email does not
-  arrive for the pre-authorized owner. Custom SMTP remains deferred while that
-  delivery succeeds.
+  arrive for the pre-authorized owner. Check the configured email delivery before
+  releasing account-recovery changes.
 - A red daily-backup run requires investigation before relying on the next
   artifact. Retry only after identifying and repairing the root cause.
 - If password recovery is needed during the deletion window, complete password

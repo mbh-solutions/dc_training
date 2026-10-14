@@ -2,37 +2,37 @@ schema_version = "1.0"
 module_boundaries = []
 
 [behavior]
-intended_behavior = "Preserve DC Training behavior while installing patched transitive dependencies: source-map-js, brace-expansion, undici and fast-uri."
-proof = "All 21 application tests, including 45 UX checks, lint and the production build passed. npm audit reports zero vulnerabilities."
+intended_behavior = "Describe implemented DC Training behavior and operator procedures in the README and canonical wiki pages without changing the application."
+proof = "Documentation is checked against source, tests and configuration; links and published rendering are verified before handoff."
 
 [characterization]
-captured_behavior = "Existing workout, history, rotation and authentication characterization outputs remain unchanged with the patched lockfile."
-proof = "Hosted base and head characterization passed in run 38512375786; final protected qualification binds the updated review evidence."
+captured_behavior = "Application source, dependencies and database migrations are unchanged."
+proof = "The documentation describes the existing tested workflows; protected qualification binds this documentation change."
 
 [separation_of_concerns]
-before = "The lockfile resolved transitive tooling dependencies with published security advisories."
-after = "The lockfile resolves patched compatible versions. No application functions, components or module responsibilities change."
+before = "Product documentation has no complete owner and maintainer reading paths."
+after = "The README directs readers to focused wiki pages; the backup runbook remains the home for detailed restore procedures. No production responsibilities change."
 boundaries = []
 
 [architecture]
-dependency_direction = "Existing application imports and dependency declarations are unchanged; only resolved transitive dependency versions change."
-reviewed_paths = ["package-lock.json"]
+dependency_direction = "Application imports and dependency declarations are unchanged; wiki pages link directly to the responsible source modules."
+reviewed_paths = ["README.md", "docs/wiki", "docs/operations/ACCOUNT_LIFECYCLE_AND_BACKUPS.md"]
 
 [responsibility_boundary]
-path = "package-lock.json"
-owns = "Exact dependency versions, registry integrity hashes and reproducible installation."
+path = "docs/wiki"
+owns = "Canonical product guidance, user workflows and maintainer documentation."
 does_not_own = "Workout behavior, saved data, authentication, database schema or user preferences."
 
 [incremental_refactor]
-target = "Resolve open dependency alerts and consolidate four pending security update PRs."
-completed_step = "Applied the four proposed fixes and advanced fast-uri to 3.1.8 for its newer security fix. No application refactor is needed."
+target = "Publish concise, source-grounded README and GitHub Wiki documentation."
+completed_step = "README entry point, focused wiki pages, navigation, diagrams and manual publication procedure."
 
 [review_handoff]
 summary = "DERIVED_FROM_AUTHENTICATED_EVIDENCE"
 remaining_risks = ["DERIVED_FROM_AUTHENTICATED_EVIDENCE"]
 
 [human_review]
-naming = "Existing package names and application terminology are unchanged."
-cohesion = "The changes form one bounded transitive dependency security update."
-intended_behavior = "Preserve application behavior while fixing published dependency vulnerabilities."
-reviewability = "The owner requested repository synchronization, security resolution and branch hygiene. The lockfile changes correspond to PRs 71, 79, 81 and 82, with the additional fast-uri patch supported by npm audit."
+naming = "UI labels match the application, including RP1/RP2/RP3 and combined target ranges."
+cohesion = "Each detailed subject has one primary home; the README and sidebar provide reading paths."
+intended_behavior = "Document current behavior without release summaries or changing application behavior."
+reviewability = "The owner requested a published README and GitHub Wiki following the supplied documentation guidelines, without revision language. Source files are reviewed before the wiki is published."
