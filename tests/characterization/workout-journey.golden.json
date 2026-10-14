@@ -1,0 +1,48 @@
+{
+  "journey": [
+    {
+      "input": {
+        "slot": "A1",
+        "amount": "80",
+        "reps": [8, 3, 2]
+      },
+      "output": {
+        "slot": "A1",
+        "amount": "80",
+        "recordedAmount": "80",
+        "recordedReps": [8, 3, 2],
+        "correctedReps": [9, 3, 2],
+        "exercise": "Incline barbell press",
+        "target": [
+          {
+            "min": 8,
+            "max": 12
+          }
+        ],
+        "comparison": "win"
+      }
+    },
+    {
+      "input": {
+        "slot": "A2",
+        "amount": "100",
+        "reps": [10, 3, 2]
+      },
+      "output": {
+        "slot": "A2",
+        "amount": "100",
+        "recordedAmount": "100",
+        "recordedReps": [10, 3, 2],
+        "correctedReps": [11, 3, 2],
+        "exercise": "Incline barbell press",
+        "target": [
+          {
+            "min": 10,
+            "max": 14
+          }
+        ],
+        "comparison": "win"
+      }
+    }
+  ]
+}

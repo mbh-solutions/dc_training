@@ -85,7 +85,128 @@
       ],
       "id": "offline-sync-v1",
       "kind": "regression"
+    },
+    {
+      "id": "workout-journey",
+      "kind": "regression",
+      "covers": [
+        "src/FoundationHome.tsx",
+        "src/HistoryScreen.tsx",
+        "src/HomeScreen.tsx",
+        "src/RotationSetupView.tsx",
+        "src/WorkoutTracer.tsx",
+        "src/hooks/use-rotation-assignment.ts",
+        "src/hooks/use-rotation-editor.ts",
+        "src/hooks/use-workout.ts",
+        "src/offline-sync.ts",
+        "src/rotation-assignment-draft.ts",
+        "src/rotation-assignment.ts",
+        "src/rotation-config.ts",
+        "src/weight-conversion.ts",
+        "src/workout-domain.ts"
+      ]
     }
   ],
-  "schema_version": "1.0"
+  "schema_version": "2.0",
+  "transitions": [],
+  "obligations": [
+    {
+      "id": "journey-1",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/FoundationHome.tsx"
+    },
+    {
+      "id": "journey-2",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/HistoryScreen.tsx"
+    },
+    {
+      "id": "journey-3",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/HomeScreen.tsx"
+    },
+    {
+      "id": "journey-4",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/RotationSetupView.tsx"
+    },
+    {
+      "id": "journey-5",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/WorkoutTracer.tsx"
+    },
+    {
+      "id": "journey-6",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/hooks/use-rotation-assignment.ts"
+    },
+    {
+      "id": "journey-7",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/hooks/use-rotation-editor.ts"
+    },
+    {
+      "id": "journey-8",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/hooks/use-workout.ts"
+    },
+    {
+      "id": "journey-9",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/offline-sync.ts"
+    },
+    {
+      "id": "journey-10",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/rotation-assignment-draft.ts"
+    },
+    {
+      "id": "journey-11",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/rotation-assignment.ts"
+    },
+    {
+      "id": "journey-12",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/rotation-config.ts"
+    },
+    {
+      "id": "journey-13",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/weight-conversion.ts"
+    },
+    {
+      "id": "journey-14",
+      "category": "behavior",
+      "scenario": "workout-journey",
+      "selector": "journey",
+      "target": "src/workout-domain.ts"
+    }
+  ]
 }

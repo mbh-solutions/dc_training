@@ -3,11 +3,11 @@ module_boundaries = []
 
 [behavior]
 intended_behavior = "Improve workout navigation and prescriptions, support labelled loads, share exercise history across slots, compare weighted performance using estimated one-rep-max scores, and simplify rotation and home screens."
-proof = "Thirteen runtime/domain tests, a PGlite migration and workout-flow check, existing characterization drivers, lint and production build exercise the changed behavior."
+proof = "Twenty runtime/domain tests, a PGlite migration and workout-flow check, existing characterization drivers, lint and production build exercise the changed behavior."
 
 [characterization]
 captured_behavior = "Retain authenticated owner access, recovery, offline state, assignment round trips and workout/history surface contracts while updating text selectors for the requested home cleanup."
-proof = "Existing characterization goldens remain unchanged. Runtime tests cover draft-preserving backward navigation, explicit prescriptions, labelled loads, one ab, B1/B3 history in both directions and estimated-strength verdicts. Database checks exercise correction propagation and active-history guards."
+proof = "Existing characterization goldens remain unchanged. A schema-2 workflow scenario observes actual workout entry, history correction and rotation editing on both base and head, with whole-file behavior obligations. Runtime tests cover draft-preserving backward navigation, explicit prescriptions, labelled loads, one ab, B1/B3 history in both directions and estimated-strength verdicts. Database checks exercise correction propagation and active-history guards."
 
 [separation_of_concerns]
 before = "Workout screens embedded navigation and entry decisions; assignment identity also selected prior performance."
